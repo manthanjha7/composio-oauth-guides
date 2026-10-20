@@ -162,6 +162,25 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     tools.push({ type: "web_search_20260209", name: "web_search", max_uses: maxSearches } as BetaToolUnion);
   }
 
+  // Server-side refusal fallback is on by default; if the API rejects it for this request shape, retry once without it.
+  let useFallbacks = process.env.AGENT_FALLBACKS !== "off";
+  type StreamParams = Parameters<typeof client.beta.messages.stream>[0];
+  async function callModel(params: StreamParams) {
+    const run = (withFallbacks: boolean) =>
+      client.beta.messages
+        .stream(withFallbacks ? { ...params, betas: BETAS, fallbacks: "default" } : params, { signal: opts.signal })
+        .finalMessage();
+    if (!useFallbacks) return run(false);
+    try {
+      return await run(true);
+    } catch (e) {
+      if (!(e instanceof Anthropic.BadRequestError)) throw e;
+      useFallbacks = false;
+      emit({ type: "warning", message: "Refusal fallback not accepted for this request; continuing without it." });
+      return run(false);
+    }
+  }
+
   async function runTool(name: string, input: Record<string, unknown>): Promise<{ content: string; isError?: boolean; stop?: "finish" | "ambiguous" | "not_oauth" }> {
     switch (name) {
       case "composio_lookup": {
@@ -274,20 +293,14 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         break;
       }
       opts.signal?.throwIfAborted();
-      const stream = client.beta.messages.stream(
-        {
-          model: MODEL,
-          max_tokens: 16000,
-          betas: BETAS,
-          fallbacks: "default",
-          output_config: { effort: EFFORT },
-          system: researchSystem(maxSearches, maxFetches),
-          tools,
-          messages,
-        },
-        { signal: opts.signal },
-      );
-      const msg = await stream.finalMessage();
+      const msg = await callModel({
+        model: MODEL,
+        max_tokens: 32000,
+        output_config: { effort: EFFORT },
+        system: researchSystem(maxSearches, maxFetches),
+        tools,
+        messages,
+      });
 
       for (const block of msg.content) {
         if (block.type === "text" && block.text.trim()) emit({ type: "note", text: block.text.trim().slice(0, 300) });
@@ -364,28 +377,23 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   let generated: z.infer<typeof GeneratedGuideSchema> | null = null;
   for (let attempt = 0; attempt < 2 && !generated; attempt++) {
     try {
-      const stream = client.beta.messages.stream(
-        {
-          model: MODEL,
-          max_tokens: 32000,
-          betas: BETAS,
-          fallbacks: "default",
-          output_config: { effort: EFFORT, format: betaZodOutputFormat(GeneratedGuideSchema) },
-          system: WRITE_SYSTEM,
-          messages: [
-            {
-              role: "user",
-              content:
-                attempt === 0
-                  ? dossier
-                  : `${dossier}\n\nYour previous answer did not match the schema. Return only valid JSON for the schema.`,
-            },
-          ],
-        },
-        { signal: opts.signal },
-      );
-      const msg = await stream.finalMessage();
+      const msg = await callModel({
+        model: MODEL,
+        max_tokens: 64000,
+        output_config: { effort: EFFORT, format: betaZodOutputFormat(GeneratedGuideSchema) },
+        system: WRITE_SYSTEM,
+        messages: [
+          {
+            role: "user",
+            content:
+              attempt === 0
+                ? dossier
+                : `${dossier}\n\nYour previous answer did not match the schema. Return only valid JSON for the schema.`,
+          },
+        ],
+      });
       if (msg.stop_reason === "refusal") throw new Error("The model declined to write this guide.");
+      if (msg.stop_reason === "max_tokens") throw new Error("The guide was cut off (max_tokens).");
       const text = msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
       const parsed = GeneratedGuideSchema.safeParse(JSON.parse(text));
       if (parsed.success) generated = parsed.data;
