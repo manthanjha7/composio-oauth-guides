@@ -60,7 +60,8 @@ Useful scripts:
    - Everything else is downgraded to ❓ Unknown (or 💬 Reported for real, non-official pages), with a note.
    - A wait estimate with no verified backing becomes "Unknown"; unbacked time spans in the summary are shown as warnings.
    - The generator can't assign 🧪 Tested.
-7. **Save, read back, then link.** Research stops itself at about 150 s and writes a partial guide rather than timing out. Progress streams to the browser as real agent events over SSE.
+7. **Replay.** `/generate?replay=gmail` plays back a recorded real run (events captured from a live Gmail run) in the browser with no model calls. It shows the live experience while generation is paused, and lets every live-run state be tested for free.
+8. **Save, read back, then link.** Research stops itself at about 150 s and writes a partial guide rather than timing out. Progress streams to the browser as real agent events over SSE.
 
 ## Key decisions
 

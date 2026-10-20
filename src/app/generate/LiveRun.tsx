@@ -3,51 +3,142 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Badge } from "@/components/badges";
 import type { AgentEvent } from "@/lib/agent/run";
 
-type Ev = AgentEvent & { at: number };
+/** `at`: wall-clock ms when received; `rt`: recorded seconds (replays only). */
+type Ev = AgentEvent & { at: number; rt?: number };
+type Status = "connecting" | "running" | "done" | "error" | "ambiguous" | "not_oauth" | "unavailable";
+
+const PHASES = [
+  { id: "composio", label: "Composio check" },
+  { id: "identify", label: "Identify" },
+  { id: "research", label: "Read docs" },
+  { id: "probe", label: "Probe" },
+  { id: "write", label: "Write guide" },
+  { id: "verify", label: "Check evidence" },
+  { id: "save", label: "Save" },
+] as const;
+type PhaseId = (typeof PHASES)[number]["id"];
+
+function phaseOf(e: AgentEvent): PhaseId | null {
+  if (e.type === "composio") return "composio";
+  if (e.type === "identified") return "identify";
+  if (e.type === "search" || e.type === "fetch") return "research";
+  if (e.type === "probe") return "probe";
+  if (e.type === "verify" || e.type === "cost") return "verify";
+  if (e.type === "done") return "save";
+  if (e.type === "stage") {
+    const map: Record<string, PhaseId | null> = { start: null, composio: "composio", identify: "identify", research: "research", probe: "probe", write: "write", verify: "verify", save: "save" };
+    return map[e.stage] ?? null;
+  }
+  return null;
+}
+
+interface Replay {
+  query: string;
+  recorded_at: string;
+  note: string;
+  events: { t: number; event: AgentEvent }[];
+}
 
 export function LiveRun() {
   const params = useSearchParams();
   const router = useRouter();
-  const q = params.get("q") ?? "";
+  const replayName = params.get("replay");
   const fresh = params.get("fresh") === "1";
+  const [q, setQ] = useState(params.get("q") ?? "");
   const [events, setEvents] = useState<Ev[]>([]);
-  const [status, setStatus] = useState<"running" | "done" | "error" | "ambiguous" | "not_oauth">("running");
+  const [status, setStatus] = useState<Status>("connecting");
   const [error, setError] = useState<string | null>(null);
-  const [slug, setSlug] = useState<string | null>(null);
-  const [started] = useState(() => Date.now());
+  const [replay, setReplay] = useState<Replay | null>(null);
+  const [speed, setSpeed] = useState(4);
+  const [virtual, setVirtual] = useState(0); // replay clock, in recorded seconds
+  const speedRef = useRef(speed);
+  const [started, setStarted] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
-  const ran = useRef(false);
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 500);
+    speedRef.current = speed;
+  }, [speed]);
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
-    if (ran.current || !q) return;
-    ran.current = true;
+    // Start on the next tick and cancel in cleanup: React's dev double-invoke then yields exactly one run
+    // (one API request), instead of a duplicate or an aborted-and-never-restarted one.
     const ctrl = new AbortController();
-    (async () => {
+    let cancelled = false;
+    const handle = (e: AgentEvent, at: number, rt?: number) => {
+      setEvents((xs) => [...xs, { ...e, at, rt }]);
+      if (e.type === "done") {
+        setStatus("done");
+      } else if (e.type === "error") {
+        setError(e.message);
+        setStatus("error");
+      } else if (e.type === "ambiguous") setStatus("ambiguous");
+      else if (e.type === "not_oauth") setStatus("not_oauth");
+      else setStatus((s) => (s === "connecting" ? "running" : s));
+    };
+
+    // Replay: a recorded real run, played back in the browser with no model calls.
+    const runReplay = () =>
+      (async () => {
+        const res = await fetch(`/replays/${encodeURIComponent(replayName ?? "")}.json`, { signal: ctrl.signal });
+        if (!res.ok) {
+          setError("Recorded run not found.");
+          setStatus("error");
+          return;
+        }
+        const data = (await res.json()) as Replay;
+        setReplay(data);
+        setQ(data.query);
+        const t0 = Date.now();
+        setStarted(t0);
+        let clock = 0; // seconds of recorded time already played
+        let last = Date.now();
+        for (const item of data.events) {
+          while (clock < item.t) {
+            if (ctrl.signal.aborted) return;
+            await new Promise((r) => setTimeout(r, 100));
+            const n = Date.now();
+            clock = Math.min(item.t, clock + ((n - last) / 1000) * speedRef.current);
+            last = n;
+            setVirtual(clock);
+          }
+          handle(item.event, t0, item.t);
+        }
+      })().catch((e) => {
+        if ((e as Error).name !== "AbortError") {
+          setError((e as Error).message);
+          setStatus("error");
+        }
+      });
+
+    const query = params.get("q") ?? "";
+    const runLive = () =>
+      (async () => {
       try {
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ query: q, fresh }),
+          body: JSON.stringify({ query, fresh }),
           signal: ctrl.signal,
         });
-        const ct = res.headers.get("content-type") ?? "";
-        if (!ct.includes("text/event-stream")) {
+        if (!(res.headers.get("content-type") ?? "").includes("text/event-stream")) {
           const json = (await res.json()) as { existing?: string; error?: string };
           if (json.existing) {
             router.replace(`/guides/${json.existing}`);
             return;
           }
           setError(json.error ?? `Request failed (${res.status})`);
-          setStatus("error");
+          setStatus(res.status === 503 ? "unavailable" : "error");
           return;
         }
+        setStatus("running");
         const reader = res.body!.getReader();
         const dec = new TextDecoder();
         let buf = "";
@@ -62,26 +153,12 @@ export function LiveRun() {
             const line = chunk.split("\n").find((l) => l.startsWith("data: "));
             if (!line) continue;
             const e = JSON.parse(line.slice(6)) as AgentEvent;
-            setEvents((xs) => [...xs, { ...e, at: Date.now() }]);
-            if (e.type === "done") {
-              finished = true;
-              setSlug(e.slug);
-              setStatus("done");
-            } else if (e.type === "error") {
-              finished = true;
-              setError(e.message);
-              setStatus("error");
-            } else if (e.type === "ambiguous") {
-              finished = true;
-              setStatus("ambiguous");
-            } else if (e.type === "not_oauth") {
-              finished = true;
-              setStatus("not_oauth");
-            }
+            if (["done", "error", "ambiguous", "not_oauth"].includes(e.type)) finished = true;
+            handle(e, Date.now());
           }
         }
         if (!finished) {
-          setError("The connection closed before the guide was finished. Try again.");
+          setError("The connection closed before the guide was finished.");
           setStatus("error");
         }
       } catch (e) {
@@ -91,147 +168,345 @@ export function LiveRun() {
         }
       }
     })();
-    return () => ctrl.abort();
-  }, [q, fresh, router]);
 
-  if (!q) return <p>Type an app name on the <Link className="text-violet-700 underline" href="/">home page</Link>.</p>;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      if (replayName) runReplay();
+      else if (query) runLive();
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [replayName, params, fresh, router]);
 
-  const identified = events.find((e) => e.type === "identified") as Extract<AgentEvent, { type: "identified" }> | undefined;
-  const composio = events.find((e) => e.type === "composio") as Extract<AgentEvent, { type: "composio" }> | undefined;
-  const verify = events.find((e) => e.type === "verify") as Extract<AgentEvent, { type: "verify" }> | undefined;
-  const ambiguous = events.find((e) => e.type === "ambiguous") as Extract<AgentEvent, { type: "ambiguous" }> | undefined;
-  const notOauth = events.find((e) => e.type === "not_oauth") as Extract<AgentEvent, { type: "not_oauth" }> | undefined;
-  const elapsed = Math.round(((status === "running" ? now : (events.at(-1)?.at ?? now)) - started) / 1000);
+  if (!q && !replayName) {
+    return (
+      <p className="text-muted">
+        Type an app name on the{" "}
+        <Link className="text-accent hover:underline" href="/">
+          home page
+        </Link>
+        .
+      </p>
+    );
+  }
+
+  const find = <T extends AgentEvent["type"]>(t: T) => events.find((e) => e.type === t) as Extract<Ev, { type: T }> | undefined;
+  const identified = find("identified");
+  const composio = find("composio");
+  const verify = find("verify");
+  const cost = find("cost");
+  const ambiguous = find("ambiguous");
+  const notOauth = find("not_oauth");
+  const done = find("done");
+  const running = status === "running" || status === "connecting";
+  const lastAt = events.at(-1)?.at ?? now;
+  const elapsed = replay ? Math.round(virtual) : Math.max(0, Math.round(((running ? now : lastAt) - started) / 1000));
+
+  // Phase status: done if a later phase has started; active = latest seen.
+  const seen = events.map(phaseOf).filter((p): p is PhaseId => !!p);
+  const latest = seen.at(-1);
+  const latestIdx = latest ? PHASES.findIndex((p) => p.id === latest) : -1;
+  const phaseState = (i: number) => (status === "done" || i < latestIdx ? "done" : i === latestIdx && running ? "active" : i === latestIdx ? "done" : "pending");
+
+  const writing = running && latest === "write";
+  const writeEv = events.find((e) => e.type === "stage" && e.stage === "write");
+  const writeSecs = writeEv ? (writeEv.rt !== undefined ? Math.round(virtual - writeEv.rt) : Math.round((now - writeEv.at) / 1000)) : 0;
+  const pagesRead = events.filter((e) => e.type === "fetch" && e.ok).length;
+  const searches = events.filter((e) => e.type === "search").length;
+  const probes = events.filter((e) => e.type === "probe").length;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-stone-500">Live research</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {identified ? identified.name : q}
-          <span className="ml-3 align-middle text-sm font-normal text-stone-500">
-            {status === "running" ? `working… ${elapsed}s` : `${elapsed}s`}
-          </span>
-        </h1>
-        {identified && (
-          <p className="mt-1 text-sm text-stone-600">
-            Researching <b>{identified.name}</b>
-            {identified.website && <> · {identified.website}</>}
-            {identified.docs && <> · docs: <a className="text-violet-700 underline" href={identified.docs} target="_blank" rel="noreferrer">{identified.docs}</a></>}
-            {" "}· OAuth for third-party apps: <b>{identified.oauth}</b>. Not what you meant? <Link className="text-violet-700 underline" href="/">Search again</Link> with a website.
+    <div className="space-y-8">
+      {replay && (
+        <div role="note" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-400/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100">
+          <p>
+            <b>Replay of a real run</b> recorded {replay.recorded_at}. {replay.note}
           </p>
-        )}
-      </div>
-
-      {status === "done" && slug && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <p className="font-medium text-emerald-900">Guide ready{verify ? `: ${verify.verified} of ${verify.checked} quoted claims verified against the source pages, ${verify.downgraded} downgraded to Unknown` : ""}.</p>
-          <Link href={`/guides/${slug}`} className="mt-2 inline-block rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">
-            Open the guide →
-          </Link>
-        </div>
-      )}
-      {status === "error" && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
-          <p className="font-medium">Couldn&apos;t finish this guide.</p>
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
-      {status === "ambiguous" && ambiguous && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="font-medium">&quot;{q}&quot; could mean several products. Which one?</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {ambiguous.candidates.map((c) => (
-              <a key={c} href={`/generate?q=${encodeURIComponent(c)}`} className="rounded-full bg-white px-3 py-1 text-sm ring-1 ring-amber-300 hover:bg-amber-100">
-                {c}
-              </a>
+          <div className="flex items-center gap-1" role="group" aria-label="Playback speed">
+            {[1, 4, 16].map((s) => (
+              <button
+                key={s}
+                onClick={() => setSpeed(s)}
+                aria-pressed={speed === s}
+                className={`rounded-md px-2 py-1 font-mono text-xs ring-1 ring-inset ${speed === s ? "bg-sky-200 text-bg ring-sky-200" : "ring-sky-400/40 hover:bg-sky-500/20"}`}
+              >
+                {s}×
+              </button>
             ))}
           </div>
         </div>
       )}
-      {status === "not_oauth" && notOauth && (
-        <div className="rounded-xl border border-stone-200 bg-white p-4">
-          <p className="font-medium">No OAuth app needed (as far as the agent could tell)</p>
-          <p className="text-sm text-stone-600">{notOauth.message}</p>
-        </div>
-      )}
 
-      <div className="grid gap-6 md:grid-cols-[1fr_260px]">
-        <ol className="space-y-2">
-          {events.map((e, i) => (
-            <EventRow key={i} e={e} t={Math.round((e.at - started) / 1000)} />
-          ))}
-          {status === "running" && <li className="animate-pulse text-sm text-stone-400">…</li>}
-        </ol>
-        <aside className="space-y-3 text-sm">
-          <div className="rounded-lg border border-stone-200 bg-white p-3">
-            <p className="text-xs uppercase tracking-wide text-stone-400">Composio</p>
-            {composio ? (
-              <p className="mt-1">
-                Managed OAuth app: <b>{composio.managed}</b>
-                {composio.slug && <> · toolkit <code>{composio.slug}</code></>}
-                {composio.guide && <> · <a className="text-violet-700 underline" href={composio.guide} target="_blank" rel="noreferrer">credential guide</a></>}
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">{replay ? "Recorded run" : "Live research"}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{identified?.name ?? q}</h1>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-sm text-muted" aria-live="off">
+          {running && <span aria-hidden className="pulse-dot h-2 w-2 rounded-full bg-emerald-400" />}
+          <span>{running ? "working" : status === "done" ? "finished" : "stopped"}</span>
+          <span className="text-ink">{elapsed}s</span>
+          {replay && <span className="text-faint">(recorded time, {speed}× speed)</span>}
+        </div>
+      </header>
+
+      {/* Phase stepper */}
+      <ol aria-label="Progress" className="scrollbar-none flex gap-1 overflow-x-auto">
+        {PHASES.map((p, i) => {
+          const st = status === "connecting" ? "pending" : phaseState(i);
+          return (
+            <li key={p.id} className="min-w-[110px] flex-1">
+              <div className={`h-1 rounded-full ${st === "done" ? "bg-emerald-400" : st === "active" ? "pulse-dot bg-accent" : "bg-surface-3"}`} />
+              <p className={`mt-2 text-xs ${st === "pending" ? "text-faint" : "text-ink"}`}>
+                <span className="sr-only">{st}: </span>
+                {p.label}
               </p>
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* Outcome banners */}
+      <div aria-live="polite">
+        {status === "done" && done && (
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-5">
+            <div>
+              <p className="font-semibold text-emerald-200">
+                Guide ready{done.partial ? " (partial: research hit its time budget)" : ""}.
+              </p>
+              {verify && (
+                <p className="mt-1 text-sm text-emerald-100/80">
+                  {verify.verified} of {verify.checked} quoted claims verified against the source pages · {verify.downgraded} downgraded to Unknown · {verify.total} claims
+                  {cost ? ` · model cost ~$${cost.usd.toFixed(2)}` : ""}
+                </p>
+              )}
+            </div>
+            <Link href={`/guides/${done.slug}`} className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-bg hover:bg-emerald-300">
+              Open the guide →
+            </Link>
+          </div>
+        )}
+        {status === "error" && (
+          <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-5">
+            <p className="font-semibold text-rose-200">Couldn&apos;t finish this guide.</p>
+            <p className="mt-1 text-sm text-rose-100/80">{error}</p>
+            <button onClick={() => location.reload()} className="mt-3 rounded-lg border border-rose-300/40 px-3 py-1.5 text-sm text-rose-100 hover:bg-rose-500/20">
+              Try again
+            </button>
+          </div>
+        )}
+        {status === "unavailable" && (
+          <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5">
+            <p className="font-semibold text-amber-200">Live generation isn&apos;t available right now.</p>
+            <p className="mt-1 text-sm text-amber-100/80">{error}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-sm">
+              <Link href="/generate?replay=gmail" className="rounded-lg bg-amber-300 px-3 py-1.5 font-medium text-bg hover:bg-amber-200">
+                Watch a recorded run instead
+              </Link>
+              <Link href="/" className="rounded-lg border border-amber-300/40 px-3 py-1.5 text-amber-100 hover:bg-amber-500/20">
+                Browse the library
+              </Link>
+            </div>
+          </div>
+        )}
+        {status === "ambiguous" && ambiguous && (
+          <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5">
+            <p className="font-semibold text-amber-200">&ldquo;{q}&rdquo; could mean several products. Which one?</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {ambiguous.candidates.map((c) => (
+                <a key={c} href={`/generate?q=${encodeURIComponent(c)}`} className="rounded-full border border-amber-300/40 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/20">
+                  {c}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+        {status === "not_oauth" && notOauth && (
+          <div className="rounded-2xl border border-line-strong bg-surface p-5">
+            <p className="font-semibold">No OAuth app needed (as far as the agent could tell)</p>
+            <p className="mt-1 text-sm text-muted">{notOauth.message}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0 space-y-4">
+          {writing && (
+            <div className="rounded-2xl border border-accent/30 bg-violet-500/[0.07] p-5">
+              <div className="flex items-center gap-2">
+                <span aria-hidden className="pulse-dot h-2 w-2 rounded-full bg-accent" />
+                <p className="font-semibold">Writing scenarios, steps and evidence…</p>
+                <span className="ml-auto font-mono text-sm text-muted">{writeSecs}s</span>
+              </div>
+              <p className="mt-2 text-sm text-muted">
+                The model is turning what it read into a guide. This step sends no updates and usually takes 50–95 seconds. After it, code checks every quoted claim against the pages
+                below before anything is saved.
+              </p>
+              <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <Stat label="pages read" value={pagesRead} />
+                <Stat label="searches" value={searches} />
+                <Stat label="live probes" value={probes} />
+              </dl>
+            </div>
+          )}
+
+          <ol className="overflow-hidden rounded-2xl border border-line bg-surface font-mono text-[13px]">
+            {events.length === 0 && <li className="px-4 py-3 text-faint">{status === "connecting" ? "Connecting…" : "No events."}</li>}
+            {events.map((e, i) => (
+              <EventRow key={i} e={e} t={e.rt ?? Math.max(0, Math.round((e.at - started) / 1000))} />
+            ))}
+            {running && events.length > 0 && <li className="pulse-dot px-4 py-2 text-faint">…</li>}
+          </ol>
+        </div>
+
+        <aside className="space-y-3 text-sm">
+          <Panel title="Researching">
+            {identified ? (
+              <>
+                <p className="font-semibold">{identified.name}</p>
+                <p className="mt-1 break-all font-mono text-xs text-muted">{identified.website}</p>
+                {identified.docs && (
+                  <a href={identified.docs} target="_blank" rel="noreferrer" className="mt-1 block break-all font-mono text-xs text-accent hover:underline">
+                    {identified.docs} ↗
+                  </a>
+                )}
+                <p className="mt-2 text-xs text-muted">
+                  OAuth for third-party apps: <span className="text-ink">{identified.oauth}</span>
+                </p>
+                {!replay && (
+                  <p className="mt-2 text-xs text-faint">
+                    Not what you meant?{" "}
+                    <Link href="/" className="text-accent hover:underline">
+                      Search again with a website
+                    </Link>
+                  </p>
+                )}
+              </>
             ) : (
-              <p className="mt-1 text-stone-400">checking…</p>
+              <p className="text-faint">{running ? "Identifying the provider…" : "—"}</p>
             )}
-          </div>
-          <div className="rounded-lg border border-stone-200 bg-white p-3 text-stone-600">
-            <p className="text-xs uppercase tracking-wide text-stone-400">What happens</p>
-            <p className="mt-1">The agent reads Composio&apos;s docs and the provider&apos;s official docs, probes the live OAuth endpoint, then writes the guide. Code then checks every quoted claim against the pages it actually read; anything it can&apos;t confirm is marked Unknown.</p>
-          </div>
+          </Panel>
+          <Panel title="Composio">
+            {composio ? (
+              <div className="space-y-1">
+                <Badge tone={composio.managed === "yes" ? "accent" : composio.managed === "no" ? "solid" : "neutral"}>
+                  {composio.managed === "yes" ? "Managed app available" : composio.managed === "no" ? "Bring your own app" : composio.managed === "not_in_composio" ? "Not in Composio" : "Unknown"}
+                </Badge>
+                {composio.slug && <p className="font-mono text-xs text-muted">toolkit {composio.slug}</p>}
+                {composio.guide && (
+                  <a href={composio.guide} target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
+                    Composio credential guide ↗
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="text-faint">{running ? "Checking…" : "—"}</p>
+            )}
+          </Panel>
+          <Panel title="What happens">
+            <p className="text-muted">
+              The agent reads Composio&apos;s docs and the provider&apos;s official docs, probes the live OAuth endpoint, then writes the guide. Code checks every quoted claim against the
+              pages it actually read; anything it can&apos;t confirm becomes Unknown.
+            </p>
+          </Panel>
         </aside>
       </div>
     </div>
   );
 }
 
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-line bg-surface p-2">
+      <dd className="font-mono text-xl text-ink">{value}</dd>
+      <dt className="text-xs text-faint">{label}</dt>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-faint">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function host(url: string) {
+  try {
+    const u = new URL(url);
+    return u.hostname + (u.pathname.length > 1 ? u.pathname.replace(/\/$/, "") : "");
+  } catch {
+    return url;
+  }
+}
+
+/** Prefer the decoded provider error over a long redirect URL. */
+function probeSummary(observation: string): string {
+  const decoded = observation.match(/Decoded error in redirect: "([^"]+)"/);
+  if (decoded) return `Provider says: "${decoded[1].trim()}"`;
+  return observation.length > 200 ? `${observation.slice(0, 200)}…` : observation;
+}
+
 function EventRow({ e, t }: { e: Ev; t: number }) {
-  const time = <span className="w-10 shrink-0 font-mono text-xs text-stone-400">{t}s</span>;
-  const row = (icon: string, body: React.ReactNode, tone = "text-stone-700") => (
-    <li className={`flex gap-3 text-sm ${tone}`}>
-      {time}
-      <span className="w-5 shrink-0">{icon}</span>
-      <div className="min-w-0 flex-1">{body}</div>
+  const row = (icon: string, body: React.ReactNode, tone = "text-ink/90") => (
+    <li className={`flex gap-3 border-b border-line/60 px-4 py-2 last:border-0 ${tone}`}>
+      <span className="w-10 shrink-0 text-right text-faint">{t}s</span>
+      <span aria-hidden className="w-5 shrink-0 text-center">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1 break-words">{body}</div>
     </li>
   );
   switch (e.type) {
     case "stage":
-      return row("▸", <b>{e.message}</b>);
+      return e.stage === "start" ? row("▸", e.message, "text-muted") : row("▸", <span className="font-sans font-medium">{e.message}</span>);
     case "identified":
-      return row("🎯", <>Identified <b>{e.name}</b>{e.website ? ` (${e.website})` : ""}</>);
+      return row("🎯", <>Identified {e.name}{e.website ? ` · ${host(e.website)}` : ""} · OAuth: {e.oauth}</>);
     case "composio":
-      return row("🟣", <>Composio: managed app <b>{e.managed}</b>{e.slug ? `, toolkit ${e.slug}` : ""}</>);
+      return row("🟣", <>Composio: managed app {e.managed}{e.slug ? ` · toolkit ${e.slug}` : ""}</>);
     case "search":
       return row(
         "🔍",
         <>
-          Searched <q>{e.query}</q> <span className="text-stone-400">via {e.via}</span>
-          <ul className="mt-1 space-y-0.5 text-xs text-stone-500">
+          Searched &ldquo;{e.query}&rdquo; <span className="text-faint">via {e.via}</span>
+          <ul className="mt-1 space-y-0.5 text-xs text-muted">
             {e.results.map((r) => (
-              <li key={r.url} className="truncate">↳ {r.title} <span className="text-stone-400">{new URL(r.url).hostname}</span></li>
+              <li key={r.url} className="truncate">
+                ↳ {r.title} <span className="text-faint">{host(r.url).split("/")[0]}</span>
+              </li>
             ))}
           </ul>
         </>,
       );
     case "fetch":
       return e.ok
-        ? row("📄", <>Read <a className="break-all text-violet-700 hover:underline" href={e.url} target="_blank" rel="noreferrer">{e.url}</a> <span className="text-stone-400">({Math.round(e.chars / 1000)}k chars, {e.via})</span></>)
-        : row("⚠️", <>Couldn&apos;t read <span className="break-all">{e.url}</span>: {e.error}</>, "text-amber-700");
+        ? row("📄", <>Read <a className="text-accent hover:underline" href={e.url} target="_blank" rel="noreferrer">{host(e.url)}</a> <span className="text-faint">({Math.round(e.chars / 1000)}k chars, {e.via})</span></>)
+        : row("⚠", <>Couldn&apos;t read {host(e.url)}: {e.error}</>, "text-amber-200");
     case "probe":
-      return row("🔎", <>Probed <span className="break-all">{e.url}</span> → <b>{e.status ?? "no response"}</b><div className="text-xs text-stone-500">{e.observation}</div></>);
+      return row(
+        "🔎",
+        <>
+          Probed {host(e.url).slice(0, 70)}… → <span className="text-sky-300">{e.status ?? "no response"}</span>
+          <div className="mt-0.5 text-xs text-muted">{probeSummary(e.observation)}</div>
+        </>,
+      );
     case "note":
-      return row("💭", <span className="text-stone-500">{e.text}</span>);
+      return row("💭", e.text, "text-muted");
     case "verify":
-      return row("✅", <>Evidence check: {e.verified}/{e.checked} quotes found on the source pages · {e.downgraded} claims downgraded to Unknown · {e.total} claims total</>);
+      return row("✅", <>Evidence check: {e.verified}/{e.checked} quotes found on the source pages · {e.downgraded} downgraded · {e.total} claims</>, "text-emerald-200");
     case "cost":
-      return row("💲", <span className="text-stone-500">Model cost for this run: ~${e.usd.toFixed(3)} ({Math.round(e.input_tokens / 1000)}k input, {Math.round(e.output_tokens / 1000)}k output tokens{e.web_searches ? `, ${e.web_searches} web searches` : ""})</span>);
+      return row("💲", <>Model cost ~${e.usd.toFixed(2)} ({Math.round(e.input_tokens / 1000)}k in / {Math.round(e.output_tokens / 1000)}k out)</>, "text-muted");
     case "warning":
-      return row("⚠️", e.message, "text-amber-700");
+      return row("⚠", e.message, "text-amber-200");
     case "error":
-      return row("✖", e.message, "text-rose-700");
+      return row("✖", e.message, "text-rose-300");
     case "done":
-      return row("🎉", <>Saved{e.partial ? " (partial: research hit its time budget)" : ""}</>);
+      return row("🎉", <>Saved{e.partial ? " (partial)" : ""} → /guides/{e.slug}</>, "text-emerald-200");
     default:
       return null;
   }

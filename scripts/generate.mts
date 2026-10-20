@@ -13,7 +13,7 @@ if (!query) {
 const t0 = Date.now();
 const result = await runAgent({
   query,
-  emit: (e) => console.log(`[${((Date.now() - t0) / 1000).toFixed(0).padStart(3)}s] ${e.type}: ${JSON.stringify(e).slice(0, 260)}`),
+  emit: (e) => console.log(`[${((Date.now() - t0) / 1000).toFixed(0).padStart(3)}s] ${e.type}: ${JSON.stringify(e)}`),
 });
 if (result.outcome === "ok") {
   // Same rule as the API route: never overwrite a seed guide; save the agent's version alongside it.
