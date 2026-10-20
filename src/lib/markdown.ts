@@ -1,4 +1,5 @@
 import { LABEL_INFO } from "./evidence";
+import { appliesTo, CHECK_INFO, PATH_INFO } from "./guide-view";
 import type { ClaimT, GuideRecord } from "./schema";
 
 const OWNER = { agent: "🤖 Agent can do", you: "👤 You", waiting: "⏳ Waiting on provider" } as const;
@@ -34,6 +35,7 @@ export function guideToMarkdown(r: GuideRecord, baseUrl: string, scenarioId?: st
   if (r.meta.partial) L.push(">", "> **Incomplete:** research timed out; some sections may be thin.");
   (r.meta.warnings ?? []).forEach((w) => L.push(">", `> **Note:** ${w}`));
   L.push("", `Evidence labels: ${labels.map((k) => `${LABEL_INFO[k].icon} ${LABEL_INFO[k].name}`).join(" · ")}. Citations like [c3] point to the Evidence section.`, "");
+  if (g.verdict) L.push(`**${t(g.verdict)}**`, "");
   L.push(t(g.summary), "");
   L.push(`**Composio:** ${MANAGED[g.composio.managed_oauth] ?? MANAGED.unknown} ${g.composio.note}`);
   if (g.composio.credential_guide_url) L.push(`Composio setup guide: ${g.composio.credential_guide_url}`);
@@ -45,12 +47,25 @@ export function guideToMarkdown(r: GuideRecord, baseUrl: string, scenarioId?: st
     L.push(`| ${s.id === selected?.id ? "▶ " : ""}**${s.label}**: ${t(s.when_this_applies)} | ${cap(s.difficulty)} | ${s.hands_on.estimate} | ${s.waiting.estimate} | ${t(s.approval)}${cite(s.claim_ids)} |`),
   );
 
-  if (g.prerequisites.length) {
+  if (selected) {
+    L.push("", `## Your setup: ${selected.label}`);
+    if (selected.path) L.push(`- **${PATH_INFO[selected.path].name}:** ${PATH_INFO[selected.path].meaning}.`);
+    if (selected.review_checks?.length) L.push(`- **The review checks:** ${selected.review_checks.map((c) => CHECK_INFO[c]).join(", ")}.`);
+    if (selected.shortcut) L.push(`- **Shortcut:** ${t(selected.shortcut)}`);
+    (selected.extras ?? []).forEach((x) => L.push(`- ${t(x)}`));
+  }
+  // With a setup chosen, only the items that apply to it.
+  const keep = <T extends { scenario_ids?: string[] }>(xs: T[]) => (selected ? xs.filter((x) => appliesTo(x.scenario_ids, selected.id)) : xs);
+  const prereqs = keep(g.prerequisites);
+  const traps = keep(g.traps);
+  const blockers = keep(g.blockers);
+
+  if (prereqs.length) {
     L.push("", "## Before you start");
-    g.prerequisites.forEach((p) => L.push(`- **${t(p.title)}**: ${t(p.detail)}${cite(p.claim_ids)}`));
+    prereqs.forEach((p) => L.push(`- **${t(p.title)}**: ${t(p.detail)}${cite(p.claim_ids)}`));
   }
 
-  const steps = selected ? g.steps.filter((s) => s.scenario_ids.length === 0 || s.scenario_ids.includes(selected.id)) : g.steps;
+  const steps = selected ? g.steps.filter((s) => appliesTo(s.scenario_ids, selected.id)) : g.steps;
   L.push("", selected ? `## Steps for: ${selected.label}` : "## Steps");
   steps.forEach((s, i) => {
     const only = !selected && s.scenario_ids.length ? ` _(only: ${s.scenario_ids.map((id) => names.get(id) ?? id).join("; ")})_` : "";
@@ -61,13 +76,13 @@ export function guideToMarkdown(r: GuideRecord, baseUrl: string, scenarioId?: st
     if (s.link) L.push(`   - ${s.link}`);
   });
 
-  if (g.traps.length) {
+  if (traps.length) {
     L.push("", "## Traps");
-    g.traps.forEach((x) => L.push(`- **${t(x.title)}**: ${t(x.detail)}${cite(x.claim_ids)}`));
+    traps.forEach((x) => L.push(`- **${t(x.title)}**: ${t(x.detail)}${cite(x.claim_ids)}`));
   }
-  if (g.blockers.length) {
+  if (blockers.length) {
     L.push("", "## Stuck?");
-    g.blockers.forEach((b) => L.push(`- **${t(b.symptom)}**: ${t(b.what_it_means)} → ${t(b.what_to_do)}${b.agent_can_help ? ` (🤖 ${t(b.agent_can_help)})` : ""}${cite(b.claim_ids)}`));
+    blockers.forEach((b) => L.push(`- **${t(b.symptom)}**: ${t(b.what_it_means)} → ${t(b.what_to_do)}${b.agent_can_help ? ` (🤖 ${t(b.agent_can_help)})` : ""}${cite(b.claim_ids)}`));
   }
   if (g.open_questions.length) {
     L.push("", "## Unconfirmed");

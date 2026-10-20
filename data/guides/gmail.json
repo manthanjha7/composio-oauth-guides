@@ -15,7 +15,7 @@
       "note": "Composio's managed Gmail app works for prototypes. On it, users see 'Composio' on the consent screen, Google quota is shared with other Composio users, and trigger polling has a 15-minute minimum. Adding scopes beyond Composio's defaults causes 'App is blocked'. For production you bring your own Google OAuth client. Register the redirect URI shown in your Composio dashboard; don't copy one from docs, because Composio's pages show two different ones."
     },
     "need_own_app": {
-      "answer": "Not for prototyping: Composio's managed Gmail app works out of the box. For production, almost always yes. You need your own app for your own consent-screen branding, a dedicated quota, faster triggers, or scopes beyond Composio's defaults. Your own app means you go through Google's verification for your scopes.",
+      "answer": "Not to prototype: Composio's managed Gmail app works today. To launch, almost always: for your own name on the consent screen, your own quota, and permissions beyond Composio's defaults.",
       "reasons": [
         "Consent screen should show your app, not 'Composio wants to access your account' (c41)",
         "Composio's managed app shares Google quota across all Composio users (c40)",
@@ -27,7 +27,7 @@
     "scenarios": [
       {
         "id": "s1",
-        "label": "Prototype / personal use (managed app or Testing mode)",
+        "label": "Prototype or personal use",
         "when_this_applies": "You are building or demoing, and you or a known group of up to 100 people connect Gmail. Either use Composio's managed app or your own External client left in Testing status.",
         "difficulty": "easy",
         "hands_on": {
@@ -48,11 +48,18 @@
           "c38",
           "c58",
           "c59"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Max 100 test users",
+          "Logins expire every 7 days"
         ]
       },
       {
         "id": "s2",
-        "label": "Internal Google Workspace tool",
+        "label": "Internal tool, your company only",
         "when_this_applies": "Only people in your own Workspace / Cloud Identity organization connect, and the Cloud project is owned by that organization. Any Gmail scope, including restricted ones.",
         "difficulty": "easy",
         "hands_on": {
@@ -72,11 +79,17 @@
           "c52",
           "c53",
           "c61"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Your Workspace admin may need to trust it"
         ]
       },
       {
         "id": "s3",
-        "label": "External app, send-only (gmail.send)",
+        "label": "Public app that only sends email",
         "when_this_applies": "A public product where any Google user connects, and the agent only sends email (no reading, drafting or labeling beyond non-sensitive scopes).",
         "difficulty": "medium",
         "hands_on": {
@@ -101,11 +114,21 @@
           "c27",
           "c32",
           "c51"
+        ],
+        "path": "app_review",
+        "review_checks": [
+          "identity",
+          "use_case",
+          "working_demo"
+        ],
+        "shortcut": null,
+        "extras": [
+          "Needs a domain you own"
         ]
       },
       {
         "id": "s4",
-        "label": "External server-side agent reading inboxes",
+        "label": "Public agent that reads inboxes",
         "when_this_applies": "A public product whose agent reads, triages, drafts or modifies mail (gmail.readonly / modify / compose / metadata), with tokens and data handled on servers (yours or Composio's).",
         "difficulty": "hard",
         "hands_on": {
@@ -116,7 +139,7 @@
           "estimate": "Several weeks (Google); 5-20 days reported when well prepared",
           "basis": "Google: 'several weeks' (c7), possibly months (c51). Vendor report: 5-20 days (c65). No official CASA duration (c70)."
         },
-        "approval": "Brand + restricted-scope verification + CASA security assessment by a Google-empanelled assessor, repeated at least every 12 months (c5, c6). Reported assessor cost from about $540/yr (c66).",
+        "approval": "Brand verification, restricted-scope verification, and a CASA security assessment by a Google-approved assessor (c5, c6).",
         "claim_ids": [
           "c2",
           "c4",
@@ -132,6 +155,18 @@
           "c66",
           "c68",
           "c70"
+        ],
+        "path": "app_review",
+        "review_checks": [
+          "identity",
+          "use_case",
+          "working_demo",
+          "security"
+        ],
+        "shortcut": "Only need to send email? Ask for gmail.send alone. It needs no security assessment (c1).",
+        "extras": [
+          "Security assessment repeats every 12 months",
+          "Assessor fees reported from about $540"
         ]
       }
     ],
@@ -161,13 +196,17 @@
         ]
       },
       {
-        "title": "A domain you control (s3, s4)",
+        "title": "A domain you control",
         "detail": "Homepage and privacy policy hosted on it, and ownership verified in Google Search Console by a project owner/editor.",
         "claim_ids": [
           "c21",
           "c22",
           "c26",
           "c27"
+        ],
+        "scenario_ids": [
+          "s3",
+          "s4"
         ]
       },
       {
@@ -181,12 +220,15 @@
         ]
       },
       {
-        "title": "Security posture for restricted scopes (s4)",
+        "title": "Security posture for restricted scopes",
         "detail": "Tokens encrypted at rest, prompt-injection protection, and readiness for a CASA assessment.",
         "claim_ids": [
           "c29",
           "c30",
           "c5"
+        ],
+        "scenario_ids": [
+          "s4"
         ]
       }
     ],
@@ -537,11 +579,41 @@
     ],
     "traps": [
       {
+        "title": "Redirect on Composio's domain blocks verification",
+        "detail": "Authorized domains must include your redirect URI's domain, and you must prove ownership in Search Console. You can't do that for Composio's domain, so proxy the callback through your own domain before submitting. (This is an inference from c22 + c23; not stated by either party.)",
+        "claim_ids": [
+          "c21",
+          "c22",
+          "c23"
+        ],
+        "scenario_ids": [
+          "s3",
+          "s4"
+        ]
+      },
+      {
         "title": "gmail.compose and gmail.modify are restricted, not sensitive",
         "detail": "Drafting replies or labeling read mail puts you on the restricted track with CASA. Only gmail.send (and add-on scopes) are sensitive.",
         "claim_ids": [
           "c1",
           "c2"
+        ],
+        "scenario_ids": [
+          "s3",
+          "s4"
+        ]
+      },
+      {
+        "title": "AI-agent-specific policy rules",
+        "detail": "Workspace policy requires prompt-injection protection and bans training general models on user Gmail data. Reviewers of task-automation apps expect the video to show data flow.",
+        "claim_ids": [
+          "c29",
+          "c31",
+          "c57"
+        ],
+        "scenario_ids": [
+          "s3",
+          "s4"
         ]
       },
       {
@@ -551,6 +623,9 @@
           "c11",
           "c12",
           "c35"
+        ],
+        "scenario_ids": [
+          "s1"
         ]
       },
       {
@@ -562,15 +637,9 @@
           "c59",
           "c67",
           "c54"
-        ]
-      },
-      {
-        "title": "Redirect on Composio's domain blocks verification",
-        "detail": "Authorized domains must include your redirect URI's domain, and you must prove ownership in Search Console. You can't do that for Composio's domain, so proxy the callback through your own domain before submitting. (This is an inference from c22 + c23; not stated by either party.)",
-        "claim_ids": [
-          "c21",
-          "c22",
-          "c23"
+        ],
+        "scenario_ids": [
+          "s1"
         ]
       },
       {
@@ -587,15 +656,6 @@
         "claim_ids": [
           "c36",
           "c37"
-        ]
-      },
-      {
-        "title": "AI-agent-specific policy rules",
-        "detail": "Workspace policy requires prompt-injection protection and bans training general models on user Gmail data. Reviewers of task-automation apps expect the video to show data flow.",
-        "claim_ids": [
-          "c29",
-          "c31",
-          "c57"
         ]
       },
       {
@@ -618,13 +678,15 @@
     ],
     "blockers": [
       {
-        "symptom": "'App is blocked' / 'This app is blocked' when connecting Gmail",
-        "what_it_means": "The client requests scopes Google has not verified for it (often extra scopes added to Composio's managed app).",
-        "what_to_do": "Remove the extra scopes, or use your own OAuth client and get those scopes verified.",
-        "agent_can_help": "Diff the auth config's scopes against the Data Access list and approved scopes.",
+        "symptom": "Error 403: org_internal",
+        "what_it_means": "An Internal app is being authorized by a user outside your organization.",
+        "what_to_do": "Use an account in the org, or switch Audience to External (which brings verification).",
+        "agent_can_help": null,
         "claim_ids": [
-          "c39",
-          "c50"
+          "c53"
+        ],
+        "scenario_ids": [
+          "s2"
         ]
       },
       {
@@ -635,15 +697,36 @@
         "claim_ids": [
           "c50",
           "c14"
+        ],
+        "scenario_ids": [
+          "s1",
+          "s3",
+          "s4"
         ]
       },
       {
-        "symptom": "Error 403: org_internal",
-        "what_it_means": "An Internal app is being authorized by a user outside your organization.",
-        "what_to_do": "Use an account in the org, or switch Audience to External (which brings verification).",
-        "agent_can_help": null,
+        "symptom": "invalid_grant / 401 after about a week",
+        "what_it_means": "Testing-mode 7-day token expiry, or the refresh-token limit revoked older tokens.",
+        "what_to_do": "Reconnect; to stop it, publish and verify the app.",
+        "agent_can_help": "Detect the pattern in logs and trigger re-auth prompts.",
         "claim_ids": [
-          "c53"
+          "c11",
+          "c35",
+          "c36",
+          "c37"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "symptom": "'App is blocked' / 'This app is blocked' when connecting Gmail",
+        "what_it_means": "The client requests scopes Google has not verified for it (often extra scopes added to Composio's managed app).",
+        "what_to_do": "Remove the extra scopes, or use your own OAuth client and get those scopes verified.",
+        "agent_can_help": "Diff the auth config's scopes against the Data Access list and approved scopes.",
+        "claim_ids": [
+          "c39",
+          "c50"
         ]
       },
       {
@@ -666,18 +749,6 @@
         ]
       },
       {
-        "symptom": "invalid_grant / 401 after about a week",
-        "what_it_means": "Testing-mode 7-day token expiry, or the refresh-token limit revoked older tokens.",
-        "what_to_do": "Reconnect; to stop it, publish and verify the app.",
-        "agent_can_help": "Detect the pattern in logs and trigger re-auth prompts.",
-        "claim_ids": [
-          "c11",
-          "c35",
-          "c36",
-          "c37"
-        ]
-      },
-      {
         "symptom": "invalid_client 'The OAuth client was not found.'",
         "what_it_means": "Wrong or deleted client ID in the auth config.",
         "what_to_do": "Re-copy the client ID from the Clients page into Composio.",
@@ -695,6 +766,32 @@
         "claim_ids": [
           "c40",
           "c47"
+        ]
+      },
+      {
+        "symptom": "Under review for weeks with no reply",
+        "what_it_means": "Developers report reviews sitting for 8+ weeks with no email from Google's Trust & Safety team (c71).",
+        "what_to_do": "Reply on your existing verification case or use Google's OAuth verification support form. Drop every scope you don't call: one team was approved two days after removing unneeded scopes (c72).",
+        "agent_can_help": "List the scopes your code actually calls and draft the reply.",
+        "claim_ids": [
+          "c71",
+          "c72"
+        ],
+        "scenario_ids": [
+          "s3",
+          "s4"
+        ]
+      },
+      {
+        "symptom": "The security assessment (CASA) email never arrived",
+        "what_it_means": "Google's verification team sends the invitation. Developers report it going missing, even after checking spam (c73).",
+        "what_to_do": "Check the project owner and support contact mailboxes, then reply on the verification case or use the OAuth verification support form. Only Google can resend it.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c73"
+        ],
+        "scenario_ids": [
+          "s4"
         ]
       }
     ],
@@ -1259,7 +1356,7 @@
         "id": "c62",
         "text": "Composio's Google guide says default scopes are usually sufficient and that the redirect URI in Composio must match the one configured in GCP.",
         "source_url": "https://composio.dev/auth/googleapps",
-        "quote": "Redirect URI \u2192 must match the one you configured in GCP",
+        "quote": "Redirect URI → must match the one you configured in GCP",
         "probe_id": null,
         "label": "composio_docs",
         "note": null
@@ -1335,8 +1432,37 @@
         "probe_id": null,
         "label": "unknown",
         "note": "Only vendor reports (c65, c66)."
+      },
+      {
+        "id": "c71",
+        "label": "reported",
+        "text": "A developer reports a sensitive-scope-only verification stuck under review for over 8 weeks, with no email from Trust & Safety.",
+        "source_url": "https://discuss.google.dev/t/oauth-data-access-verification-stuck-under-review-for-8-weeks-sensitive-scope-only-spreadsheets-no-trust-safety-contact/375352",
+        "quote": "has been stuck in “under review” for over 8 weeks",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c72",
+        "label": "reported",
+        "text": "One team reports verification took almost a month; after removing unnecessary scopes it was verified within two days.",
+        "source_url": "https://kartaca.com/en/google-oath-application-verification-process/",
+        "quote": "we received an email within two days confirming that our application was verified.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c73",
+        "label": "reported",
+        "text": "A developer reports never receiving the CASA invitation from Trust & Safety. The advice given: use the OAuth verification support form or reply to the existing case.",
+        "source_url": "https://discuss.google.dev/t/stuck-on-casa-assessment-requirement-no-email-received-from-trust-safety-team/381887",
+        "quote": "use the OAuth verification support form or reply to the existing verification case",
+        "probe_id": null,
+        "note": null
       }
-    ]
+    ],
+    "verdict": "Under an hour for an internal tool. Weeks of Google review, a security assessment and a yearly re-check if your agent reads inboxes.",
+    "default_scenario": "s4"
   },
   "meta": {
     "origin": "seed",
@@ -1348,7 +1474,7 @@
     "query": null,
     "partial": false,
     "verification": {
-      "claims_total": 70,
+      "claims_total": 73,
       "quotes_checked": 62,
       "quotes_verified": 62,
       "downgraded": 0

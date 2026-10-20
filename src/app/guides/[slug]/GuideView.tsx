@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge, DifficultyBadge, ManagedBadge, ReviewBadge } from "@/components/badges";
 import { LABEL_INFO } from "@/lib/evidence";
+import { appliesTo, CHECK_INFO, defaultScenario, PATH_INFO, verdictOf } from "@/lib/guide-view";
 import type { ClaimT, GuideRecord } from "@/lib/schema";
-import { ClaimPreview, Rich, type ChipHandlers, type Jump } from "./claims";
+import { plain, Sources } from "./claims";
 
 const OWNER = {
-  agent: { icon: "🤖", label: "Agent can do", tone: "accent" },
-  you: { icon: "👤", label: "You", tone: "neutral" },
-  waiting: { icon: "⏳", label: "Waiting on provider", tone: "warn" },
+  agent: { icon: "🤖", label: "Agent can do" },
+  you: { icon: "👤", label: "You" },
+  waiting: { icon: "⏳", label: "Waiting on provider" },
 } as const;
 
 const LABEL_TONE: Record<ClaimT["label"], "good" | "info" | "accent" | "warn" | "neutral"> = {
@@ -22,38 +23,40 @@ const LABEL_TONE: Record<ClaimT["label"], "good" | "info" | "accent" | "warn" | 
   unknown: "neutral",
 };
 
-type PreviewState = { id: string; el: HTMLElement; pinned: boolean; tick: number } | null;
+/** How many traps show before "Show more". */
+const TOP_TRAPS = 3;
 
 export function GuideView({ record, initialScenario, libraryTwin }: { record: GuideRecord; initialScenario: string | null; libraryTwin: string | null }) {
   const g = record.guide;
-  const [scenarioId, setScenarioId] = useState(
-    initialScenario && g.scenarios.some((s) => s.id === initialScenario) ? initialScenario : (g.scenarios[0]?.id ?? ""),
-  );
+  const [scenarioId, setScenarioId] = useState(initialScenario && g.scenarios.some((s) => s.id === initialScenario) ? initialScenario : defaultScenario(g));
   const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
-  const [flash, setFlash] = useState<{ id: string; n: number } | null>(null);
   const [labelFilter, setLabelFilter] = useState<ClaimT["label"] | "all">("all");
-  const [preview, setPreview] = useState<PreviewState>(null);
-  const hideTimer = useRef<number | undefined>(undefined);
 
   const claims = useMemo(() => new Map(g.claims.map((c) => [c.id, c])), [g.claims]);
   const scenarioNames = useMemo(() => new Map(g.scenarios.map((s) => [s.id, s.label])), [g.scenarios]);
+  const P = (text: string) => plain(text, scenarioNames);
+
   const scenario = g.scenarios.find((s) => s.id === scenarioId);
-  const steps = g.steps.filter((s) => s.scenario_ids.length === 0 || s.scenario_ids.includes(scenarioId));
+  const steps = g.steps.filter((s) => appliesTo(s.scenario_ids, scenarioId));
+  const prereqs = g.prerequisites.filter((p) => appliesTo(p.scenario_ids, scenarioId));
+  const traps = g.traps.filter((t) => appliesTo(t.scenario_ids, scenarioId));
+  const blockers = g.blockers.filter((b) => appliesTo(b.scenario_ids, scenarioId));
   const owners = steps.reduce<Record<string, number>>((a, s) => ({ ...a, [s.owner]: (a[s.owner] ?? 0) + 1 }), {});
   const counts = g.claims.reduce<Partial<Record<ClaimT["label"], number>>>((a, c) => ({ ...a, [c.label]: (a[c.label] ?? 0) + 1 }), {});
   const labels = (Object.keys(LABEL_INFO) as ClaimT["label"][]).filter((k) => counts[k]);
   const shownClaims = labelFilter === "all" ? g.claims : g.claims.filter((c) => c.label === labelFilter);
   const name = g.app.name.replace(/\s*\(.*\)\s*$/, "") || g.app.name;
   const v = record.meta.verification;
+  const need = P(g.need_own_app.answer);
+  const approval = scenario ? P(scenario.approval) : null;
 
   const sections = [
     { id: "setup", label: "Your setup" },
-    { id: "before", label: "Before you start", show: g.prerequisites.length > 0 },
     { id: "steps", label: "Steps" },
-    { id: "traps", label: "Traps", show: g.traps.length > 0 },
-    { id: "stuck", label: "Stuck?", show: g.blockers.length > 0 },
-    { id: "unconfirmed", label: "Unconfirmed", show: g.open_questions.length > 0 },
-    { id: "evidence", label: "Evidence" },
+    { id: "ready", label: "Have ready", show: prereqs.length > 0 },
+    { id: "watch", label: "Watch out", show: traps.length > 0 },
+    { id: "stuck", label: "Stuck?", show: blockers.length > 0 },
+    { id: "evidence", label: "Sources" },
   ].filter((s) => s.show !== false);
 
   const pickScenario = (id: string) => {
@@ -63,49 +66,6 @@ export function GuideView({ record, initialScenario, libraryTwin }: { record: Gu
     url.hash = "";
     history.replaceState(null, "", url.toString());
   };
-
-  const jump: Jump = useCallback((id) => {
-    setPreview(null);
-    setLabelFilter("all");
-    setFlash((f) => ({ id, n: (f?.n ?? 0) + 1 }));
-    requestAnimationFrame(() => {
-      const el = document.getElementById(`claim-${id}`);
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
-      el?.focus({ preventScroll: true });
-    });
-  }, []);
-
-  // One shared, viewport-clamped claim preview (hover, focus, or first tap on touch). Esc closes it.
-  const showPreview = useCallback((id: string, el: HTMLElement, pinned = false) => {
-    window.clearTimeout(hideTimer.current);
-    setPreview({ id, el, pinned, tick: 0 });
-  }, []);
-  const hidePreview = useCallback(() => {
-    window.clearTimeout(hideTimer.current);
-    hideTimer.current = window.setTimeout(() => setPreview((p) => (p?.pinned ? p : null)), 150);
-  }, []);
-  const keepPreview = useCallback(() => window.clearTimeout(hideTimer.current), []);
-  const h: ChipHandlers = { jump, show: showPreview, hide: hidePreview, openId: preview?.id ?? null };
-  useEffect(() => {
-    if (!preview) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPreview(null);
-    // Follow the chip on scroll/resize (keyboard focus scrolls the page) instead of closing.
-    let frame = 0;
-    const follow = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => setPreview((p) => (p ? { ...p, tick: p.tick + 1 } : p)));
-    };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", follow, { passive: true });
-    window.addEventListener("resize", follow);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", follow);
-      window.removeEventListener("resize", follow);
-    };
-  }, [preview?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copy = async () => {
     const url = new URL(window.location.href);
@@ -135,42 +95,40 @@ export function GuideView({ record, initialScenario, libraryTwin }: { record: Gu
     setTimeout(() => setCopyState("idle"), 2500);
   };
 
-  const R = (text: string, extra?: string[]) => <Rich text={text} extra={extra} claims={claims} scenarios={scenarioNames} h={h} />;
+  const action = "text-muted underline decoration-line-strong underline-offset-4 transition hover:text-ink";
 
   return (
-    <div className="grid gap-10 pb-16 lg:grid-cols-[minmax(0,1fr)_200px] lg:pb-0">
-      <article className="min-w-0 space-y-12">
-        <header className="space-y-5">
+    <div className="grid gap-10 pb-16 lg:grid-cols-[minmax(0,1fr)_180px] lg:pb-0">
+      <article className="min-w-0 max-w-3xl space-y-12">
+        <header className="space-y-4">
           <div className="flex flex-wrap gap-1.5">
             <ManagedBadge managed={g.composio.managed_oauth} />
             <ReviewBadge record={record} />
             {record.meta.partial && <Badge tone="bad">Incomplete: research timed out</Badge>}
           </div>
-          <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{name}: OAuth app setup</h1>
-          <p className="max-w-3xl text-lg leading-relaxed text-muted">{R(g.summary)}</p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <button onClick={copy} className="rounded-lg bg-ink px-3.5 py-2 font-medium text-bg transition hover:bg-white">
-              <span aria-live="polite">{copyState === "ok" ? "✓ Link copied" : copyState === "fail" ? "Couldn't copy: use the address bar" : "Copy share link"}</span>
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-faint">OAuth app setup</p>
+            <h1 className="mt-1 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{name}</h1>
+          </div>
+          <p className="text-lg leading-relaxed text-ink/90">{P(verdictOf(g)).text}</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <button onClick={copy} className={action}>
+              <span aria-live="polite">{copyState === "ok" ? "✓ Link copied" : copyState === "fail" ? "Couldn't copy: use the address bar" : "Copy link"}</span>
             </button>
-            <a href={`/guides/${record.slug}/md?s=${scenarioId}`} className="rounded-lg border border-line-strong px-3.5 py-2 text-ink transition hover:bg-surface-2">
+            <a href={`/guides/${record.slug}/md?s=${scenarioId}`} className={action}>
               Markdown
             </a>
-            {g.app.developer_docs_url && (
-              <a href={g.app.developer_docs_url} target="_blank" rel="noreferrer" className="rounded-lg border border-line-strong px-3.5 py-2 text-ink transition hover:bg-surface-2">
-                Provider docs ↗
+            {g.composio.credential_guide_url && (
+              <a href={g.composio.credential_guide_url} target="_blank" rel="noreferrer" className={action}>
+                Composio guide ↗
               </a>
             )}
-            {g.composio.credential_guide_url && (
-              <a href={g.composio.credential_guide_url} target="_blank" rel="noreferrer" className="rounded-lg border border-line-strong px-3.5 py-2 text-ink transition hover:bg-surface-2">
-                Composio setup guide ↗
+            {g.app.developer_docs_url && (
+              <a href={g.app.developer_docs_url} target="_blank" rel="noreferrer" className={action}>
+                {name} docs ↗
               </a>
             )}
           </div>
-          <p className="font-mono text-xs text-faint">
-            Researched {new Date(record.meta.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })} ·{" "}
-            {v.quotes_verified}/{v.quotes_checked} quotes verified
-            {counts.unknown ? ` · ${counts.unknown} unconfirmed` : ""}
-          </p>
           {libraryTwin && (
             <p className="text-sm text-muted">
               Generated by the agent. A more thorough{" "}
@@ -192,32 +150,29 @@ export function GuideView({ record, initialScenario, libraryTwin }: { record: Gu
           </div>
         )}
 
-        <section className="rounded-2xl border border-accent/25 bg-gradient-to-b from-violet-500/[0.08] to-transparent p-6">
-          <h2 className="text-lg font-semibold">Do you need your own OAuth app?</h2>
-          <p className="mt-2 leading-relaxed text-ink/90">{R(g.need_own_app.answer)}</p>
+        <section aria-labelledby="need" className="rounded-xl border border-line bg-surface px-5 py-4 text-sm">
+          <h2 id="need" className="font-medium text-ink">
+            Do you need your own OAuth app?
+          </h2>
+          <p className="mt-1 leading-relaxed text-muted">{need.text}</p>
           {g.need_own_app.reasons.length > 0 && (
-            <ul className="mt-3 space-y-1.5 text-sm text-muted">
-              {g.need_own_app.reasons.map((r) => (
-                <li key={r} className="flex gap-2">
-                  <span aria-hidden className="text-accent">
-                    →
-                  </span>
-                  <span>{R(r)}</span>
-                </li>
-              ))}
-            </ul>
+            <details className="group mt-2">
+              <summary className="cursor-pointer list-none text-xs text-faint hover:text-ink [&::-webkit-details-marker]:hidden">
+                Why <span className="inline-block transition group-open:rotate-90">›</span>
+              </summary>
+              <ul className="mt-2 space-y-1 text-muted">
+                {g.need_own_app.reasons.map((r) => (
+                  <li key={r}>· {P(r).text}</li>
+                ))}
+              </ul>
+            </details>
           )}
+          <Sources ids={[...need.ids, ...g.need_own_app.reasons.flatMap((r) => P(r).ids)]} claims={claims} />
         </section>
 
         <section id="setup" className="scroll-mt-24">
-          <SectionTitle title="Your setup" sub="Pick the closest match. The steps below follow it." />
-          <div role="group" aria-label="Setups" className="overflow-hidden rounded-2xl border border-line">
-            <div className="hidden grid-cols-[minmax(0,1.6fr)_110px_minmax(0,1fr)_minmax(0,1.2fr)] gap-4 bg-surface-2 px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-faint md:grid">
-              <span>Setup</span>
-              <span>Difficulty</span>
-              <span>Your time</span>
-              <span>Provider wait</span>
-            </div>
+          <SectionTitle title="What are you building?" sub="Pick the closest match. Everything below follows it." />
+          <div role="group" aria-label="Setups" className="grid gap-2 sm:grid-cols-2">
             {g.scenarios.map((s) => {
               const on = s.id === scenarioId;
               return (
@@ -225,270 +180,307 @@ export function GuideView({ record, initialScenario, libraryTwin }: { record: Gu
                   key={s.id}
                   onClick={() => pickScenario(s.id)}
                   aria-pressed={on}
-                  className={`grid w-full gap-x-4 gap-y-1 border-t border-line px-4 py-3 text-left text-sm transition first:border-t-0 md:grid-cols-[minmax(0,1.6fr)_110px_minmax(0,1fr)_minmax(0,1.2fr)] ${
-                    on ? "bg-violet-500/[0.12] ring-1 ring-inset ring-accent/50" : "bg-surface hover:bg-surface-2"
+                  className={`rounded-xl px-4 py-3 text-left text-sm ring-1 ring-inset transition ${
+                    on ? "bg-violet-500/[0.12] ring-accent/60" : "bg-surface ring-line hover:bg-surface-2"
                   }`}
                 >
-                  <span className="font-medium text-ink">
-                    <span aria-hidden className={`mr-2 inline-block h-3 w-3 rounded-full border align-[-1px] ${on ? "border-accent bg-accent" : "border-line-strong"}`} />
-                    {s.label}
-                  </span>
-                  <span>
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="font-medium text-ink">{s.label}</span>
                     <DifficultyBadge level={s.difficulty} />
                   </span>
-                  <span className="text-muted">
-                    <span className="text-faint md:hidden">Your time: </span>
-                    {s.hands_on.estimate}
-                  </span>
-                  <span className="text-muted">
-                    <span className="text-faint md:hidden">Provider wait: </span>
-                    {s.waiting.estimate}
+                  <span className="mt-1.5 block text-xs text-muted">
+                    You: {s.hands_on.estimate} · Wait: {s.waiting.estimate}
                   </span>
                 </button>
               );
             })}
           </div>
+
           {scenario && (
-            <dl aria-live="polite" className="mt-4 grid gap-4 rounded-2xl border border-line bg-surface p-5 text-sm md:grid-cols-2">
-              <Detail title="When this applies" wide>
-                {R(scenario.when_this_applies)}
-              </Detail>
-              <Detail title="Approval">{R(scenario.approval, scenario.claim_ids)}</Detail>
-              <Detail title="Why these times">
-                <span className="block">Your time: {R(scenario.hands_on.basis)}</span>
-                <span className="mt-1 block">Provider wait: {R(scenario.waiting.basis)}</span>
-              </Detail>
-            </dl>
+            <div aria-live="polite" className="mt-4 space-y-4 rounded-2xl border border-accent/25 bg-gradient-to-b from-violet-500/[0.07] to-transparent p-5">
+              <dl className="grid grid-cols-3 gap-3">
+                <Stat title="Difficulty">
+                  <DifficultyBadge level={scenario.difficulty} />
+                </Stat>
+                <Stat title="Your time">{scenario.hands_on.estimate}</Stat>
+                <Stat title="Provider wait">{scenario.waiting.estimate}</Stat>
+              </dl>
+
+              {scenario.path && (
+                <p className="text-sm">
+                  <span className="font-medium text-ink">{PATH_INFO[scenario.path].name}:</span>{" "}
+                  <span className="text-muted">{PATH_INFO[scenario.path].meaning}.</span>
+                </p>
+              )}
+              {!!scenario.review_checks?.length && (
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-faint">The review checks:</span>
+                  {scenario.review_checks.map((c) => (
+                    <span key={c} className="rounded-full bg-surface-3 px-2 py-0.5 text-ink/90 ring-1 ring-inset ring-line-strong">
+                      {CHECK_INFO[c]}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {approval && (
+                <div className="text-sm leading-relaxed text-ink/90">
+                  {approval.text}
+                  <Sources ids={[...approval.ids, ...scenario.claim_ids]} claims={claims} />
+                </div>
+              )}
+
+              {scenario.shortcut && (
+                <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200 ring-1 ring-inset ring-emerald-400/25">
+                  <span className="font-medium">Shortcut:</span> {P(scenario.shortcut).text}
+                </p>
+              )}
+
+              {!!scenario.extras?.length && (
+                <ul className="flex flex-wrap gap-1.5 text-xs">
+                  {scenario.extras.map((x) => (
+                    <li key={x} className="rounded-full px-2 py-0.5 text-amber-200/90 ring-1 ring-inset ring-amber-400/30">
+                      {P(x).text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <details className="group text-sm">
+                <summary className="cursor-pointer list-none text-xs text-faint hover:text-ink [&::-webkit-details-marker]:hidden">
+                  When this applies, and why these times <span className="inline-block transition group-open:rotate-90">›</span>
+                </summary>
+                <div className="mt-2 space-y-1.5 text-muted">
+                  <p>{P(scenario.when_this_applies).text}</p>
+                  <p>Your time: {P(scenario.hands_on.basis).text}</p>
+                  <p>Provider wait: {P(scenario.waiting.basis).text}</p>
+                </div>
+              </details>
+            </div>
           )}
         </section>
-
-        {g.prerequisites.length > 0 && (
-          <section id="before" className="scroll-mt-24">
-            <SectionTitle title="Before you start" />
-            <ul className="grid gap-2 md:grid-cols-2">
-              {g.prerequisites.map((p) => (
-                <li key={p.title} className="rounded-xl border border-line bg-surface p-4 text-sm">
-                  <p className="font-medium">{R(p.title)}</p>
-                  <p className="mt-1 leading-relaxed text-muted">{R(p.detail, p.claim_ids)}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         <section id="steps" className="scroll-mt-24">
           <SectionTitle
             title="Steps"
-            sub={scenario ? `For: ${scenario.label}` : undefined}
             right={
               <span className="font-mono text-xs text-muted">
-                {owners.agent ?? 0} 🤖 agent · {owners.you ?? 0} 👤 you · {owners.waiting ?? 0} ⏳ waiting
+                {owners.agent ?? 0} 🤖 agent · {owners.you ?? 0} 👤 you · {owners.waiting ?? 0} ⏳ wait
               </span>
             }
           />
-          <ol className="relative space-y-3 before:absolute before:bottom-4 before:left-[15px] before:top-4 before:w-px before:bg-line">
-            {steps.map((s, i) => (
-              <li key={`${s.title}-${i}`} className="relative flex gap-4">
-                <span
-                  aria-hidden
-                  className={`z-10 mt-4 grid h-8 w-8 shrink-0 place-items-center rounded-full font-mono text-xs ring-1 ${
-                    s.owner === "agent" ? "bg-violet-500/15 text-violet-200 ring-violet-400/40" : s.owner === "waiting" ? "bg-amber-500/15 text-amber-200 ring-amber-400/40" : "bg-surface-3 text-ink ring-line-strong"
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                <div className="min-w-0 flex-1 rounded-xl border border-line bg-surface p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-medium">{R(s.title)}</h3>
-                    <Badge tone={OWNER[s.owner].tone}>
-                      <span aria-hidden>{OWNER[s.owner].icon}</span> {OWNER[s.owner].label}
-                    </Badge>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{R(s.detail, s.claim_ids)}</p>
-                  <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                    {s.inputs.length > 0 && (
-                      <div>
-                        <p className="font-mono text-[11px] uppercase tracking-wider text-faint">You need</p>
-                        <ul className="mt-1 space-y-0.5 text-ink/85">
-                          {s.inputs.map((x) => (
-                            <li key={x}>· {R(x)}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-mono text-[11px] uppercase tracking-wider text-faint">Done when</p>
-                      <p className="mt-1 text-ink/85">{R(s.done_when)}</p>
+          <ol className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
+            {steps.map((s, i) => {
+              const d = P(s.detail);
+              return (
+                <li key={`${s.title}-${i}`}>
+                  <details className="group">
+                    <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+                      <span className="w-5 shrink-0 text-right font-mono text-xs text-faint">{i + 1}</span>
+                      <span aria-label={OWNER[s.owner].label} title={OWNER[s.owner].label} className="shrink-0">
+                        {OWNER[s.owner].icon}
+                      </span>
+                      <span className="min-w-0 flex-1 text-ink">{P(s.title).text}</span>
+                      <span aria-hidden className="text-faint transition group-open:rotate-90">
+                        ›
+                      </span>
+                    </summary>
+                    <div className="space-y-2 px-4 pb-4 pl-[3.25rem] text-sm text-muted">
+                      <p className="leading-relaxed">{d.text}</p>
+                      {s.inputs.length > 0 && <p>You need: {s.inputs.map((x) => P(x).text).join(" · ")}</p>}
+                      <p>Done when: {P(s.done_when).text}</p>
+                      {s.link && (
+                        <a href={s.link} target="_blank" rel="noreferrer" className="inline-block break-all font-mono text-xs text-accent hover:underline">
+                          {s.link.replace(/^https?:\/\//, "")} ↗
+                        </a>
+                      )}
+                      <Sources ids={[...d.ids, ...s.claim_ids]} claims={claims} />
                     </div>
-                  </div>
-                  {s.link && (
-                    <a href={s.link} target="_blank" rel="noreferrer" className="mt-3 inline-block break-all font-mono text-xs text-accent hover:underline">
-                      {s.link} ↗
-                    </a>
-                  )}
-                </div>
-              </li>
-            ))}
+                  </details>
+                </li>
+              );
+            })}
           </ol>
         </section>
 
-        {g.traps.length > 0 && (
-          <section id="traps" className="scroll-mt-24">
-            <SectionTitle title="Traps" />
-            <ul className="space-y-2">
-              {g.traps.map((t) => (
-                <li key={t.title} className="rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-4 text-sm">
-                  <p className="font-medium text-amber-200">⚠ {R(t.title)}</p>
-                  <p className="mt-1 leading-relaxed text-muted">{R(t.detail, t.claim_ids)}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {g.blockers.length > 0 && (
-          <section id="stuck" className="scroll-mt-24">
-            <SectionTitle title="Stuck?" />
-            <div className="hidden rounded-xl border border-line md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-surface-2 font-mono text-[11px] uppercase tracking-wider text-faint">
-                  <tr>
-                    <th className="rounded-tl-xl p-3 font-normal">You see</th>
-                    <th className="p-3 font-normal">It means</th>
-                    <th className="p-3 font-normal">Do this</th>
-                    <th className="rounded-tr-xl p-3 font-normal">🤖 Agent can do</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line bg-surface">
-                  {g.blockers.map((b) => (
-                    <tr key={b.symptom} className="align-top">
-                      <td className="p-3 font-medium">{R(b.symptom)}</td>
-                      <td className="p-3 text-muted">{R(b.what_it_means, b.claim_ids)}</td>
-                      <td className="p-3 text-ink/85">{R(b.what_to_do)}</td>
-                      <td className="p-3 text-muted">{b.agent_can_help ? R(b.agent_can_help) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <ul className="space-y-2 md:hidden">
-              {g.blockers.map((b) => (
-                <li key={b.symptom} className="rounded-xl border border-line bg-surface p-4 text-sm">
-                  <p className="font-medium">{R(b.symptom)}</p>
-                  <p className="mt-2 text-muted">{R(b.what_it_means, b.claim_ids)}</p>
-                  <p className="mt-1 text-ink/85">→ {R(b.what_to_do)}</p>
-                  {b.agent_can_help && <p className="mt-1 text-muted">🤖 {R(b.agent_can_help)}</p>}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {g.open_questions.length > 0 && (
-          <section id="unconfirmed" className="scroll-mt-24">
-            <SectionTitle title="Unconfirmed" />
-            <ul className="space-y-1.5 text-sm text-muted">
-              {g.open_questions.map((q) => (
-                <li key={q} className="flex gap-2">
+        {prereqs.length > 0 && (
+          <section id="ready" className="scroll-mt-24">
+            <SectionTitle title="Have these ready" />
+            <ul className="space-y-1.5 text-sm">
+              {prereqs.map((p) => (
+                <li key={p.title} className="flex gap-2">
                   <span aria-hidden className="text-faint">
-                    ❓
+                    ☐
                   </span>
-                  <span>{R(q)}</span>
+                  <span>
+                    <span className="text-ink">{P(p.title).text}.</span> <span className="text-muted">{P(p.detail).text}</span>
+                  </span>
                 </li>
               ))}
+            </ul>
+          </section>
+        )}
+
+        {traps.length > 0 && (
+          <section id="watch" className="scroll-mt-24">
+            <SectionTitle title="Watch out" />
+            <ul className="space-y-2">
+              {traps.slice(0, TOP_TRAPS).map((t) => (
+                <Trap key={t.title} t={t} P={P} claims={claims} />
+              ))}
+            </ul>
+            {traps.length > TOP_TRAPS && (
+              <details className="group mt-2">
+                <summary className="cursor-pointer list-none text-sm text-muted hover:text-ink [&::-webkit-details-marker]:hidden">
+                  Show {traps.length - TOP_TRAPS} more <span className="inline-block transition group-open:rotate-90">›</span>
+                </summary>
+                <ul className="mt-2 space-y-2">
+                  {traps.slice(TOP_TRAPS).map((t) => (
+                    <Trap key={t.title} t={t} P={P} claims={claims} />
+                  ))}
+                </ul>
+              </details>
+            )}
+          </section>
+        )}
+
+        {blockers.length > 0 && (
+          <section id="stuck" className="scroll-mt-24">
+            <SectionTitle title="Stuck?" sub="Find what you see." />
+            <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
+              {blockers.map((b) => {
+                const m = P(b.what_it_means);
+                const d = P(b.what_to_do);
+                return (
+                  <li key={b.symptom}>
+                    <details className="group">
+                      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+                        <span className="min-w-0 flex-1 text-ink">{P(b.symptom).text}</span>
+                        <span aria-hidden className="text-faint transition group-open:rotate-90">
+                          ›
+                        </span>
+                      </summary>
+                      <div className="space-y-1.5 px-4 pb-4 text-sm">
+                        <p className="text-muted">{m.text}</p>
+                        <p className="text-ink/90">→ {d.text}</p>
+                        {b.agent_can_help && <p className="text-muted">🤖 {P(b.agent_can_help).text}</p>}
+                        <Sources ids={[...m.ids, ...d.ids, ...b.claim_ids]} claims={claims} />
+                      </div>
+                    </details>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}
 
         <section id="evidence" className="scroll-mt-24">
-          <SectionTitle title="Evidence" />
-          <div role="group" aria-label="Filter evidence" className="scrollbar-none -mx-1 mb-4 flex gap-1.5 overflow-x-auto px-1">
-            <FilterChip active={labelFilter === "all"} onClick={() => setLabelFilter("all")}>
-              All <span className="font-mono text-faint">{g.claims.length}</span>
-            </FilterChip>
-            {labels.map((k) => (
-              <FilterChip key={k} active={labelFilter === k} onClick={() => setLabelFilter(k)} title={LABEL_INFO[k].meaning}>
-                {LABEL_INFO[k].icon} {LABEL_INFO[k].name} <span className="font-mono text-faint">{counts[k]}</span>
-              </FilterChip>
-            ))}
-          </div>
-          <ul className="space-y-2">
-            {shownClaims.map((c) => (
-              <li
-                key={flash?.id === c.id ? `${c.id}-${flash.n}` : c.id}
-                id={`claim-${c.id}`}
-                tabIndex={-1}
-                className={`scroll-mt-24 rounded-xl border border-line bg-surface p-4 text-sm ${flash?.id === c.id ? "claim-flash" : ""}`}
-              >
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="font-mono text-xs text-faint">{c.id}</span>
-                  <Badge tone={LABEL_TONE[c.label]}>
-                    {LABEL_INFO[c.label].icon} {LABEL_INFO[c.label].name}
-                  </Badge>
+          <details className="group rounded-xl border border-line bg-surface">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-5 py-4 [&::-webkit-details-marker]:hidden">
+              <span>
+                <span className="font-semibold">Sources and evidence</span>
+                <span className="ml-2 font-mono text-xs text-faint">
+                  {g.claims.length} claims · {v.quotes_verified}/{v.quotes_checked} quotes verified
+                  {counts.unknown ? ` · ${counts.unknown} unconfirmed` : ""}
+                </span>
+              </span>
+              <span aria-hidden className="text-faint transition group-open:rotate-90">
+                ›
+              </span>
+            </summary>
+            <div className="space-y-6 border-t border-line px-5 py-5 text-sm">
+              <p className="text-muted">
+                {labels.map((k) => `${LABEL_INFO[k].icon} ${LABEL_INFO[k].name}`).join(" · ")}. Every docs quote was matched word for word on its source page.{" "}
+                {record.meta.origin === "seed" ? "Library guide." : "Generated by the agent on request."}{" "}
+                {counts.tested ? `${counts.tested} claims confirmed in a recorded setup.` : "Not hands-on tested yet."}{" "}
+                <Link href="/verification" className="text-accent hover:underline">
+                  Verification log
+                </Link>
+              </p>
+              {record.meta.review_note && <p className="text-muted">{record.meta.review_note}</p>}
+
+              {g.open_questions.length > 0 && (
+                <div>
+                  <h3 className="mb-1.5 font-medium">Still unconfirmed</h3>
+                  <ul className="space-y-1 text-muted">
+                    {g.open_questions.map((q) => (
+                      <li key={q}>❓ {P(q).text}</li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="mt-2 leading-relaxed text-ink/90">{c.text}</p>
-                {c.quote && <blockquote className="mt-2 border-l-2 border-accent/50 pl-3 font-mono text-xs leading-relaxed text-muted">“{c.quote}”</blockquote>}
-                {c.source_url && (
-                  <a href={c.source_url} target="_blank" rel="noreferrer" className="mt-2 block break-all font-mono text-xs text-accent hover:underline">
-                    {c.source_url} ↗
-                  </a>
-                )}
-                {c.probe_id && <p className="mt-1 font-mono text-xs text-faint">Endpoint check {c.probe_id}, below</p>}
-                {c.note && <p className="mt-2 text-xs italic text-amber-200/80">{c.note}</p>}
-              </li>
-            ))}
-          </ul>
+              )}
 
-          {record.meta.probes.length > 0 && (
-            <div className="mt-8">
-              <h3 className="mb-2 font-semibold">Endpoint checks</h3>
-              <ul className="space-y-2">
-                {record.meta.probes.map((p) => (
-                  <li key={p.id} className="rounded-xl border border-sky-400/20 bg-sky-500/[0.05] p-4 text-xs">
-                    <p className="text-muted">
-                      <span className="font-mono text-ink">{p.id}</span> · {p.purpose}
-                    </p>
-                    <p className="mt-1 break-all font-mono text-ink/90">
-                      GET {p.url} <span className="text-sky-300">→ {p.status ?? "no response"}</span>
-                    </p>
-                    <p className="mt-1 break-words text-muted">{p.observation}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="mt-6 space-y-2 rounded-xl border border-line bg-surface p-4 text-sm text-muted">
-            <p className="font-medium text-ink">About this guide</p>
-            <p>
-              {record.meta.origin === "seed" ? "Library guide." : "Generated by the agent on request."} Each quote was matched word for word against its source page.{" "}
-              {counts.tested ? `${counts.tested} claims were confirmed in a recorded setup attempt.` : "Not hands-on tested yet."}{" "}
-              <Link href="/verification" className="text-accent hover:underline">
-                Verification log
-              </Link>
-            </p>
-            {record.meta.review_note && <p>{record.meta.review_note}</p>}
-            {record.meta.sources.length > 0 && (
-              <details>
-                <summary className="cursor-pointer hover:text-ink">{record.meta.sources.length} pages read</summary>
-                <ul className="mt-2 space-y-1 text-xs">
-                  {record.meta.sources.map((s, i) => (
-                    <li key={`${s.url}-${i}`} className="break-all">
-                      <a className="text-accent hover:underline" href={s.url} target="_blank" rel="noreferrer">
-                        {s.title || s.url}
-                      </a>
+              <div>
+                <div role="group" aria-label="Filter evidence" className="scrollbar-none -mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1">
+                  <FilterChip active={labelFilter === "all"} onClick={() => setLabelFilter("all")}>
+                    All <span className="font-mono text-faint">{g.claims.length}</span>
+                  </FilterChip>
+                  {labels.map((k) => (
+                    <FilterChip key={k} active={labelFilter === k} onClick={() => setLabelFilter(k)} title={LABEL_INFO[k].meaning}>
+                      {LABEL_INFO[k].icon} {LABEL_INFO[k].name} <span className="font-mono text-faint">{counts[k]}</span>
+                    </FilterChip>
+                  ))}
+                </div>
+                <ul className="space-y-2">
+                  {shownClaims.map((c) => (
+                    <li key={c.id} id={`claim-${c.id}`} className="rounded-lg border border-line p-3">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="font-mono text-xs text-faint">{c.id}</span>
+                        <Badge tone={LABEL_TONE[c.label]}>
+                          {LABEL_INFO[c.label].icon} {LABEL_INFO[c.label].name}
+                        </Badge>
+                      </div>
+                      <p className="mt-1.5 leading-relaxed text-ink/90">{c.text}</p>
+                      {c.quote && <blockquote className="mt-1.5 border-l-2 border-accent/50 pl-3 font-mono text-xs leading-relaxed text-muted">“{c.quote}”</blockquote>}
+                      {c.source_url && (
+                        <a href={c.source_url} target="_blank" rel="noreferrer" className="mt-1.5 block break-all font-mono text-xs text-accent hover:underline">
+                          {c.source_url} ↗
+                        </a>
+                      )}
+                      {c.probe_id && <p className="mt-1 font-mono text-xs text-faint">Endpoint check {c.probe_id}, below</p>}
+                      {c.note && <p className="mt-1.5 text-xs italic text-amber-200/80">{c.note}</p>}
                     </li>
                   ))}
                 </ul>
-              </details>
-            )}
-          </div>
+              </div>
+
+              {record.meta.probes.length > 0 && (
+                <div>
+                  <h3 className="mb-1.5 font-medium">Endpoint checks</h3>
+                  <ul className="space-y-2">
+                    {record.meta.probes.map((p) => (
+                      <li key={p.id} className="rounded-lg border border-sky-400/20 bg-sky-500/[0.05] p-3 text-xs">
+                        <p className="text-muted">
+                          <span className="font-mono text-ink">{p.id}</span> · {p.purpose}
+                        </p>
+                        <p className="mt-1 break-all font-mono text-ink/90">
+                          GET {p.url} <span className="text-sky-300">→ {p.status ?? "no response"}</span>
+                        </p>
+                        <p className="mt-1 break-words text-muted">{p.observation}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {record.meta.sources.length > 0 && (
+                <details>
+                  <summary className="cursor-pointer text-muted hover:text-ink">{record.meta.sources.length} pages read</summary>
+                  <ul className="mt-2 space-y-1 text-xs">
+                    {record.meta.sources.map((s, i) => (
+                      <li key={`${s.url}-${i}`} className="break-all">
+                        <a className="text-accent hover:underline" href={s.url} target="_blank" rel="noreferrer">
+                          {s.title || s.url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+          </details>
         </section>
       </article>
-
-      {preview && claims.get(preview.id) && (
-        <ClaimPreview claim={claims.get(preview.id)!} anchor={preview.el} onEnter={keepPreview} onLeave={hidePreview} onJump={() => jump(preview.id)} />
-      )}
 
       <aside className="hidden lg:block">
         <nav aria-label="On this page" className="sticky top-24 space-y-1 text-sm">
@@ -498,13 +490,6 @@ export function GuideView({ record, initialScenario, libraryTwin }: { record: Gu
               {s.label}
             </a>
           ))}
-          <div className="mt-4 rounded-lg border border-line p-3 text-xs text-muted">
-            {labels.map((k) => (
-              <p key={k} title={LABEL_INFO[k].meaning}>
-                {LABEL_INFO[k].icon} {LABEL_INFO[k].name}
-              </p>
-            ))}
-          </div>
         </nav>
       </aside>
 
@@ -521,9 +506,22 @@ export function GuideView({ record, initialScenario, libraryTwin }: { record: Gu
   );
 }
 
+type Plain = (text: string) => { text: string; ids: string[] };
+
+function Trap({ t, P, claims }: { t: GuideRecord["guide"]["traps"][number]; P: Plain; claims: Map<string, ClaimT> }) {
+  const d = P(t.detail);
+  return (
+    <li className="rounded-xl border border-amber-400/20 bg-amber-500/[0.06] px-4 py-3 text-sm">
+      <p className="font-medium text-amber-200">{P(t.title).text}</p>
+      <p className="mt-1 leading-relaxed text-muted">{d.text}</p>
+      <Sources ids={[...d.ids, ...t.claim_ids]} claims={claims} />
+    </li>
+  );
+}
+
 function SectionTitle({ title, sub, right }: { title: string; sub?: string; right?: React.ReactNode }) {
   return (
-    <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+    <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
       <div>
         <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
         {sub && <p className="mt-1 text-sm text-muted">{sub}</p>}
@@ -533,11 +531,11 @@ function SectionTitle({ title, sub, right }: { title: string; sub?: string; righ
   );
 }
 
-function Detail({ title, wide, children }: { title: string; wide?: boolean; children: React.ReactNode }) {
+function Stat({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className={wide ? "md:col-span-2" : ""}>
+    <div>
       <dt className="font-mono text-[11px] uppercase tracking-wider text-faint">{title}</dt>
-      <dd className="mt-1 leading-relaxed text-ink/90">{children}</dd>
+      <dd className="mt-1 text-sm leading-snug text-ink">{children}</dd>
     </div>
   );
 }

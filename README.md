@@ -26,7 +26,7 @@ There are two ways in:
 npm install
 cp .env.example .env.local     # add ANTHROPIC_API_KEY for live generation
 npm run dev                    # http://localhost:3000
-npm test                       # 38 tests, incl. a scripted run of the whole agent loop
+npm test                       # 49 tests, incl. a scripted run of the whole agent loop
 ```
 
 | Env var | Purpose |

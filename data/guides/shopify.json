@@ -15,7 +15,7 @@
       "note": "Bring your own app. The toolkit supports OAUTH2 and S2S_OAUTH2; the connection flow asks for the store subdomain. What S2S_OAUTH2 requires is not documented on the toolkit page."
     },
     "need_own_app": {
-      "answer": "Yes, always. Composio has no managed Shopify OAuth app, so you cannot connect even a dev store without creating your own Shopify app and putting its client ID and secret in a Composio auth config.",
+      "answer": "Yes, always. Composio has no managed Shopify app, so even a dev store needs your own app.",
       "reasons": [
         "No Composio-managed Shopify app exists",
         "Each app is tied to a distribution method: custom (one store or Plus org) or public (App Store review)",
@@ -26,7 +26,7 @@
     "scenarios": [
       {
         "id": "s1",
-        "label": "Prototype on a dev store you own",
+        "label": "Prototype on your own dev store",
         "when_this_applies": "You are building or demoing the agent and only need test data. Composio has no managed Shopify app, so even this needs your own app.",
         "difficulty": "easy",
         "hands_on": {
@@ -49,11 +49,15 @@
           "c17",
           "c18",
           "c41"
-        ]
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": []
       },
       {
         "id": "s2",
-        "label": "One merchant store or one Plus organization (custom distribution)",
+        "label": "One merchant store (custom app)",
         "when_this_applies": "Your agent serves a single merchant (or one Plus org with several stores). No App Store listing, no app review.",
         "difficulty": "easy",
         "hands_on": {
@@ -75,11 +79,17 @@
           "c46",
           "c48",
           "c58"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Orders older than 60 days need approval"
         ]
       },
       {
         "id": "s3",
-        "label": "Many merchants via public distribution (App Store, listed or limited visibility)",
+        "label": "Many merchants (public app)",
         "when_this_applies": "Arbitrary merchants should be able to connect their store to your agent product.",
         "difficulty": "hard",
         "hands_on": {
@@ -108,11 +118,23 @@
           "c54",
           "c55",
           "c57"
+        ],
+        "path": "app_review",
+        "review_checks": [
+          "use_case",
+          "working_demo",
+          "security",
+          "listing"
+        ],
+        "shortcut": "Serving one merchant? A custom app needs no review.",
+        "extras": [
+          "Merchants must install from Shopify",
+          "No official review timeline"
         ]
       },
       {
         "id": "s4",
-        "label": "A handful of merchants without the App Store (one custom app per merchant)",
+        "label": "A few merchants, one app each",
         "when_this_applies": "You onboard a few merchants by hand (agency-style) and want to avoid app review.",
         "difficulty": "medium",
         "hands_on": {
@@ -130,6 +152,12 @@
           "c21",
           "c7",
           "c58"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "One app per merchant"
         ]
       }
     ],
@@ -171,13 +199,16 @@
         ]
       },
       {
-        "title": "For the App Store only",
+        "title": "App Store requirements",
         "detail": "A merchant-facing UI, compliance webhooks, a 1200x1200 icon, listing content, privacy/data-protection details, and an install flow that starts from Shopify.",
         "claim_ids": [
           "c26",
           "c28",
           "c29",
           "c31"
+        ],
+        "scenario_ids": [
+          "s3"
         ]
       }
     ],
@@ -510,12 +541,50 @@
     ],
     "traps": [
       {
+        "title": "Composio's connect flow vs App Store install rules",
+        "detail": "Composio asks for the store subdomain; the App Store forbids manual shop-domain entry and requires install from a Shopify surface, and discourages pop-up OAuth.",
+        "claim_ids": [
+          "c8",
+          "c26",
+          "c32",
+          "c57"
+        ],
+        "scenario_ids": [
+          "s3"
+        ]
+      },
+      {
+        "title": "App Store requires a real UI",
+        "detail": "A headless agent integration is not enough for public distribution.",
+        "claim_ids": [
+          "c28"
+        ],
+        "scenario_ids": [
+          "s3"
+        ]
+      },
+      {
         "title": "You can't even prototype without your own app",
         "detail": "Composio has no managed Shopify app. The toolkit FAQ mentions a 'default Shopify OAuth app' but the toolkit is listed as bring-your-own; plan on creating an app from day one.",
         "claim_ids": [
           "c1",
           "c3",
           "c4"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "Custom distribution is one merchant per app",
+        "detail": "One store or one Plus org per app. Serving several merchants this way means one app and one Composio auth config per merchant.",
+        "claim_ids": [
+          "c19",
+          "c20"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s4"
         ]
       },
       {
@@ -553,14 +622,6 @@
         ]
       },
       {
-        "title": "Custom distribution is one merchant per app",
-        "detail": "One store or one Plus org per app. Serving several merchants this way means one app and one Composio auth config per merchant.",
-        "claim_ids": [
-          "c19",
-          "c20"
-        ]
-      },
-      {
         "title": "Scope changes don't reach existing installs",
         "detail": "Adding scopes in a new version requires each merchant to approve them; existing Composio connections may need reconnecting.",
         "claim_ids": [
@@ -575,26 +636,24 @@
           "c48",
           "c56"
         ]
-      },
-      {
-        "title": "Composio's connect flow vs App Store install rules",
-        "detail": "Composio asks for the store subdomain; the App Store forbids manual shop-domain entry and requires install from a Shopify surface, and discourages pop-up OAuth.",
-        "claim_ids": [
-          "c8",
-          "c26",
-          "c32",
-          "c57"
-        ]
-      },
-      {
-        "title": "App Store requires a real UI",
-        "detail": "A headless agent integration is not enough for public distribution.",
-        "claim_ids": [
-          "c28"
-        ]
       }
     ],
     "blockers": [
+      {
+        "symptom": "App review stuck in Submitted, Paused, or Reviewed",
+        "what_it_means": "Core requirements unmet (Paused) or reviewer needs fixes (Reviewed); otherwise queue time.",
+        "what_to_do": "Fix issues and resubmit; reply to reviewer emails; protected data can't be changed during review.",
+        "agent_can_help": "Run the requirements checklist against your app and draft replies.",
+        "claim_ids": [
+          "c24",
+          "c30",
+          "c53",
+          "c54"
+        ],
+        "scenario_ids": [
+          "s3"
+        ]
+      },
       {
         "symptom": "Creating an app version fails with an app_access validation error on scopes",
         "what_it_means": "You declared an approval-required scope (e.g. read_all_orders) before Shopify approved it.",
@@ -666,18 +725,6 @@
         "claim_ids": [
           "c4",
           "c7"
-        ]
-      },
-      {
-        "symptom": "App review stuck in Submitted, Paused, or Reviewed",
-        "what_it_means": "Core requirements unmet (Paused) or reviewer needs fixes (Reviewed); otherwise queue time.",
-        "what_to_do": "Fix issues and resubmit; reply to reviewer emails; protected data can't be changed during review.",
-        "agent_can_help": "Run the requirements checklist against your app and draft replies.",
-        "claim_ids": [
-          "c24",
-          "c30",
-          "c53",
-          "c54"
         ]
       }
     ],
@@ -757,7 +804,7 @@
         "id": "c8",
         "text": "Composio's Shopify connection flow asks for the store's myshopify subdomain when connecting an account.",
         "source_url": "https://composio.dev/auth/shopify",
-        "quote": "Store subdomain: Enter your Shopify store\u2019s subdomain.",
+        "quote": "Store subdomain: Enter your Shopify store’s subdomain.",
         "probe_id": null,
         "label": "composio_docs",
         "note": null
@@ -766,7 +813,7 @@
         "id": "c9",
         "text": "Composio's Shopify credential guide creates the app from a store's admin via 'App Development', then 'Build apps in Dev Dashboard'.",
         "source_url": "https://composio.dev/auth/shopify",
-        "quote": "On the development page, click \u201cBuild apps in Dev Dashboard\u201d.",
+        "quote": "On the development page, click “Build apps in Dev Dashboard”.",
         "probe_id": null,
         "label": "composio_docs",
         "note": null
@@ -1238,7 +1285,9 @@
         "probe_id": "p4",
         "label": "probed"
       }
-    ]
+    ],
+    "verdict": "An hour or two for one store, with no review. Serving many merchants means Shopify app review, which has no published timeline.",
+    "default_scenario": "s3"
   },
   "meta": {
     "origin": "seed",
@@ -1402,7 +1451,7 @@
         "purpose": "Shopify authorize endpoint, non-existent shop, invalid client_id",
         "status": 404,
         "location": null,
-        "observation": "Page title: \"Store unavailable\". Body starts: \"Store unavailable - \u2190 Shopify # This store will be right back Shopify is working to bring it back online as soon as possible.\"",
+        "observation": "Page title: \"Store unavailable\". Body starts: \"Store unavailable - ← Shopify # This store will be right back Shopify is working to bring it back online as soon as possible.\"",
         "at": "2026-10-20T08:17:04.801Z"
       },
       {

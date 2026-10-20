@@ -21,7 +21,9 @@ export default async function GuidePage({ params, searchParams }: Props) {
   // An agent-generated guide for an app that also has a library guide links to it.
   const twin =
     record.meta.origin === "live"
-      ? ((await listSeedGuides()).find((g) => shortName(g.guide.app.name).toLowerCase() === shortName(record.guide.app.name).toLowerCase())?.slug ?? null)
+      ? ((await listSeedGuides()).find(
+          (g) => g.meta.origin === "seed" && g.slug !== record.slug && shortName(g.guide.app.name).toLowerCase() === shortName(record.guide.app.name).toLowerCase(),
+        )?.slug ?? null)
       : null;
   return <GuideView record={record} initialScenario={s ?? null} libraryTwin={twin} />;
 }

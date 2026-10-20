@@ -51,6 +51,10 @@ Content rules:
   * Composio's managed app has default scopes, shared quota and slower trigger polling; say which matter for this app
   * Composio stores and uses tokens on its servers, which counts as server-side access where providers distinguish it
 - Fill every checklist gap from the research notes: if something was NOT FOUND, put it in open_questions and say how to find out.
+- verdict: one sentence, at most 25 words, with the easiest and hardest realistic case and their times. default_scenario: the id of the most common production setup for an AI agent (not the prototype).
+- Per scenario: path = what must happen before a customer outside the developer's company can connect ("automatic" nothing to register, "self_serve" no review, "app_review" the provider reviews the app, "partner" the provider must accept the company first; if several apply, the strictest). review_checks = what that review inspects. shortcut = a documented way to avoid or shrink the review for the same goal, or null. extras = at most 3 facts of at most 8 words (customer admin approval, limits before approval, paid plan, yearly re-review).
+- Set scenario_ids on prerequisites, traps and blockers that only apply to some scenarios. Put the traps that hurt most first.
+- Brevity: step titles at most 8 words; step detail, trap detail and blocker text at most 2 sentences; need_own_app.answer at most 40 words. Plain words; explain any acronym once.
 - Be concrete and brief. No marketing language.`;
 
 export function researchSystem(maxSearches: number, maxFetches: number) {

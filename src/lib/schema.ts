@@ -11,6 +11,10 @@ import { z } from "zod";
 
 export const Owner = z.enum(["agent", "you", "waiting"]);
 export const Difficulty = z.enum(["easy", "medium", "hard", "unknown"]);
+/** What must happen before a customer outside your company can connect (the strictest mandatory gate). */
+export const Path = z.enum(["automatic", "self_serve", "app_review", "partner"]);
+/** What a provider review inspects. One submission can check several. */
+export const ReviewCheck = z.enum(["identity", "use_case", "working_demo", "security", "listing"]);
 
 /** Labels the generator may assign. "tested" is deliberately absent: only a recorded attempt can award it. */
 export const AgentEvidenceLabel = z.enum(["provider_docs", "composio_docs", "probed", "reported", "unknown"]);
@@ -50,6 +54,11 @@ const Scenario = z.object({
   }),
   approval: z.string().describe("What review/verification this scenario triggers, if any"),
   claim_ids: z.array(z.string()),
+  // Optional so guides saved before these fields existed still load.
+  path: Path.optional().describe("automatic = nothing to register; self_serve = create the app and go live; app_review = the provider reviews your app; partner = the provider must accept your company first"),
+  review_checks: z.array(ReviewCheck).optional().describe("What the review inspects; empty if there is no review"),
+  shortcut: z.string().nullable().optional().describe("A documented way to avoid or shrink the review for this goal, in one sentence, or null"),
+  extras: z.array(z.string()).optional().describe("Up to 3 short facts that change the experience (max 8 words each): customer admin approval, limits before approval, paid plan, yearly re-review"),
 });
 
 const Step = z.object({
@@ -67,6 +76,7 @@ const Item = z.object({
   title: z.string(),
   detail: z.string(),
   claim_ids: z.array(z.string()),
+  scenario_ids: z.array(z.string()).optional().describe("Scenario ids this applies to; empty or missing = all"),
 });
 
 const Blocker = z.object({
@@ -75,6 +85,7 @@ const Blocker = z.object({
   what_to_do: z.string(),
   agent_can_help: z.string().nullable().describe("What an AI agent can do here, or null"),
   claim_ids: z.array(z.string()),
+  scenario_ids: z.array(z.string()).optional().describe("Scenario ids this applies to; empty or missing = all"),
 });
 
 const guideFields = {
@@ -85,6 +96,8 @@ const guideFields = {
   }),
   oauth_supported: z.enum(["yes", "no", "unclear"]),
   summary: z.string().describe("2-3 plain sentences: how hard is it, and what decides that"),
+  verdict: z.string().optional().describe("One sentence, max 25 words: the easiest and the hardest realistic case, with times"),
+  default_scenario: z.string().optional().describe("Scenario id of the most common production setup for an AI agent"),
   composio: z.object({
     toolkit_slug: z.string().nullable(),
     managed_oauth: z.enum(["yes", "no", "not_in_composio", "unknown"]),
