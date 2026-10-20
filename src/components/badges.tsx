@@ -35,33 +35,14 @@ export function DifficultyBadge({ level }: { level: string }) {
 }
 
 export function ManagedBadge({ managed }: { managed: string }) {
-  if (managed === "yes") return <Badge tone="accent">Composio managed app available</Badge>;
+  if (managed === "yes") return <Badge tone="accent">Composio-managed app</Badge>;
   if (managed === "no") return <Badge tone="solid">Bring your own app</Badge>;
-  if (managed === "not_in_composio") return <Badge>Not in Composio yet</Badge>;
-  return <Badge>Composio status unknown</Badge>;
+  if (managed === "not_in_composio") return <Badge>Not in Composio</Badge>;
+  return <Badge>Composio: unknown</Badge>;
 }
 
-export function OriginBadge({ record }: { record: GuideRecord }) {
-  const { origin, reviewed } = record.meta;
-  if (reviewed) return <Badge tone="good">Human-reviewed</Badge>;
-  if (origin === "seed") return <Badge tone="info">Seed guide · review pending</Badge>;
-  return <Badge tone="warn">Agent-generated · not human-reviewed</Badge>;
-}
-
-const ORDER = ["easy", "medium", "hard"];
-export function difficultyRange(r: GuideRecord): string {
-  const levels = r.guide.scenarios.map((s) => s.difficulty).filter((d) => d !== "unknown");
-  if (!levels.length) return "unknown";
-  const idx = levels.map((l) => ORDER.indexOf(l));
-  const lo = ORDER[Math.min(...idx)];
-  const hi = ORDER[Math.max(...idx)];
-  return lo === hi ? lo : `${lo}–${hi}`;
-}
-
-/** The scenario with the longest expected wait, for the card's "worst-case wait". */
-export function hardestScenario(r: GuideRecord) {
-  const rank = { hard: 3, medium: 2, easy: 1, unknown: 0 } as const;
-  return [...r.guide.scenarios].sort((a, b) => rank[b.difficulty] - rank[a.difficulty])[0];
+export function ReviewBadge({ record }: { record: GuideRecord }) {
+  return record.meta.reviewed ? <Badge tone="good">Human-reviewed</Badge> : <Badge tone="warn">Not human-reviewed</Badge>;
 }
 
 const DOT: Record<string, string> = { easy: "bg-emerald-400", medium: "bg-amber-400", hard: "bg-rose-400", unknown: "bg-faint" };

@@ -101,6 +101,29 @@ export async function managedSchemesFromApi(slug: string): Promise<string[] | nu
   }
 }
 
+/** Composio-wide facts every guide may need (redirect proxy for domain verification, managed-app limits), with their source pages. */
+let factsCache: { url: string; text: string }[] | null = null;
+export async function composioGeneralFacts(): Promise<{ url: string; text: string }[]> {
+  if (factsCache) return factsCache;
+  const pick = async (url: string, keep: RegExp, max = 3500) => {
+    try {
+      const res = await safeGet(url);
+      if (res.status !== 200) return null;
+      const paras = res.body.replace(/^---[\s\S]*?---\s*/, "").split(/\n{2,}/);
+      const text = paras.filter((p) => keep.test(p)).join("\n\n").slice(0, max);
+      return text ? { url: url.replace(/\.md$/, ""), text } : null;
+    } catch {
+      return null;
+    }
+  };
+  const out = await Promise.all([
+    pick(`${DOCS}/docs/authentication/white-labeling-authentication.md`, /callback|redirect|your (own )?domain|proxy/i),
+    pick(`${DOCS}/docs/authentication/custom-app-vs-managed-app.md`, /quota|polling|scope|consent|branding|managed apps/i),
+  ]);
+  factsCache = out.filter((x): x is { url: string; text: string } => x !== null);
+  return factsCache;
+}
+
 export interface ComposioLookup {
   query: string;
   matches: CatalogEntry[];
@@ -110,6 +133,8 @@ export interface ComposioLookup {
   toolkit: ToolkitFacts | null;
   credential_guide: { url: string; title: string } | null;
   directory_url: string;
+  /** Composio-wide facts (redirect proxy, managed-app limits). */
+  facts: { url: string; text: string }[];
   /** Pages read, so quotes from them can be verified. */
   pages: { url: string; text: string }[];
 }
@@ -121,10 +146,11 @@ export async function composioLookup(query: string, slugHint?: string): Promise<
     : matchCatalog(query, entries);
   const chosen = matches.length >= 1 ? matches[0] : null;
   const slug = chosen?.slug ?? slugHint?.toLowerCase() ?? norm(query);
-  const [toolkit, guide, api] = await Promise.all([
+  const [toolkit, guide, api, facts] = await Promise.all([
     toolkitPageFacts(slug).catch(() => null),
     credentialGuide(slug),
     managedSchemesFromApi(slug),
+    composioGeneralFacts(),
   ]);
   let managed: ComposioLookup["managed_oauth"] = "unknown";
   if (chosen) managed = chosen.managed ? "yes" : "no";
@@ -133,7 +159,7 @@ export async function composioLookup(query: string, slugHint?: string): Promise<
   else if (/Composio-managed OAuth available\?\*\*\s*Yes/i.test(toolkit.header)) managed = "yes";
   if (api && api.some((s) => /oauth/i.test(s))) managed = "yes";
 
-  const pages = [{ url, text }];
+  const pages = [{ url, text }, ...facts];
   if (toolkit) pages.push({ url: `https://docs.composio.dev/toolkits/${slug}`, text: `${toolkit.header}\n\n${toolkit.faq}` });
   return {
     query,
@@ -144,6 +170,7 @@ export async function composioLookup(query: string, slugHint?: string): Promise<
     toolkit,
     credential_guide: guide,
     directory_url: url.replace(/\.md$/, ""),
+    facts,
     pages,
   };
 }

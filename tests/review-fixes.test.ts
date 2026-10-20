@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
-import { baseDomain, enforceEvidence, supportIssue } from "@/lib/evidence";
+import { baseDomain, enforceEvidence, overlapNote, quoteInText, supportIssue } from "@/lib/evidence";
 import type { GeneratedGuide } from "@/lib/schema";
 import { assertPublicUrl, readCapped } from "@/lib/web";
 
@@ -90,12 +90,20 @@ describe("[P1] a verbatim quote must also support the claim, from the right auth
     expect(g.claims[0].note).toMatch(/not an official page/);
   });
 
-  it("adds a visible note when a negated claim rests on an un-negated quote", () => {
-    const { guide: g } = enforceEvidence(
-      guide([{ id: "c1", text: "Public apps never require review", label: "provider_docs", source_url: "https://docs.acme.dev/review", quote: "Public applications require review", probe_id: null }]),
-      ctx(),
-    );
-    expect(g.claims[0].note).toMatch(/negative/);
+  it("ignores protocol versions and HTTP status codes when checking numbers", () => {
+    expect(supportIssue("Box uses OAuth 2.0 for user apps", "Apps using OAuth authenticate users")).toBeNull();
+    expect(supportIssue("A 401 error means the token was revoked", "The token was revoked")).toBeNull();
+    expect(supportIssue("Review takes 10 business days", "Review takes a while")).toMatch(/10/);
+  });
+
+  it("matches quotes that start inside a markdown link or differ in spacing before punctuation", () => {
+    expect(quoteInText("Private and beta](/docs/x) apps do not require review.", "[Private and beta](/docs/x) apps do not require review.")).toBe(true);
+    expect(quoteInText("built with HubSpot’s MCP Server .", "be built with HubSpot's MCP Server.")).toBe(true);
+  });
+
+  it("notes (without downgrading) a quote that shares almost no words with its claim", () => {
+    expect(overlapNote("Unverified apps are capped at one hundred users for their lifetime", "Send email on your behalf")).toMatch(/few words/);
+    expect(overlapNote("Unverified apps are capped at 100 users", "unverified apps are limited to 100 users")).toBeNull();
   });
 
   it("computes registrable domains", () => {

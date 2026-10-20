@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <footer className="border-t border-line py-6 text-center text-xs text-faint">
-          Take-home prototype for Composio · guides are research aids, not legal advice · every claim shows its evidence
+          Take-home prototype for Composio · research aid, not legal advice
         </footer>
       </body>
     </html>

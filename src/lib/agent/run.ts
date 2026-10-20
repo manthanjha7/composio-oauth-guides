@@ -152,7 +152,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const emit = opts.emit;
   const client = opts.client ?? new Anthropic();
   const maxSearches = opts.maxSearches ?? 5;
-  const maxFetches = opts.maxFetches ?? 6;
+  const maxFetches = opts.maxFetches ?? 10;
   const researchDeadline = started + (opts.researchBudgetMs ?? 150_000);
   const runDeadline = started + (opts.totalBudgetMs ?? 270_000);
   const runId = Math.random().toString(36).slice(2, 10);
@@ -186,7 +186,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     sources.push({ url, title, fetched_at: new Date().toISOString(), via, chars: text.length });
   };
 
-  emit({ type: "stage", stage: "start", message: `Researching "${opts.query}" (search via ${search ? "Composio Search" : "Anthropic web search"})` });
+  emit({ type: "stage", stage: "start", message: `Researching ${opts.query}` });
 
   const tools = customTools(!!search);
   if (!search) {
@@ -229,7 +229,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     } catch (e) {
       if (!(e instanceof Anthropic.BadRequestError)) throw e;
       useFallbacks = false;
-      emit({ type: "warning", message: "Refusal fallback not accepted for this request; continuing without it." });
+      emit({ type: "warning", message: "Retrying without the safety fallback" });
       return run(false);
     }
   }
@@ -237,12 +237,13 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   async function runTool(name: string, input: Record<string, unknown>): Promise<{ content: string; isError?: boolean; stop?: "finish" | "ambiguous" | "not_oauth" }> {
     switch (name) {
       case "composio_lookup": {
-        emit({ type: "stage", stage: "composio", message: "Checking Composio's managed-auth directory and toolkit docs" });
+        emit({ type: "stage", stage: "composio", message: "Checking Composio" });
         lookup = await composioLookup(String(input.app_name ?? opts.query), input.slug_hint ? String(input.slug_hint) : undefined);
         for (const p of lookup.pages) addPage(p.url, p.text, "direct");
         emit({ type: "composio", managed: lookup.managed_oauth, slug: lookup.chosen?.slug ?? lookup.toolkit?.slug ?? null, guide: lookup.credential_guide?.url ?? null });
         return {
           content: JSON.stringify({
+            composio_facts: lookup.facts,
             directory_url: lookup.directory_url,
             catalog_matches: lookup.matches,
             managed_oauth: lookup.managed_oauth,
@@ -315,7 +316,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         }
       }
       case "probe_url": {
-        emit({ type: "stage", stage: "probe", message: "Probing a live endpoint" });
+        emit({ type: "stage", stage: "probe", message: "Testing the OAuth endpoint" });
         const r = await probe(String(input.url ?? ""));
         const rec: ProbeRecordT = {
           id: `p${ctx.probes.length + 1}`,
@@ -345,7 +346,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     for (let turn = 0; turn < 16 && !stopReason; turn++) {
       if (Date.now() > researchDeadline) {
         partial = true;
-        emit({ type: "warning", message: "Research time budget reached; writing the guide from what was found so far." });
+        emit({ type: "warning", message: "Research time limit reached; writing from what was found" });
         break;
       }
       opts.signal?.throwIfAborted();
@@ -408,7 +409,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     if (e instanceof Anthropic.APIConnectionTimeoutError) {
       // A slow research turn: stop researching and write from what we have.
       partial = true;
-      emit({ type: "warning", message: "A research step took too long; writing the guide from what was found so far." });
+      emit({ type: "warning", message: "A research step timed out; writing from what was found" });
     } else if (e instanceof Anthropic.APIError) {
       emit({ type: "error", message: `Model API error (${e.status ?? "network"}): ${e.message}` });
       return { outcome: "error", message: e.message };
@@ -436,7 +437,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   }
 
   // ---- Phase 2: write the guide from a dossier ----
-  emit({ type: "stage", stage: "write", message: "Writing the guide from the evidence gathered" });
+  emit({ type: "stage", stage: "write", message: "Writing the guide" });
   const lk = lookup as ComposioLookup | null;
   const dossier = buildDossier({ query: opts.query, ident, lookup: lk, notes, ctx, hits, partial });
 
@@ -467,7 +468,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       } catch (err) {
         problem = `Not valid JSON: ${(err as Error).message}`;
       }
-      emit({ type: "warning", message: "Guide did not match the schema; asking the model to repair it once." });
+      emit({ type: "warning", message: "Fixing the guide's format (one retry)" });
       writeMessages.push({ role: "assistant", content: msg.content }, { role: "user", content: `Fix these problems and return the complete corrected JSON object only:\n${problem}` });
     } catch (e) {
       if (e instanceof Anthropic.APIError) {
@@ -484,7 +485,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   }
 
   // ---- Phase 3: enforce evidence rules ----
-  emit({ type: "stage", stage: "verify", message: "Checking every quoted claim against the pages actually read" });
+  emit({ type: "stage", stage: "verify", message: "Checking quotes against their sources" });
   if (ident?.website) ctx.officialDomains!.push(ident.website);
   if (ident?.developer_docs_url) ctx.officialDomains!.push(ident.developer_docs_url);
   const { guide, stats, warnings } = enforceEvidence(generated, ctx);

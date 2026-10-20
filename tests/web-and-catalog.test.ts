@@ -79,3 +79,25 @@ describe("slugify", () => {
     expect(slugify("HubSpot")).toBe("hubspot");
   });
 });
+
+describe("cleanMarkdown (MDX docs sources)", () => {
+  it("keeps link text and captions, drops component code", async () => {
+    const { cleanMarkdown } = await import("@/lib/web");
+    const md = [
+      'export const docsUrl = "https://x";',
+      "",
+      "export const Link = ({href, children}) => {",
+      "  return <a href={href}>{children}</a>;",
+      "};",
+      "",
+      'Apps using <Link href="/jwt">JWT</Link> or <Link href="/ccg">Client Credentials Grant</Link> must be authorized.',
+      '<Frame caption="The Authorization URL field populates after review">',
+      "Kept paragraph after the export.",
+    ].join("\n");
+    const out = cleanMarkdown(md);
+    expect(out).toContain("Apps using JWT or Client Credentials Grant must be authorized.");
+    expect(out).toContain("The Authorization URL field populates after review");
+    expect(out).toContain("Kept paragraph after the export.");
+    expect(out).not.toMatch(/export const|children/);
+  });
+});

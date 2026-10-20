@@ -203,7 +203,6 @@ export function LiveRun() {
   const identified = find("identified");
   const composio = find("composio");
   const verify = find("verify");
-  const cost = find("cost");
   const ambiguous = find("ambiguous");
   const notOauth = find("not_oauth");
   const done = find("done");
@@ -228,7 +227,7 @@ export function LiveRun() {
       {replay && (
         <div role="note" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-400/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100">
           <p>
-            <b>Replay of a real run</b> recorded {replay.recorded_at}. {replay.note}
+            <b>Recorded run</b> ({replay.recorded_at}). {replay.note}
           </p>
           <div className="flex items-center gap-1" role="group" aria-label="Playback speed">
             {[1, 4, 16].map((s) => (
@@ -250,7 +249,7 @@ export function LiveRun() {
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">{replay ? "Recorded run" : "Live research"}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">{identified?.name ?? q}</h1>
         </div>
-        <div className="flex items-center gap-2 font-mono text-sm text-muted" aria-live="off">
+        <div className={`flex items-center gap-2 font-mono text-sm text-muted ${status === "unavailable" ? "hidden" : ""}`} aria-live="off">
           {running && <span aria-hidden className="pulse-dot h-2 w-2 rounded-full bg-emerald-400" />}
           <span>{running ? "working" : status === "done" ? "finished" : "stopped"}</span>
           <span className="text-ink">{elapsed}s</span>
@@ -281,13 +280,10 @@ export function LiveRun() {
         {status === "done" && done && (
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-5">
             <div>
-              <p className="font-semibold text-emerald-200">
-                Guide ready{done.partial ? " (partial: research hit its time budget)" : ""}.
-              </p>
+              <p className="font-semibold text-emerald-200">Guide ready{done.partial ? " (incomplete: research timed out)" : ""}</p>
               {verify && (
                 <p className="mt-1 text-sm text-emerald-100/80">
-                  {verify.verified} of {verify.checked} quoted claims verified against the source pages · {verify.downgraded} downgraded to Unknown · {verify.total} claims
-                  {cost ? ` · model cost ~$${cost.usd.toFixed(2)}` : ""}
+                  {verify.verified}/{verify.checked} quotes verified{verify.downgraded ? ` · ${verify.downgraded} flagged` : ""}
                 </p>
               )}
             </div>
@@ -307,11 +303,10 @@ export function LiveRun() {
         )}
         {status === "unavailable" && (
           <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5">
-            <p className="font-semibold text-amber-200">Live generation isn&apos;t available right now.</p>
-            <p className="mt-1 text-sm text-amber-100/80">{error}</p>
+            <p className="font-semibold text-amber-200">{error}</p>
             <div className="mt-3 flex flex-wrap gap-2 text-sm">
               <Link href="/generate?replay=gmail" className="rounded-lg bg-amber-300 px-3 py-1.5 font-medium text-bg hover:bg-amber-200">
-                Watch a recorded run instead
+                Watch a recorded run (Gmail)
               </Link>
               <Link href="/" className="rounded-lg border border-amber-300/40 px-3 py-1.5 text-amber-100 hover:bg-amber-500/20">
                 Browse the library
@@ -339,19 +334,17 @@ export function LiveRun() {
         )}
       </div>
 
+      {status !== "unavailable" && (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-4">
           {writing && (
             <div role="status" className="rounded-2xl border border-accent/30 bg-violet-500/[0.07] p-5">
               <div className="flex items-center gap-2">
                 <span aria-hidden className="pulse-dot h-2 w-2 rounded-full bg-accent" />
-                <p className="font-semibold">Writing scenarios, steps and evidence…</p>
+                <p className="font-semibold">Writing the guide…</p>
                 <span className="ml-auto font-mono text-sm text-muted">{writeSecs}s</span>
               </div>
-              <p className="mt-2 text-sm text-muted">
-                The model is turning what it read into a guide. This step sends no updates and usually takes 50–95 seconds. After it, code checks every quoted claim against the pages
-                below before anything is saved.
-              </p>
+              <p className="mt-2 text-sm text-muted">No updates for about a minute. Then every quote is checked against the pages read below.</p>
               <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
                 <Stat label="pages read" value={pagesRead} />
                 <Stat label="searches" value={searches} />
@@ -380,9 +373,11 @@ export function LiveRun() {
                     {identified.docs} ↗
                   </a>
                 )}
-                <p className="mt-2 text-xs text-muted">
-                  OAuth for third-party apps: <span className="text-ink">{identified.oauth}</span>
-                </p>
+                {identified.oauth !== "yes" && (
+                  <p className="mt-2 text-xs text-muted">
+                    OAuth for other apps: <span className="text-ink">{identified.oauth}</span>
+                  </p>
+                )}
                 {!replay && (
                   <p className="mt-2 text-xs text-faint">
                     Not what you meant?{" "}
@@ -400,7 +395,7 @@ export function LiveRun() {
             {composio ? (
               <div className="space-y-1">
                 <Badge tone={composio.managed === "yes" ? "accent" : composio.managed === "no" ? "solid" : "neutral"}>
-                  {composio.managed === "yes" ? "Managed app available" : composio.managed === "no" ? "Bring your own app" : composio.managed === "not_in_composio" ? "Not in Composio" : "Unknown"}
+                  {composio.managed === "yes" ? "Composio-managed app" : composio.managed === "no" ? "Bring your own app" : composio.managed === "not_in_composio" ? "Not in Composio" : "Unknown"}
                 </Badge>
                 {composio.slug && <p className="font-mono text-xs text-muted">toolkit {composio.slug}</p>}
                 {composio.guide && (
@@ -414,13 +409,11 @@ export function LiveRun() {
             )}
           </Panel>
           <Panel title="What happens">
-            <p className="text-muted">
-              The agent reads Composio&apos;s docs and the provider&apos;s official docs, probes the live OAuth endpoint, then writes the guide. Code checks every quoted claim against the
-              pages it actually read; anything it can&apos;t confirm becomes Unknown.
-            </p>
+            <p className="text-muted">Reads Composio and provider docs, tests the OAuth endpoint, writes the guide. Claims it can&apos;t back with a quote are flagged.</p>
           </Panel>
         </aside>
       </div>
+      )}
     </div>
   );
 }
@@ -473,9 +466,9 @@ function EventRow({ e, t }: { e: Ev; t: number }) {
     case "stage":
       return e.stage === "start" ? row("▸", e.message, "text-muted") : row("▸", <span className="font-sans font-medium">{e.message}</span>);
     case "identified":
-      return row("🎯", <>Identified {e.name}{e.website ? ` · ${host(e.website)}` : ""} · OAuth: {e.oauth}</>);
+      return row("🎯", <>Identified {e.name}{e.website ? ` (${host(e.website)})` : ""}{e.oauth !== "yes" ? ` · OAuth: ${e.oauth}` : ""}</>);
     case "composio":
-      return row("🟣", <>Composio: managed app {e.managed}{e.slug ? ` · toolkit ${e.slug}` : ""}</>);
+      return row("🟣", <>Composio: {e.managed === "yes" ? "managed app available" : e.managed === "no" ? "bring your own app" : e.managed === "not_in_composio" ? "not in catalog" : "status unknown"}</>);
     case "search":
       return row(
         "🔍",
@@ -492,22 +485,22 @@ function EventRow({ e, t }: { e: Ev; t: number }) {
       );
     case "fetch":
       return e.ok
-        ? row("📄", <>Read <a className="text-accent hover:underline" href={e.url} target="_blank" rel="noreferrer">{host(e.url)}</a> <span className="text-faint">({Math.round(e.chars / 1000)}k chars, {e.via})</span></>)
+        ? row("📄", <>Read <a className="text-accent hover:underline" href={e.url} target="_blank" rel="noreferrer">{host(e.url)}</a> <span className="text-faint">({Math.round(e.chars / 1000)}k chars)</span></>)
         : row("⚠", <>Couldn&apos;t read {host(e.url)}: {e.error}</>, "text-amber-200");
     case "probe":
       return row(
         "🔎",
         <>
-          Probed {host(e.url).slice(0, 70)}… → <span className="text-sky-300">{e.status ?? "no response"}</span>
+          Tested {host(e.url).slice(0, 60)}… → <span className="text-sky-300">{e.status ?? "no response"}</span>
           <div className="mt-0.5 text-xs text-muted">{probeSummary(e.observation)}</div>
         </>,
       );
     case "note":
       return row("💭", e.text, "text-muted");
     case "verify":
-      return row("✅", <>Evidence check: {e.verified}/{e.checked} quotes found on the source pages · {e.downgraded} downgraded · {e.total} claims</>, "text-emerald-200");
+      return row("✅", <>{e.verified}/{e.checked} quotes verified{e.downgraded ? ` · ${e.downgraded} flagged` : ""}</>, "text-emerald-200");
     case "cost":
-      return row("💲", <>Model cost ~${e.usd.toFixed(2)} ({Math.round(e.input_tokens / 1000)}k in / {Math.round(e.output_tokens / 1000)}k out)</>, "text-muted");
+      return row("💲", <>Cost ~${e.usd.toFixed(2)}</>, "text-muted");
     case "warning":
       return row("⚠", e.message, "text-amber-200");
     case "error":

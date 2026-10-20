@@ -46,6 +46,7 @@ const Scenario = z.object({
   waiting: z.object({
     estimate: z.string().describe("Time waiting on the provider (review, approval). 'None', a range, or 'Unknown'."),
     basis: z.string(),
+    max_days: z.number().nullable().optional().describe("Longest documented wait in calendar days, or null if no source gives one"),
   }),
   approval: z.string().describe("What review/verification this scenario triggers, if any"),
   claim_ids: z.array(z.string()),

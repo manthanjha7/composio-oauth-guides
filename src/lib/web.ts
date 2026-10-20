@@ -169,15 +169,45 @@ export interface FetchedPage {
   status: number;
 }
 
+/** Markdown/MDX source: drop JSX/HTML tags but keep their text ("<Link href=..>Client Credentials</Link>" -> "Client Credentials"). */
+export function cleanMarkdown(md: string): string {
+  return md
+    .replace(/^---[\s\S]*?---\s*/, "")
+    .replace(/^(?:import|export)\s[^\n]*;\s*$/gm, "") // one-line MDX imports/exports
+    .replace(/^export\s+(?:const|function)\s[^\n]*(?:\{|\(|=>)\s*$[\s\S]*?^\};?\s*$/gm, "") // multi-line component definitions
+    .replace(/<[A-Za-z][^>]*?\b(?:caption|alt|title)="([^"]+)"[^>]*>/g, "\n$1\n") // keep figure captions
+    .replace(/<\/?[A-Za-z][^>]*>/g, "");
+}
+
+// Docs sites built on MDX (Mintlify and similar) server-render pages with empty slots where
+// client components such as <Link> go ("applications using <!-- --> or"), silently dropping words.
+// They also publish the source at URL + ".md", which keeps every word.
+const looksClientRendered = (html: string) => html.includes("mdx-content") || /<!-- -->\s*(or|and|,)/.test(html);
+
 export async function fetchPageText(raw: string): Promise<FetchedPage> {
   const res = await safeGet(raw);
   if (res.status >= 400) throw new Error(`HTTP ${res.status}`);
   const ct = res.contentType.toLowerCase();
   if (ct.includes("html")) {
     const { title, text } = htmlToText(res.body);
+    if (looksClientRendered(res.body)) {
+      const mdUrl = `${res.url.split(/[?#]/)[0].replace(/\/$/, "")}.md`;
+      try {
+        const md = await safeGet(mdUrl, { timeoutMs: 8_000 });
+        const mct = md.contentType.toLowerCase();
+        if (md.status === 200 && (mct.includes("markdown") || mct.includes("text/plain")) && md.body.length > 200) {
+          return { url: res.url, title, text: cleanMarkdown(md.body), status: res.status };
+        }
+      } catch {
+        /* fall back to the HTML text */
+      }
+    }
     return { url: res.url, title, text, status: res.status };
   }
-  if (ct.includes("json") || ct.includes("text") || ct.includes("markdown") || ct === "") {
+  if (ct.includes("markdown") || /\.mdx?(\?|$)/.test(res.url)) {
+    return { url: res.url, title: null, text: cleanMarkdown(res.body), status: res.status };
+  }
+  if (ct.includes("json") || ct.includes("text") || ct === "") {
     return { url: res.url, title: null, text: res.body, status: res.status };
   }
   throw new Error(`Unsupported content type: ${ct}`);

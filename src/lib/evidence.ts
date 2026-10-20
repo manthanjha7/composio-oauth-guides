@@ -8,8 +8,11 @@ export function normalizeForMatch(s: string): string {
     .replace(/[“”‟]/g, '"')
     .replace(/[–—−]/g, "-")
     .replace(/ /g, " ")
-    .replace(/[*_`#>|]/g, " ")
+    .replace(/<\/?[a-z][^>]*>/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\]\([^)\s]*\)/g, "") // half a markdown link, e.g. a quote that starts inside one
+    .replace(/[*_`#>|\[\]]/g, " ")
+    .replace(/\s+([.,;:!?)])/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -93,18 +96,20 @@ const NUM_WORDS: Record<string, string> = {
   eleven: "11", twelve: "12", fifteen: "15", twenty: "20", thirty: "30", fifty: "50", hundred: "100",
 };
 function numbersIn(text: string): Set<string> {
-  const t = text.toLowerCase();
+  // Not quantities: protocol/API versions ("OAuth 2.0", "v3") and HTTP status codes ("401 error", "HTTP 403").
+  const t = text
+    .toLowerCase()
+    .replace(/\b(?:oauth|http|https|tls|api|v)\s*\d+(?:\.\d+)*\b/g, " ")
+    .replace(/\b(?:status|error|code|http)\s*[1-5]\d\d\b/g, " ")
+    .replace(/\b[1-5]\d\d\s*(?:errors?|status|responses?|codes?|forbidden|unauthorized|not found|too many requests)\b/g, " ");
   const out = new Set<string>();
   for (const m of t.matchAll(/(?<![\w.$])\$?(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?![\w])/g)) out.add(m[1].replace(/,/g, ""));
   for (const [w, d] of Object.entries(NUM_WORDS)) if (new RegExp(`\\b${w}\\b`).test(t)) out.add(d);
   return out;
 }
-const NEGATION = /\b(not|no|never|cannot|can't|don't|doesn't|isn't|aren't|won't|without|none|neither|nor)\b/i;
-
 /**
- * Cheap checks that the quote actually supports the claim (a verbatim quote can still be misused):
- * every number in the claim must appear in the quote, and a negated claim needs a negated quote.
- * Returns a reason when the support looks wrong, else null.
+ * Cheap check that the quote supports the claim (a verbatim quote can still be misused):
+ * every quantity in the claim must appear in the quote. Returns a reason when it doesn't, else null.
  */
 export function supportIssue(claimText: string, quote: string): string | null {
   const q = numbersIn(quote);
@@ -113,12 +118,21 @@ export function supportIssue(claimText: string, quote: string): string | null {
   return null;
 }
 
-/** Softer signal: a negated claim backed by an un-negated quote. Shown to readers as a note, not a downgrade. */
-export function negationNote(claimText: string, quote: string): string | null {
-  const norm = (x: string) => x.replace(/[\u2018\u2019]/g, "'");
-  return NEGATION.test(norm(claimText)) && !NEGATION.test(norm(quote))
-    ? "The claim is phrased as a negative but the quote is not. Read the quote before relying on it."
-    : null;
+const STOP = new Set("the a an and or of to in for on with by is are be can must may your you this that it its from as at not no all any per each into than then them they their which when".split(" "));
+const contentWords = (x: string) =>
+  new Set(
+    normalizeForMatch(x)
+      .split(/[^a-z0-9.]+/)
+      .filter((w) => w.length >= 4 && !STOP.has(w)),
+  );
+
+/** Softer signal (note, not a downgrade): the quote shares almost no words with the claim it supposedly supports. */
+export function overlapNote(claimText: string, quote: string): string | null {
+  const c = contentWords(claimText);
+  if (c.size < 3) return null;
+  const q = contentWords(quote);
+  const shared = [...c].filter((w) => q.has(w) || [...q].some((x) => x.startsWith(w.slice(0, 5)))).length;
+  return shared / c.size < 0.2 ? "The quote shares few words with this claim. Read it before relying on the claim." : null;
 }
 
 export interface EnforceResult {
@@ -175,7 +189,7 @@ export function enforceEvidence(g: GeneratedGuide, ctx: EvidenceContext): Enforc
       const issue = supportIssue(c.text, c.quote);
       if (issue) return { ...downgrade(issue), source_url: foundAt };
       stats.quotes_verified++;
-      return { ...claim, source_url: foundAt, note: negationNote(c.text, c.quote) };
+      return { ...claim, source_url: foundAt, note: overlapNote(c.text, c.quote) };
     }
 
     if (c.label === "probed") {
@@ -235,10 +249,10 @@ export function enforceEvidence(g: GeneratedGuide, ctx: EvidenceContext): Enforc
 }
 
 export const LABEL_INFO: Record<ClaimT["label"], { icon: string; name: string; meaning: string }> = {
-  tested: { icon: "🧪", name: "Tested", meaning: "Observed in a recorded setup attempt" },
-  probed: { icon: "🔎", name: "Probed", meaning: "The agent hit a live endpoint and recorded the response" },
-  provider_docs: { icon: "📘", name: "Provider docs", meaning: "Official docs, with a verbatim quote checked against the page" },
-  composio_docs: { icon: "🟣", name: "Composio docs", meaning: "Composio docs or API, quote checked against the page" },
-  reported: { icon: "💬", name: "Reported", meaning: "Developers report it (forum, blog, issue). Not official" },
-  unknown: { icon: "❓", name: "Unknown", meaning: "Not confirmed. Treat as a lead, not a fact" },
+  tested: { icon: "🧪", name: "Tested", meaning: "Seen in a recorded setup attempt" },
+  provider_docs: { icon: "📘", name: "Provider docs", meaning: "Quoted from the provider's docs" },
+  composio_docs: { icon: "🟣", name: "Composio docs", meaning: "Quoted from Composio's docs" },
+  probed: { icon: "🔎", name: "Endpoint check", meaning: "The agent called the provider's endpoint and recorded the reply" },
+  reported: { icon: "💬", name: "Reported", meaning: "From a forum or blog, not official" },
+  unknown: { icon: "❓", name: "Unconfirmed", meaning: "Not confirmed by a source" },
 };
