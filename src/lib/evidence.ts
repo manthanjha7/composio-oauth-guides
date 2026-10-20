@@ -82,6 +82,20 @@ export function baseDomain(urlOrHost: string): string {
   return parts.slice(-take).join(".");
 }
 
+/**
+ * Providers often publish docs on a sibling brand domain (docs.dropboxapi.com, googleapis.com, slack.dev).
+ * A domain counts as official if it is one of the provider's domains or its name starts with the brand.
+ */
+export function isOfficialDomain(url: string, official: Set<string>): boolean {
+  const d = baseDomain(url);
+  if (official.has(d)) return true;
+  const label = d.split(".")[0];
+  return [...official].some((o) => {
+    const brand = o.split(".")[0];
+    return brand.length >= 4 && label.startsWith(brand);
+  });
+}
+
 const isComposio = (url: string) => /(^|\.)composio\.dev$/.test(safeHost(url));
 function safeHost(url: string): string {
   try {
@@ -101,7 +115,8 @@ function numbersIn(text: string): Set<string> {
     .toLowerCase()
     .replace(/\b(?:oauth|http|https|tls|api|v)\s*\d+(?:\.\d+)*\b/g, " ")
     .replace(/\b(?:status|error|code|http)\s*[1-5]\d\d\b/g, " ")
-    .replace(/\b[1-5]\d\d\s*(?:errors?|status|responses?|codes?|forbidden|unauthorized|not found|too many requests)\b/g, " ");
+    .replace(/\b[1-5]\d\d\s*(?:errors?|status|responses?|codes?|redirects?|found|forbidden|unauthorized|not found|too many requests)\b/g, " ")
+    .replace(/\b(?:returns?|returned|responds? with|redirects? with|→)\s*(?:an?\s*)?(?:http\s*)?[1-5]\d\d\b/g, " ");
   const out = new Set<string>();
   for (const m of t.matchAll(/(?<![\w.$])\$?(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?![\w])/g)) out.add(m[1].replace(/,/g, ""));
   for (const [w, d] of Object.entries(NUM_WORDS)) if (new RegExp(`\\b${w}\\b`).test(t)) out.add(d);
@@ -156,7 +171,7 @@ export function enforceEvidence(g: GeneratedGuide, ctx: EvidenceContext): Enforc
   const seen = new Set([...ctx.seenUrls, ...ctx.pages.keys()].map(canonicalUrl));
   const official = new Set((ctx.officialDomains ?? []).map(baseDomain).filter(Boolean));
   const authorityOk = (label: "provider_docs" | "composio_docs", url: string) =>
-    label === "composio_docs" ? isComposio(url) : official.size === 0 || official.has(baseDomain(url));
+    label === "composio_docs" ? isComposio(url) : official.size === 0 || isOfficialDomain(url, official);
 
   const claims: ClaimT[] = g.claims.map((c) => {
     const claim: ClaimT = { ...c, note: null };

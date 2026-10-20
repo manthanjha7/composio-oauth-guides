@@ -7,7 +7,7 @@
  *  - meta.verification counts are recomputed
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { baseDomain, overlapNote, quoteInText, supportIssue } from "../src/lib/evidence";
+import { baseDomain, isOfficialDomain, overlapNote, quoteInText, supportIssue } from "../src/lib/evidence";
 import { GuideRecordSchema } from "../src/lib/schema";
 import { fetchPageText } from "../src/lib/web";
 
@@ -26,7 +26,7 @@ for (const file of files) {
   let checked = 0;
   let verified = 0;
   for (const c of rec.guide.claims) {
-    const wasDowngraded = c.label === "unknown" && !!c.quote && !!c.source_url && /quote|claim states|quoted text/i.test(c.note ?? "");
+    const wasDowngraded = (c.label === "unknown" || c.label === "reported") && !!c.quote && !!c.source_url && /quote|claim states|quoted text|not an official page/i.test(c.note ?? "");
     const isDocs = c.label === "provider_docs" || c.label === "composio_docs";
     if (!isDocs && !wasDowngraded) {
       if (c.note && /phrased as a negative/.test(c.note)) c.note = null;
@@ -35,7 +35,7 @@ for (const file of files) {
     checked++;
     const text = c.quote && c.source_url ? await page(c.source_url) : null;
     const label = c.source_url && baseDomain(c.source_url) === "composio.dev" ? "composio_docs" : "provider_docs";
-    const authorityOk = label === "composio_docs" || official.size === 0 || official.has(baseDomain(c.source_url ?? ""));
+    const authorityOk = label === "composio_docs" || official.size === 0 || isOfficialDomain(c.source_url ?? "", official);
     const ok = !!text && !!c.quote && quoteInText(c.quote, text) && !supportIssue(c.text, c.quote) && authorityOk;
     if (ok) {
       verified++;

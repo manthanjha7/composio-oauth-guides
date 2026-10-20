@@ -106,6 +106,15 @@ describe("[P1] a verbatim quote must also support the claim, from the right auth
     expect(overlapNote("Unverified apps are capped at 100 users", "unverified apps are limited to 100 users")).toBeNull();
   });
 
+  it("treats a provider's sibling brand domains as official, but not unrelated sites", async () => {
+    const { isOfficialDomain } = await import("@/lib/evidence");
+    const official = new Set(["dropbox.com"]);
+    expect(isOfficialDomain("https://docs.dropboxapi.com/x.md", official)).toBe(true);
+    expect(isOfficialDomain("https://community.dropbox.com/t/1", official)).toBe(true);
+    expect(isOfficialDomain("https://nango.dev/docs/dropbox", official)).toBe(false);
+    expect(supportIssue("The authorize URL returns 302 for unknown clients", "unknown clients are redirected")).toBeNull();
+  });
+
   it("computes registrable domains", () => {
     expect(baseDomain("https://support.google.com/cloud/answer/1")).toBe("google.com");
     expect(baseDomain("docs.slack.dev")).toBe("slack.dev");
