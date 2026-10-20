@@ -31,7 +31,7 @@ export default async function VerificationPage() {
       <dl className="grid gap-3 sm:grid-cols-3">
         <Stat value={claims} label="claims across all guides" />
         <Stat value={`${verified}/${checked}`} label="docs quotes matched word for word on the source page" />
-        <Stat value={tested} label="claims confirmed by a hands-on setup (none yet)" />
+        <Stat value={tested} label="claims confirmed by a recorded hands-on setup" />
       </dl>
 
       {featured.length > 0 && (
@@ -136,11 +136,12 @@ export default async function VerificationPage() {
 
       {ledger && ledger.hands_on.length > 0 && (
         <section>
-          <h2 className="text-xl font-semibold tracking-tight">Planned hands-on tests</h2>
-          <p className="mb-4 mt-1 text-sm text-muted">None completed yet. Until then, no claim is labelled 🧪 Tested.</p>
+          <h2 className="text-xl font-semibold tracking-tight">Hands-on setup attempts</h2>
+          <p className="mb-4 mt-1 text-sm text-muted">An agent does the configuration; a human only does what needs a person. Only these can make a claim 🧪 Tested.</p>
           <ul className="space-y-2">
             {ledger.hands_on.map((h) => (
               <li key={h.provider} className="rounded-xl border border-line bg-surface p-4 text-sm">
+                <Badge tone={h.status === "done" ? "good" : "warn"}>{h.status === "done" ? "done" : "planned"}</Badge>{" "}
                 <span className="font-medium">{h.provider}</span>
                 <span className="text-muted">: {h.what}</span>
                 {h.result && <p className="mt-1 text-ink/90">{h.result}</p>}

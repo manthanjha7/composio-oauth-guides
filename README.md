@@ -13,7 +13,7 @@ For each app, a guide answers:
 - What will block me, and what do I do then?
 - Which steps can an agent do (🤖) and which must I do (👤)? Waits on the provider are marked ⏳.
 
-Every claim carries a label: 📘 provider docs, 🟣 Composio docs, 🔎 endpoint check, 💬 reported, ❓ unconfirmed, or 🧪 tested. 🧪 is only for recorded setups; there are none yet.
+Every claim carries a label: 📘 provider docs, 🟣 Composio docs, 🔎 endpoint check, 💬 reported, ❓ unconfirmed, or 🧪 tested. 🧪 is only for recorded setups: so far Slack, where the agent created the app and the Composio auth config and a human only clicked Allow (`attempts/`).
 
 There are two ways in:
 
@@ -66,7 +66,7 @@ Scripts. None of them call a model unless noted.
 | Unit of guidance | A verdict per **setup**, not per app | Gmail is easy for an internal tool and hard for a server-side agent that reads inboxes |
 | Time | Your time and provider wait, each with a basis | "An hour of work plus weeks of review" is a different plan from "a week of work" |
 | Evidence | A label per claim, with a verbatim quote checked by code | A link alone doesn't prove a claim |
-| Attempting setup | Endpoint checks plus planned recorded setups | Logins, 2FA and terms of service make a signup bot fragile |
+| Attempting setup | Endpoint checks, plus recorded setups where the agent configures and a human only consents (Slack done) | Logins, 2FA and terms of service make a full signup bot fragile |
 | Built on | Composio Search, Composio docs and API, Next.js on Vercel | Reuses what Composio already ships, and links to its setup guides |
 
 ## Verification (`/verification`)
@@ -81,7 +81,7 @@ Scripts. None of them call a model unless noted.
 
 ## Limitations
 
-- **Not reviewed or tested.** No guide is human-reviewed or hands-on tested yet (planned tests are listed on `/verification`).
+- **Not reviewed, barely tested.** No guide is human-reviewed yet. Only Slack has a recorded hands-on setup (`attempts/README.md`); Google, Shopify and Notion are planned.
 - **Summaries can overstate.** The summary and setup text aren't evidence-checked the way claims are. One overstatement (Box) was fixed by hand.
 - **Logged-in areas.** The agent can't see behind developer-console logins, and review timelines are rarely published. When they're missing, guides say so.
 - **Generated guides are thinner** than library guides: 15–31 claims vs 48–81.

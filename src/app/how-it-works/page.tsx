@@ -53,14 +53,14 @@ export default function HowItWorks() {
             </li>
           ))}
         </ul>
-        <p className="text-sm text-faint">Only a recorded setup attempt can make a claim 🧪 Tested. None exist yet.</p>
+        <p className="text-sm text-faint">Only a recorded setup attempt can make a claim 🧪 Tested. So far: Slack, where an agent created the app and the Composio auth config and a human only clicked Allow.</p>
       </section>
 
       <section className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight text-ink">Limitations</h2>
         <ul className="list-disc space-y-2 pl-5 marker:text-faint">
           <li>Guides are dated research aids. Providers change their rules.</li>
-          <li>No guide is human-reviewed or hands-on tested yet.</li>
+          <li>No guide is human-reviewed yet, and only Slack has been hands-on tested.</li>
           <li>The agent can&apos;t see behind developer-console logins.</li>
           <li>Review timelines are rarely published; when missing, guides say so instead of guessing.</li>
         </ul>
