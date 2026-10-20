@@ -33,7 +33,7 @@ npm test                       # 38 tests, incl. a scripted run of the whole age
 |---|---|
 | `ANTHROPIC_API_KEY` | Live generation. The library works without it. |
 | `COMPOSIO_API_KEY` | Optional. Search through Composio Search and managed-app status from Composio's toolkit API. Without it the agent uses Anthropic web search and Composio's public docs. |
-| `KV_REST_API_URL` + `KV_REST_API_TOKEN` (Upstash) or `BLOB_READ_WRITE_TOKEN` | Storage for generated guides. One is **required on Vercel**: without storage, live generation refuses to run so share links never break. Locally, guides go to `./.data`. |
+| `DATABASE_URL` (Postgres, e.g. Neon; used on the live site), `KV_REST_API_URL` + `KV_REST_API_TOKEN` (Upstash) or `BLOB_READ_WRITE_TOKEN` | Storage for generated guides. One is **required on Vercel**: without storage, live generation refuses to run so share links never break. Locally, guides go to `./.data`. |
 | `GENERATION_PAUSED=1` | Turns live generation off without removing keys. The site then points to the recorded run. |
 | `GENERATE_DAILY_CAP`, `GENERATE_PER_IP_PER_HOUR` | Spend limits. |
 

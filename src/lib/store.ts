@@ -1,13 +1,15 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { neon } from "@neondatabase/serverless";
 import { get, list, put } from "@vercel/blob";
 import { GuideRecordSchema, type GuideRecord } from "./schema";
 
 /**
  * Two kinds of guides:
  *  - seed guides: JSON files in ./data/guides, committed (meta.reviewed says whether a human has checked them)
- *  - live guides: written by the agent at request time; stored in Upstash Redis (KV_REST_API_*)
- *    or Vercel Blob (BLOB_READ_WRITE_TOKEN) when configured, otherwise on local disk (local dev only).
+ *  - live guides: written by the agent at request time; stored in Upstash Redis (KV_REST_API_*),
+ *    Postgres (DATABASE_URL, e.g. Neon) or Vercel Blob (BLOB_READ_WRITE_TOKEN) when configured,
+ *    otherwise on local disk (local dev only).
  */
 
 const SEED_DIR = path.join(process.cwd(), "data", "guides");
@@ -34,14 +36,25 @@ async function redis<T = unknown>(command: (string | number)[]): Promise<T> {
   return json.result as T;
 }
 
+// Postgres (Neon over HTTP). One table, created on first use.
+const pgUrl = () => process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const pgEnabled = () => !!pgUrl();
+let pgReady: Promise<unknown> | null = null;
+function pg() {
+  const sql = neon(pgUrl()!);
+  pgReady ??= sql`CREATE TABLE IF NOT EXISTS oauth_guides (slug text PRIMARY KEY, body jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())`;
+  return { sql, ready: pgReady };
+}
+
 function parseRecord(text: string | null): GuideRecord | null {
   if (!text) return null;
   const parsed = GuideRecordSchema.safeParse(JSON.parse(text));
   return parsed.success ? parsed.data : null;
 }
 
-export function storageMode(): "redis" | "blob" | "local" | "unavailable" {
+export function storageMode(): "redis" | "postgres" | "blob" | "local" | "unavailable" {
   if (redisEnabled()) return "redis";
+  if (pgEnabled()) return "postgres";
   if (blobEnabled()) return "blob";
   // Deployed serverless filesystems are read-only (and ephemeral), so live guides need Blob there.
   return process.env.VERCEL ? "unavailable" : "local";
@@ -86,6 +99,12 @@ export async function listLiveGuides(): Promise<GuideRecord[]> {
     const texts = await redis<(string | null)[]>(["MGET", ...slugs.map(redisKey)]);
     return texts.map(parseRecord).filter((r): r is GuideRecord => r !== null);
   }
+  if (pgEnabled()) {
+    const { sql, ready } = pg();
+    await ready;
+    const rows = (await sql`SELECT body FROM oauth_guides ORDER BY updated_at DESC LIMIT 200`) as { body: unknown }[];
+    return rows.map((r) => GuideRecordSchema.safeParse(r.body)).flatMap((p) => (p.success ? [p.data] : []));
+  }
   if (!blobEnabled()) return readJsonDir(LOCAL_DIR);
   const { blobs } = await list({ prefix: "guides/", limit: 200 });
   const records = await Promise.all(blobs.map((b) => readBlob(b.pathname).catch(() => null)));
@@ -104,6 +123,17 @@ export async function getGuide(slug: string): Promise<GuideRecord | null> {
   const seed = seeds.find((s) => s.slug === slug);
   if (seed) return seed;
   if (redisEnabled()) return redis<string | null>(["GET", redisKey(slug)]).then(parseRecord).catch(() => null);
+  if (pgEnabled()) {
+    try {
+      const { sql, ready } = pg();
+      await ready;
+      const rows = (await sql`SELECT body FROM oauth_guides WHERE slug = ${slug}`) as { body: unknown }[];
+      const parsed = rows[0] ? GuideRecordSchema.safeParse(rows[0].body) : null;
+      return parsed?.success ? parsed.data : null;
+    } catch {
+      return null;
+    }
+  }
   if (blobEnabled()) return readBlob(blobPath(slug)).catch(() => null);
   try {
     const parsed = GuideRecordSchema.safeParse(JSON.parse(await fs.readFile(path.join(LOCAL_DIR, `${slug}.json`), "utf8")));
@@ -119,6 +149,11 @@ export async function saveGuide(record: GuideRecord): Promise<void> {
   if (redisEnabled()) {
     await redis(["SET", redisKey(record.slug), body]);
     await redis(["SADD", INDEX_KEY, record.slug]);
+  } else if (pgEnabled()) {
+    const { sql, ready } = pg();
+    await ready;
+    await sql`INSERT INTO oauth_guides (slug, body, updated_at) VALUES (${record.slug}, ${body}::jsonb, now())
+      ON CONFLICT (slug) DO UPDATE SET body = EXCLUDED.body, updated_at = now()`;
   } else if (blobEnabled()) {
     await put(blobPath(record.slug), body, {
       access: "private",
