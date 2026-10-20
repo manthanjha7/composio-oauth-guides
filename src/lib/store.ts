@@ -6,9 +6,8 @@ import { GuideRecordSchema, type GuideRecord } from "./schema";
 /**
  * Two kinds of guides:
  *  - seed guides: JSON files in ./data/guides, committed (meta.reviewed says whether a human has checked them)
- *  - live guides: written by the agent at request time; stored in Vercel Blob when
- *    BLOB_READ_WRITE_TOKEN is set, otherwise on local disk (fine for `next dev`,
- *    ephemeral on serverless - the README says so).
+ *  - live guides: written by the agent at request time; stored in Upstash Redis (KV_REST_API_*)
+ *    or Vercel Blob (BLOB_READ_WRITE_TOKEN) when configured, otherwise on local disk (local dev only).
  */
 
 const SEED_DIR = path.join(process.cwd(), "data", "guides");
@@ -16,7 +15,33 @@ const LOCAL_DIR = process.env.LOCAL_GUIDE_DIR || path.join(process.cwd(), ".data
 const blobEnabled = () => !!process.env.BLOB_READ_WRITE_TOKEN;
 const blobPath = (slug: string) => `guides/${slug}.json`;
 
-export function storageMode(): "blob" | "local" | "unavailable" {
+// Upstash Redis over REST (Vercel marketplace), used when Blob isn't available. Either env-var naming works.
+const redisUrl = () => process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = () => process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const redisEnabled = () => !!(redisUrl() && redisToken());
+const INDEX_KEY = "oauth-guides:index";
+const redisKey = (slug: string) => `oauth-guides:guide:${slug}`;
+
+async function redis<T = unknown>(command: (string | number)[]): Promise<T> {
+  const res = await fetch(redisUrl()!, {
+    method: "POST",
+    headers: { authorization: `Bearer ${redisToken()}`, "content-type": "application/json" },
+    body: JSON.stringify(command),
+    cache: "no-store",
+  });
+  const json = (await res.json()) as { result?: T; error?: string };
+  if (!res.ok || json.error) throw new Error(`Redis ${command[0]} failed: ${json.error ?? res.status}`);
+  return json.result as T;
+}
+
+function parseRecord(text: string | null): GuideRecord | null {
+  if (!text) return null;
+  const parsed = GuideRecordSchema.safeParse(JSON.parse(text));
+  return parsed.success ? parsed.data : null;
+}
+
+export function storageMode(): "redis" | "blob" | "local" | "unavailable" {
+  if (redisEnabled()) return "redis";
   if (blobEnabled()) return "blob";
   // Deployed serverless filesystems are read-only (and ephemeral), so live guides need Blob there.
   return process.env.VERCEL ? "unavailable" : "local";
@@ -55,6 +80,12 @@ async function readBlob(pathname: string): Promise<GuideRecord | null> {
 }
 
 export async function listLiveGuides(): Promise<GuideRecord[]> {
+  if (redisEnabled()) {
+    const slugs = await redis<string[]>(["SMEMBERS", INDEX_KEY]);
+    if (!slugs.length) return [];
+    const texts = await redis<(string | null)[]>(["MGET", ...slugs.map(redisKey)]);
+    return texts.map(parseRecord).filter((r): r is GuideRecord => r !== null);
+  }
   if (!blobEnabled()) return readJsonDir(LOCAL_DIR);
   const { blobs } = await list({ prefix: "guides/", limit: 200 });
   const records = await Promise.all(blobs.map((b) => readBlob(b.pathname).catch(() => null)));
@@ -72,6 +103,7 @@ export async function getGuide(slug: string): Promise<GuideRecord | null> {
   const seeds = await listSeedGuides();
   const seed = seeds.find((s) => s.slug === slug);
   if (seed) return seed;
+  if (redisEnabled()) return redis<string | null>(["GET", redisKey(slug)]).then(parseRecord).catch(() => null);
   if (blobEnabled()) return readBlob(blobPath(slug)).catch(() => null);
   try {
     const parsed = GuideRecordSchema.safeParse(JSON.parse(await fs.readFile(path.join(LOCAL_DIR, `${slug}.json`), "utf8")));
@@ -84,7 +116,10 @@ export async function getGuide(slug: string): Promise<GuideRecord | null> {
 /** Saves and then reads back, so a share link is only shown for a guide that can actually be loaded. */
 export async function saveGuide(record: GuideRecord): Promise<void> {
   const body = JSON.stringify(record, null, 2);
-  if (blobEnabled()) {
+  if (redisEnabled()) {
+    await redis(["SET", redisKey(record.slug), body]);
+    await redis(["SADD", INDEX_KEY, record.slug]);
+  } else if (blobEnabled()) {
     await put(blobPath(record.slug), body, {
       access: "private",
       addRandomSuffix: false,

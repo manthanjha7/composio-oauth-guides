@@ -31,7 +31,7 @@ npm test                     # 34 unit tests, incl. a scripted run of the full a
 |---|---|
 | `ANTHROPIC_API_KEY` | Live generation. The library works without it. `AGENT_RESEARCH_MODEL` / `AGENT_MODEL` override the Haiku/Sonnet defaults; `GENERATE_DAILY_CAP` limits spend. |
 | `COMPOSIO_API_KEY` | Optional. Research via the **Composio Search** toolkit in a Composio session, and managed-auth status from the toolkit API. Without it, the agent uses Anthropic web search and Composio's public docs. |
-| `BLOB_READ_WRITE_TOKEN` | Durable storage for generated guides. **Required on Vercel** (live generation refuses to run without it, so share links never break). Locally, guides go to `./.data`. |
+| `KV_REST_API_URL` + `KV_REST_API_TOKEN` (Upstash Redis) or `BLOB_READ_WRITE_TOKEN` (Vercel Blob) | Durable storage for generated guides. **One is required on Vercel** (live generation refuses to run without it, so share links never break). Locally, guides go to `./.data`. |
 
 Useful scripts:
 

@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
   if (storageMode() === "unavailable") {
     return Response.json(
-      { error: "Live generation needs durable storage on this deployment (BLOB_READ_WRITE_TOKEN is missing), otherwise share links would not work." },
+      { error: "Live generation needs durable storage on this deployment (connect Upstash Redis or Vercel Blob), otherwise share links would not work. The library guides still work." },
       { status: 503 },
     );
   }
