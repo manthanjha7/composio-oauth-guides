@@ -4,40 +4,42 @@
     "app": {
       "name": "Calendly",
       "website": "https://calendly.com",
-      "developer_docs_url": "https://developer.calendly.com"
+      "developer_docs_url": "https://developer.calendly.com/"
     },
     "oauth_supported": "yes",
-    "summary": "Calendly supports OAuth 2.0 for third-party apps, and Composio provides a managed OAuth app, so you can prototype without registering anything. Registering your own app is a short self-serve form in a separate developer account. The docs describe no review process, but I could not confirm that none exists, so check the developer console before promising a go-live date.",
+    "summary": "Calendly OAuth is self-serve: you register an app in the developer console and get a client ID and secret, and the docs describe no review step. Composio has a managed Calendly app, so a prototype needs no registration. Own-app setup is mainly about scopes, HTTPS redirect, and saving the secret at creation. Whether a production approval or marketplace review exists is not documented.",
     "composio": {
       "toolkit_slug": "calendly",
       "managed_oauth": "yes",
       "credential_guide_url": "https://composio.dev/auth/calendly",
-      "note": "Composio lists Calendly under Composio-managed OAuth. Scopes are fixed by the OAuth app/auth config, not chosen by end users. Changing scopes means reconnecting accounts."
+      "note": "Managed OAuth2 is available. A GitHub issue (ComposioHQ/composio #4392) reports custom auth configs being refused over derived scopes; this is unverified, so check scopes when you create a custom config."
     },
     "need_own_app": {
-      "answer": "Not to start. Composio's managed OAuth app works for prototyping. Create your own app when you need your own branding, a specific scope set, or your own quota and credentials.",
+      "answer": "Not for a prototype or internal tool: the Composio managed app works without registering anything. You need your own app for production branding, custom scopes, dedicated quota or faster trigger polling.",
       "reasons": [
-        "You want your own app name and consent screen shown to users",
-        "You need control over the exact scope set, since users cannot pick scopes individually",
-        "You want your own client ID/secret and rate-limit isolation",
-        "You want separate Sandbox and Production apps"
+        "Users see \"Composio wants to access your account\" on the consent screen with the managed app",
+        "Managed app default scopes may not match what you need; Calendly scopes are fixed per app",
+        "Managed apps share quota across all Composio users",
+        "Managed auth has a 15-minute minimum polling interval for triggers",
+        "Enterprise customers requiring your branding end to end"
       ]
     },
     "scenarios": [
       {
         "id": "s1",
-        "label": "Prototype with Composio managed auth",
-        "when_this_applies": "Internal testing or early development where Composio's app name and default scopes are acceptable.",
+        "label": "Prototype on Composio managed app",
+        "when_this_applies": "Internal tool, prototype or development where the Composio consent screen and default scopes are acceptable.",
         "difficulty": "easy",
         "hands_on": {
-          "estimate": "Unknown",
-          "basis": "No setup is needed on the Calendly side per c1, but I have no measured time. Estimate from step count: likely minutes."
+          "estimate": "10-20 min",
+          "basis": "estimate from step count, not measured; no provider registration needed (c1)"
         },
         "waiting": {
           "estimate": "None",
-          "basis": "c1: you do not need to register an OAuth app."
+          "basis": "No Calendly registration is involved.",
+          "max_days": null
         },
-        "approval": "None on the Calendly side.",
+        "approval": "None for Calendly; Composio provides the OAuth app.",
         "claim_ids": [
           "c1",
           "c2"
@@ -45,313 +47,403 @@
       },
       {
         "id": "s2",
-        "label": "Own Sandbox OAuth app for development",
-        "when_this_applies": "You want your own client ID/secret but are still developing, using a localhost redirect.",
+        "label": "Own Calendly app, sandbox",
+        "when_this_applies": "You want your own client ID/secret for development, using localhost redirects.",
         "difficulty": "easy",
         "hands_on": {
           "estimate": "30-60 min",
-          "basis": "Estimate from step count, not measured. Registration is one form (c3, c4)."
+          "basis": "estimate from step count, not measured; registration is a self-serve form (c5, c6)"
         },
         "waiting": {
-          "estimate": "None found",
-          "basis": "Docs describe no approval for Sandbox apps, but this is not confirmed."
+          "estimate": "None documented",
+          "basis": "Docs describe no review for registration (see open questions).",
+          "max_days": null
         },
         "approval": "None documented.",
         "claim_ids": [
-          "c3",
-          "c4",
-          "c5"
+          "c5",
+          "c6",
+          "c7"
         ]
       },
       {
         "id": "s3",
-        "label": "Own Production OAuth app with live customer data",
-        "when_this_applies": "You go live with your own branding, scopes, and credentials. Requires an HTTPS redirect URI.",
+        "label": "Own Calendly app, production",
+        "when_this_applies": "Customer-facing agent with your own branding, custom scopes or dedicated quota.",
         "difficulty": "medium",
         "hands_on": {
           "estimate": "1-2 hours",
-          "basis": "Estimate from step count, not measured. Includes a second app, one-time secret capture, and the Composio auth config."
+          "basis": "estimate from step count, not measured: second app, HTTPS redirect, redirect proxy, Composio config (c6, c8, c9)"
         },
         "waiting": {
           "estimate": "Unknown",
-          "basis": "Calendly docs read describe no review or verification for Production apps. I found no evidence either way, and no timeline reports."
+          "basis": "No review or timeline found in the docs read.",
+          "max_days": null
         },
-        "approval": "No review documented. Not confirmed. Verify in the developer console.",
+        "approval": "No production review documented; Partner Marketplace listing may have its own review, unverified.",
         "claim_ids": [
-          "c4",
           "c5",
           "c6",
-          "c7",
-          "c8"
+          "c8",
+          "c9",
+          "c10"
         ]
       }
     ],
     "prerequisites": [
       {
         "title": "Calendly developer account",
-        "detail": "Sign up with GitHub or Google. This is separate from your normal Calendly user account.",
+        "detail": "Sign up with GitHub or Google. It is separate from your Calendly user account.",
         "claim_ids": [
-          "c3"
+          "c5"
         ]
       },
       {
-        "title": "HTTPS redirect URI (Production)",
-        "detail": "Use the callback URL shown in your Composio dashboard for the auth config. Production requires HTTPS. Do not hard-code a URL from elsewhere.",
+        "title": "Composio API key and dashboard access",
+        "detail": "Needed to create the auth config and copy the redirect URI.",
         "claim_ids": [
           "c4"
         ]
       },
       {
-        "title": "Scope decision",
-        "detail": "Pick the scopes your app needs. The scope list page was not read, so scope names are unconfirmed here. Read https://developer.calendly.com/docs/authentication/scopes.",
+        "title": "HTTPS redirect endpoint (production)",
+        "detail": "Production redirect URIs must be HTTPS. If you proxy the callback, you need a domain you control.",
         "claim_ids": [
-          "c5",
-          "c2"
+          "c6",
+          "c9"
         ]
       },
       {
-        "title": "Composio account and API key",
-        "detail": "Needed to create the auth config.",
-        "claim_ids": []
+        "title": "Minimum scope list",
+        "detail": "Newly created apps have no API access until scopes are requested. Pick the smallest set, e.g. scheduled_events:read, plus webhooks:write if you need webhooks.",
+        "claim_ids": [
+          "c11",
+          "c12"
+        ]
+      },
+      {
+        "title": "Paid Calendly plan for webhooks",
+        "detail": "The subscribing Calendly account needs Standard, Teams or Enterprise to create webhooks. The API itself works on Free.",
+        "claim_ids": [
+          "c13"
+        ]
       }
     ],
     "steps": [
       {
-        "title": "Decide whether managed auth is enough",
-        "owner": "you",
-        "detail": "If Composio's app name and default scopes are acceptable, use managed auth and skip the rest. Otherwise continue.",
+        "title": "Try the Composio managed app",
+        "owner": "agent",
+        "detail": "Check the toolkit for composio_managed_auth_schemes containing OAUTH2, then create a session and connect using the managed app.",
         "inputs": [
-          "Branding and scope requirements"
+          "Composio API key"
         ],
-        "done_when": "You have chosen managed or custom auth.",
+        "done_when": "A Calendly account is connected and a tool call succeeds.",
         "scenario_ids": [
           "s1"
         ],
-        "link": "https://docs.composio.dev/toolkits/managed-auth",
+        "link": "https://docs.composio.dev/toolkits/calendly",
         "claim_ids": [
-          "c1"
+          "c1",
+          "c2"
         ]
       },
       {
-        "title": "Draft the scope list",
+        "title": "Decide scopes",
         "owner": "agent",
-        "detail": "An agent can read the Calendly scopes page and the Composio tools you plan to use, then propose the minimum scope set.",
+        "detail": "Map your agent's tools to the Calendly scope catalog and draft the minimum list. Remember write implies read and webhooks need related read scopes.",
         "inputs": [
-          "List of Composio Calendly tools you will call"
+          "List of tools/features needed"
         ],
-        "done_when": "You have a reviewed scope list.",
+        "done_when": "A scope list is written down.",
         "scenario_ids": [
           "s2",
           "s3"
         ],
         "link": "https://developer.calendly.com/docs/authentication/scopes",
         "claim_ids": [
-          "c2",
-          "c5"
+          "c11",
+          "c12",
+          "c14"
         ]
       },
       {
-        "title": "Create a Calendly developer account",
+        "title": "Create Calendly developer account and OAuth app",
         "owner": "you",
-        "detail": "Sign up with GitHub or Google.",
+        "detail": "Sign up, create a new OAuth app, choose web or native, choose Sandbox or Production, enter the redirect URI and scopes. Create a separate Production app when going live.",
         "inputs": [
-          "GitHub or Google login"
-        ],
-        "done_when": "You can see the developer console.",
-        "scenario_ids": [
-          "s2",
-          "s3"
-        ],
-        "link": "https://developer.calendly.com",
-        "claim_ids": [
-          "c3"
-        ]
-      },
-      {
-        "title": "Get the Composio callback URI",
-        "owner": "you",
-        "detail": "In the Composio dashboard, start creating a Calendly auth config with custom credentials and copy the redirect/callback URI it shows.",
-        "inputs": [
-          "Composio dashboard access"
-        ],
-        "done_when": "Callback URI copied.",
-        "scenario_ids": [
-          "s2",
-          "s3"
-        ],
-        "link": "https://composio.dev/auth/calendly",
-        "claim_ids": []
-      },
-      {
-        "title": "Create the OAuth app",
-        "owner": "you",
-        "detail": "Enter name and kind (web or native), pick the environment, paste the Composio callback URI, and select scopes. Use Sandbox first. Create a second app for Production, which needs an HTTPS redirect.",
-        "inputs": [
-          "App name",
-          "Callback URI",
+          "GitHub or Google login",
+          "Redirect URI",
           "Scope list"
         ],
-        "done_when": "The app is created and the credentials page is shown.",
+        "done_when": "You see the Client ID, Client Secret and webhook signing key.",
         "scenario_ids": [
           "s2",
           "s3"
         ],
         "link": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app",
         "claim_ids": [
-          "c4",
-          "c5"
+          "c5",
+          "c6",
+          "c7"
         ]
       },
       {
-        "title": "Copy the client ID, client secret, and webhook signing key",
+        "title": "Save the client secret and webhook signing key",
         "owner": "you",
-        "detail": "The secret and signing key are shown only at creation. Store them in a secrets manager now.",
+        "detail": "They are shown only once, at creation. Store them in a secrets manager.",
         "inputs": [
-          "Secrets manager"
+          "Client Secret",
+          "Webhook signing key"
         ],
-        "done_when": "All three values are saved.",
+        "done_when": "Both values are stored securely.",
         "scenario_ids": [
           "s2",
           "s3"
         ],
         "link": null,
         "claim_ids": [
-          "c6"
+          "c5"
         ]
       },
       {
-        "title": "Create the Composio auth config",
+        "title": "Get the callback URI from Composio",
         "owner": "you",
-        "detail": "Paste the client ID and secret into the Calendly auth config in Composio and use the same scopes. Then connect a test account.",
+        "detail": "Copy the redirect URI from your Composio dashboard when creating the auth config. Do not hard-code it.",
         "inputs": [
-          "Client ID",
-          "Client secret"
+          "Composio dashboard"
         ],
-        "done_when": "A test account connects and a tool call succeeds.",
+        "done_when": "You have the Composio callback URI.",
         "scenario_ids": [
           "s2",
           "s3"
         ],
         "link": "https://composio.dev/auth/calendly",
         "claim_ids": [
-          "c2",
-          "c7"
+          "c4"
         ]
       },
       {
-        "title": "Check whether Production needs approval",
-        "owner": "you",
-        "detail": "Docs describe no review. Check the developer console and ask developer support if unsure.",
+        "title": "Optional: set up redirect proxy on your domain",
+        "owner": "agent",
+        "detail": "If the browser must stay on your domain, write an endpoint that 302-redirects the callback to Composio, and register that URL as the Calendly redirect URI. Calendly docs do not mention domain verification, so this is for branding only.",
         "inputs": [
-          "Production app"
+          "Your domain",
+          "Composio callback URI"
         ],
-        "done_when": "You know whether any approval is pending.",
+        "done_when": "The endpoint returns a 302 to Composio with the query string intact.",
         "scenario_ids": [
           "s3"
         ],
-        "link": "mailto:support+developer@calendly.com",
-        "claim_ids": [
-          "c8"
-        ]
-      }
-    ],
-    "traps": [
-      {
-        "title": "Client secret cannot be recovered",
-        "detail": "Editing the app does not reveal the secret or webhook signing key. If lost, you will likely need to create a new app or find a reset option in the console, which I did not confirm.",
-        "claim_ids": [
-          "c6"
-        ]
-      },
-      {
-        "title": "Sandbox and Production are separate apps",
-        "detail": "Docs recommend a second app for Production, so credentials and redirect URIs differ.",
-        "claim_ids": [
-          "c4"
-        ]
-      },
-      {
-        "title": "Scope changes require reconnecting",
-        "detail": "Users cannot pick scopes, and changing scopes means reconnecting accounts.",
-        "claim_ids": [
-          "c2"
-        ]
-      },
-      {
-        "title": "Single-use refresh tokens",
-        "detail": "Calendly has a guide on single-use refresh tokens. I did not read it, so check how rotation interacts with your setup.",
+        "link": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
         "claim_ids": [
           "c9"
         ]
-      }
-    ],
-    "blockers": [
+      },
       {
-        "symptom": "Production redirect URI rejected",
-        "what_it_means": "Production apps require HTTPS. Only Sandbox allows http://localhost.",
-        "what_to_do": "Use the HTTPS callback URI from Composio, or use a Sandbox app for local tests.",
-        "agent_can_help": "An agent can check that the URI is HTTPS and matches the Composio dashboard value exactly.",
+        "title": "Register redirect URI in Calendly",
+        "owner": "you",
+        "detail": "Edit the app and set the redirect URI (Composio callback or your proxy). Production must be HTTPS; the URI can be edited later.",
+        "inputs": [
+          "Redirect URI"
+        ],
+        "done_when": "The app is saved with the correct redirect URI.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app",
         "claim_ids": [
-          "c4"
+          "c6",
+          "c8"
         ]
       },
       {
-        "symptom": "Lost client secret",
-        "what_it_means": "The secret is shown only once at creation.",
-        "what_to_do": "Check the console for a regenerate option, otherwise create a new app and update the Composio auth config.",
-        "agent_can_help": null,
+        "title": "Create Composio auth config with your credentials",
+        "owner": "agent",
+        "detail": "Create a custom OAUTH2 auth config for the calendly toolkit with your client ID/secret and the scopes chosen. If the connection fails with scope errors, see the GitHub issue lead.",
+        "inputs": [
+          "Client ID",
+          "Client Secret",
+          "Scope list",
+          "Composio API key"
+        ],
+        "done_when": "The auth config exists and a test connection completes.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://composio.dev/auth/calendly",
         "claim_ids": [
-          "c6"
+          "c3",
+          "c4",
+          "c15"
         ]
       },
       {
-        "symptom": "Authorize URL with a bad client_id lands on a login page instead of an error",
-        "what_it_means": "The probe showed redirects to the Calendly login page with no obvious error. This does not tell you whether an app is registered.",
-        "what_to_do": "Test the authorize URL in a browser with your real client ID after logging in.",
-        "agent_can_help": null,
+        "title": "Check for any production review",
+        "owner": "you",
+        "detail": "No review is documented. Before launch, ask Calendly developer support whether production apps or Partner Marketplace listing need approval, and how long it takes.",
+        "inputs": [
+          "Calendly developer account"
+        ],
+        "done_when": "You have a written answer from Calendly.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developer.calendly.com/",
         "claim_ids": [
           "c10"
         ]
       }
     ],
+    "traps": [
+      {
+        "title": "Client secret is shown only once",
+        "detail": "Editing the app later does not reveal the secret or the webhook signing key.",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "title": "Scopes are fixed per app",
+        "detail": "Users cannot approve individual scopes in the Composio flow. To change permissions, update the scopes in your app/auth config and reconnect the account.",
+        "claim_ids": [
+          "c14"
+        ]
+      },
+      {
+        "title": "Scopes must be requested explicitly",
+        "detail": "New OAuth apps get no API access until scopes are requested and approved.",
+        "claim_ids": [
+          "c11"
+        ]
+      },
+      {
+        "title": "Webhooks need a paid plan on the user's side",
+        "detail": "Free-plan users can use the API but cannot create webhook subscriptions.",
+        "claim_ids": [
+          "c13"
+        ]
+      },
+      {
+        "title": "Tokens get revoked on login changes",
+        "detail": "Changing the account's email, password or login method revokes tokens, so expect to reconnect.",
+        "claim_ids": [
+          "c16"
+        ]
+      },
+      {
+        "title": "Low rate limits on Free plan",
+        "detail": "Free plan is 50 requests per user per minute, and only 8 OAuth token requests per user per minute are allowed.",
+        "claim_ids": [
+          "c17"
+        ]
+      },
+      {
+        "title": "Sandbox and Production are separate apps",
+        "detail": "Calendly recommends creating a second application for Production.",
+        "claim_ids": [
+          "c6"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "403 missing scopes error on a tool call",
+        "what_it_means": "The granted scopes don't cover the endpoint, or the user declined some.",
+        "what_to_do": "Add the required scopes to the app and auth config, then reauthorize.",
+        "agent_can_help": "Look up the required scopes for the failing endpoint and update the scope list.",
+        "claim_ids": [
+          "c12",
+          "c14"
+        ]
+      },
+      {
+        "symptom": "Custom Calendly auth config can't connect; scopes refused",
+        "what_it_means": "A reported Composio issue about derived scopes being refused by the bundled app. Unverified.",
+        "what_to_do": "Check that the config's scopes exactly match those on your own Calendly app, and review the GitHub issue.",
+        "agent_can_help": "Compare scopes between the auth config and the Calendly app.",
+        "claim_ids": [
+          "c15"
+        ]
+      },
+      {
+        "symptom": "Production redirect URI rejected",
+        "what_it_means": "Production apps require HTTPS; http://localhost is only allowed in Sandbox.",
+        "what_to_do": "Use an HTTPS URI or switch to a Sandbox app for local testing.",
+        "agent_can_help": "Check the redirect URI format.",
+        "claim_ids": [
+          "c6"
+        ]
+      },
+      {
+        "symptom": "Webhook subscription creation fails",
+        "what_it_means": "The Calendly account may be on the Free plan, or webhooks:write and related read scopes are missing.",
+        "what_to_do": "Use a Standard/Teams/Enterprise account and grant the needed scopes.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c12",
+          "c13"
+        ]
+      }
+    ],
     "open_questions": [
-      "Does Calendly review or verify Production OAuth apps? Docs read do not say. Check the developer console or ask developer support.",
-      "Are there user caps for apps in Sandbox or unreviewed Production? Unknown.",
-      "Do end users need a paid Calendly plan to authorize an OAuth app? Unknown.",
-      "What are the scope names and rate limits? Pages exist but were not read.",
-      "How do single-use refresh tokens interact with Composio's token storage? Guide not read."
+      "Is there a test-user, install or user-count cap for unreviewed production apps? Not found; ask Calendly developer support.",
+      "Does a production app or Partner Marketplace listing need review, and how long does it take? Not found; check the Partner Marketplace community post and ask support.",
+      "Does Calendly verify redirect URI domain ownership? Not found in the docs read; test with your own domain in Sandbox.",
+      "Do Calendly org admins have approval or allowlist controls for end-user installs? Not found; check Calendly help center admin docs.",
+      "Sandbox limits are not documented; confirm with support.",
+      "The refresh-token rotation guide was not read; single-use refresh tokens may matter for custom setups. Read https://developer.calendly.com/docs/authentication/refresh-token-rotation-guide.md."
     ],
     "claims": [
       {
         "id": "c1",
-        "text": "Composio can provide the OAuth app for managed toolkits, so you do not need to register your own.",
-        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
-        "quote": "You do not need to register an OAuth app or supply its client ID and client secret.",
+        "text": "Composio provides managed OAuth for Calendly, so you do not need to register your own OAuth app.",
+        "source_url": "https://docs.composio.dev/toolkits/calendly",
+        "quote": "**Composio-managed OAuth available?** Yes",
         "probe_id": null,
         "label": "composio_docs",
         "note": null
       },
       {
         "id": "c2",
-        "text": "Calendly end users cannot approve individual scopes. The scopes in your OAuth app are the ones requested, and changing them requires reconnecting.",
-        "source_url": "https://docs.composio.dev/toolkits/calendly",
-        "quote": "To change Calendly permissions, update the scopes in your OAuth app/auth config and reconnect the account so a new token is issued with the updated scopes.",
+        "text": "Managed apps are suitable for prototypes and development where consent-screen branding doesn't matter.",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      },
+      {
+        "id": "c3",
+        "text": "You can still create a custom auth config for Calendly for branding, scopes, rate limits or polling intervals.",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
         "probe_id": null,
         "label": "composio_docs",
         "note": null
       },
       {
-        "id": "c3",
-        "text": "Registering requires a separate Calendly developer account, not your normal user account.",
+        "id": "c4",
+        "text": "Composio's callback is routed via backend.composio.dev, and you can proxy the redirect through your own domain.",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Calendly's Client Secret and Webhook signing key are only shown at creation.",
         "source_url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app.md",
-        "quote": "Sign up for a Calendly developer account using your Github or Google account by clicking the Sign Up button found in the top right corner of this page.",
+        "quote": "**Be sure to copy these values as you will not be able to access the Client Secret or Webhook signing key again**.",
         "probe_id": null,
         "label": "provider_docs",
         "note": null
       },
       {
-        "id": "c4",
-        "text": "Calendly recommends Sandbox for development and a second application for Production. Sandbox allows an http localhost redirect and Production must be HTTPS.",
+        "id": "c6",
+        "text": "Production redirect URIs must be HTTPS, and Calendly recommends a separate Production app after starting in Sandbox.",
         "source_url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app.md",
         "quote": "For the Production environment, this must be HTTPS",
         "probe_id": null,
@@ -359,35 +451,35 @@
         "note": null
       },
       {
-        "id": "c5",
-        "text": "Scopes are selected when creating the OAuth app, based on the data and functionality needed.",
-        "source_url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app.md",
-        "quote": "Select scopes based on the Calendly data and functionality that your OAuth app requires access to.",
-        "probe_id": null,
-        "label": "provider_docs",
-        "note": null
-      },
-      {
-        "id": "c6",
-        "text": "The client secret and webhook signing key are shown only at creation and cannot be accessed again.",
-        "source_url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app.md",
-        "quote": "Be sure to copy these values as you will not be able to access the Client Secret or Webhook signing key again",
-        "probe_id": null,
-        "label": "provider_docs",
-        "note": null
-      },
-      {
         "id": "c7",
-        "text": "All apps should use a specific redirect_uri and PKCE with S256, though PKCE is not enforced for web apps.",
+        "text": "Sandbox allows HTTP with a localhost redirect.",
         "source_url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app.md",
-        "quote": "While we will not enforce PKCE for web applications, we recommend using PKCE conforming to the RFC 7636 specification for both web and native applications.",
+        "quote": "For the Sandbox environment, we allow HTTP with localhost domain.",
         "probe_id": null,
         "label": "provider_docs",
         "note": null
       },
       {
         "id": "c8",
-        "text": "No review, verification, or approval process for Calendly OAuth apps was found in the docs read, and its absence is not confirmed.",
+        "text": "The redirect URI of an existing OAuth app can be edited.",
+        "source_url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app.md",
+        "quote": "Redirect URI",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "The Composio redirect proxy must return a 302 redirect and not follow the redirect server-side.",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "Your endpoint must return a **302 redirect**.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "No Calendly production review, approval timeline or marketplace review was found in the docs read.",
         "source_url": null,
         "quote": null,
         "probe_id": null,
@@ -395,21 +487,66 @@
         "note": null
       },
       {
-        "id": "c9",
-        "text": "Calendly has a separate guide on single-use refresh tokens (refresh token rotation). It was listed in the docs index but not read.",
-        "source_url": "https://developer.calendly.com/llms.txt",
-        "quote": "[How to handle single-use refresh tokens](https://developer.calendly.com/docs/authentication/refresh-token-rotation-guide.md)",
+        "id": "c11",
+        "text": "Newly created OAuth apps get no API access until scopes are explicitly requested and approved.",
+        "source_url": "https://developer.calendly.com/docs/authentication/scopes.md",
+        "quote": "For newly created OAuth apps and new Personal Access Tokens, no API access is granted until scopes are explicitly requested and approved.",
         "probe_id": null,
         "label": "provider_docs",
         "note": null
       },
       {
-        "id": "c10",
-        "text": "An authorize request with an invalid client_id redirected (301, then 302) to the Calendly login page rather than returning an obvious error.",
-        "source_url": null,
+        "id": "c12",
+        "text": "Webhook payloads require the related read scopes to be granted.",
+        "source_url": "https://developer.calendly.com/docs/authentication/scopes.md",
+        "quote": "Your app must be granted the related read scopes to receive webhook event payloads.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "Creating a webhook subscription requires the Calendly account to be on a paid Standard, Teams or Enterprise plan.",
+        "source_url": "https://developer.calendly.com/docs/getting-started/frequently-asked-questions.md",
+        "quote": "the Calendly user account for which the **webhook subscription** is being made will need a **paid** subscription on the **Standard, Teams**, or **Enterprise** plan.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "In Composio, Calendly scopes are those configured on the OAuth app; users can't approve them individually, and changing them needs a reconnect.",
+        "source_url": "https://docs.composio.dev/toolkits/calendly",
+        "quote": "To change Calendly permissions, update the scopes in your OAuth app/auth config and reconnect the account so a new token is issued with the updated scopes.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "A GitHub issue reports Calendly auth configs being unconnectable because derived scopes are refused by the bundled Calendly OAuth app.",
+        "source_url": "https://github.com/ComposioHQ/composio/issues/4392",
         "quote": null,
-        "probe_id": "p2",
-        "label": "probed",
+        "probe_id": null,
+        "label": "reported",
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "Calendly access tokens are revoked if the account's login email is changed.",
+        "source_url": "https://developer.calendly.com/docs/getting-started/frequently-asked-questions.md",
+        "quote": "The account's login email is changed.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "Calendly's Free plan rate limit is 50 requests per user per minute.",
+        "source_url": "https://developer.calendly.com/api-docs/overview/rate-limits.md",
+        "quote": "| Free Plan    | 50 requests per user per minute  |",
+        "probe_id": null,
+        "label": "provider_docs",
         "note": null
       }
     ]
@@ -418,102 +555,97 @@
     "origin": "live",
     "reviewed": false,
     "review_note": null,
-    "generated_at": "2026-10-20T08:49:02.046Z",
+    "generated_at": "2026-10-20T11:33:04.005Z",
     "generated_by": "research claude-haiku-5-5 + writing claude-sonnet-5-5 + composio_search",
-    "duration_ms": 47521,
+    "duration_ms": 58449,
     "query": "Calendly",
     "partial": false,
     "warnings": [],
     "usage": {
-      "usd": 0.0742,
-      "input_tokens": 51836,
-      "output_tokens": 7116,
-      "cache_read_tokens": 29052,
+      "usd": 0.1094,
+      "input_tokens": 69152,
+      "output_tokens": 9017,
+      "cache_read_tokens": 30364,
       "web_searches": 0
     },
     "verification": {
-      "claims_total": 10,
-      "quotes_checked": 8,
-      "quotes_verified": 8,
+      "claims_total": 17,
+      "quotes_checked": 15,
+      "quotes_verified": 15,
       "downgraded": 0
     },
     "sources": [
       {
         "url": "https://docs.composio.dev/toolkits/managed-auth.md",
         "title": null,
-        "fetched_at": "2026-10-20T08:48:16.077Z",
+        "fetched_at": "2026-10-20T11:32:10.281Z",
         "via": "direct",
         "chars": 20290
       },
       {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:10.283Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:10.283Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
         "url": "https://docs.composio.dev/toolkits/calendly",
         "title": null,
-        "fetched_at": "2026-10-20T08:48:16.078Z",
+        "fetched_at": "2026-10-20T11:32:10.283Z",
         "via": "direct",
         "chars": 906
       },
       {
-        "url": "https://developer.calendly.com/docs/getting-started/overview",
-        "title": null,
-        "fetched_at": "2026-10-20T08:48:19.089Z",
-        "via": "direct",
-        "chars": 2063
-      },
-      {
-        "url": "https://developer.calendly.com/api-docs/overview/api/reference.md",
-        "title": null,
-        "fetched_at": "2026-10-20T08:48:19.130Z",
-        "via": "direct",
-        "chars": 1138
-      },
-      {
-        "url": "https://developer.calendly.com/how-to-authenticate-with-oauth",
-        "title": "404",
-        "fetched_at": "2026-10-20T08:48:20.222Z",
-        "via": "composio_fetch",
-        "chars": 343
-      },
-      {
         "url": "https://developer.calendly.com/llms.txt",
         "title": null,
-        "fetched_at": "2026-10-20T08:48:22.019Z",
+        "fetched_at": "2026-10-20T11:32:11.765Z",
         "via": "direct",
         "chars": 16651
       },
       {
-        "url": "https://developer.calendly.com/docs/getting-started/authentication.md",
-        "title": "",
-        "fetched_at": "2026-10-20T08:48:22.667Z",
-        "via": "composio_fetch",
-        "chars": 345
-      },
-      {
         "url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app.md",
         "title": null,
-        "fetched_at": "2026-10-20T08:48:24.369Z",
+        "fetched_at": "2026-10-20T11:32:14.952Z",
         "via": "direct",
         "chars": 4292
-      }
-    ],
-    "probes": [
-      {
-        "id": "p1",
-        "url": "https://auth.calendly.com/oauth/authorize?client_id=invalid-client-id-test&response_type=code&redirect_uri=https://example.com/callback",
-        "purpose": "Observe Calendly authorize endpoint response to an invalid client_id",
-        "status": 301,
-        "location": "https://calendly.com/oauth/authorize?client_id=invalid-client-id-test&response_type=code&redirect_uri=https://example.com/callback",
-        "observation": "Redirects to https://calendly.com/oauth/authorize?client_id=invalid-client-id-test&response_type=code&redirect_uri=https://example.com/callback.",
-        "at": "2026-10-20T08:48:21.798Z"
       },
       {
-        "id": "p2",
-        "url": "https://calendly.com/oauth/authorize?client_id=invalid-client-id-test&response_type=code&redirect_uri=https://example.com/callback",
-        "purpose": "Observe the authorize page response for an invalid client_id",
-        "status": 302,
-        "location": "https://calendly.com/app/login",
-        "observation": "Redirects to https://calendly.com/app/login. Body starts: \"You are being redirected .\"",
-        "at": "2026-10-20T08:48:24.185Z"
+        "url": "https://developer.calendly.com/docs/authentication/overview.md",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:14.956Z",
+        "via": "direct",
+        "chars": 2284
+      },
+      {
+        "url": "https://developer.calendly.com/docs/getting-started/frequently-asked-questions.md",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:14.962Z",
+        "via": "direct",
+        "chars": 9702
+      },
+      {
+        "url": "https://developer.calendly.com/api-docs/overview/rate-limits.md",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:14.983Z",
+        "via": "direct",
+        "chars": 2909
+      },
+      {
+        "url": "https://developer.calendly.com/docs/authentication/scopes.md",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:17.295Z",
+        "via": "direct",
+        "chars": 12260
       }
-    ]
+    ],
+    "probes": []
   }
 }

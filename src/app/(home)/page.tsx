@@ -50,7 +50,7 @@ export default async function Home() {
           For each app: whether you need your own OAuth app, how hard approval is for your setup, how long it takes, and what an agent can do for you.
         </p>
       </section>
-      <Explorer cards={cards} status={liveStatus()} replay="gmail" />
+      <Explorer cards={cards} status={liveStatus()} replay="asana" />
     </div>
   );
 }

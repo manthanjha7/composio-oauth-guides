@@ -1,0 +1,818 @@
+{
+  "slug": "asana",
+  "guide": {
+    "app": {
+      "name": "Asana",
+      "website": "https://asana.com",
+      "developer_docs_url": "https://developers.asana.com/docs"
+    },
+    "oauth_supported": "yes",
+    "summary": "Asana OAuth is easy for a prototype or a single workspace: register an app in the developer console and share it to your workspace, with no review. Multi-tenant use needs distribution set to \"Any workspace\", which the docs do not tie to review. App Directory listing requires review, which Asana targets at about one week but community reports say takes much longer. Composio has a managed Asana app, so you only need your own app for branding, scopes or dedicated quota.",
+    "composio": {
+      "toolkit_slug": "asana",
+      "managed_oauth": "yes",
+      "credential_guide_url": "https://composio.dev/auth/asana",
+      "note": "Composio lists Asana under managed OAuth (auth scheme OAUTH2). Create a custom auth config only if you need your own consent-screen branding, custom scopes or dedicated quota."
+    },
+    "need_own_app": {
+      "answer": "Not for prototyping: Composio's managed Asana app works. Create your own Asana app for production, where users should see your app name instead of Composio's.",
+      "reasons": [
+        "Consent screen shows \"Composio wants to access your account\" with the managed app; your own app shows your name.",
+        "Default scopes may not match what you need; Asana scopes must be registered in your own app's console.",
+        "Managed apps share quota across Composio users; Asana limits are per authorization token, so check whether this matters for you.",
+        "Managed auth enforces a 15-minute minimum polling interval for triggers; your own app can use shorter intervals where supported.",
+        "Enterprise customers may require your branding end to end, and their admins decide to approve or block your app."
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Prototype or single workspace",
+        "when_this_applies": "You or your team use the app in a workspace you belong to. Use the Composio managed app, or your own app shared to a specific workspace.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "15-45 min (managed app: minutes; own app: about 30-45 min)",
+          "basis": "Estimate from step count, not measured. See c8, c9, c11."
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "Docs say review is not required to obtain a token (c1).",
+          "max_days": null
+        },
+        "approval": "None for internal tools or testing.",
+        "claim_ids": [
+          "c1",
+          "c8",
+          "c9",
+          "c11"
+        ]
+      },
+      {
+        "id": "s2",
+        "label": "Own app, users from many workspaces",
+        "when_this_applies": "A multi-tenant product where customers from different Asana workspaces authorize your app, with your own branding via a custom auth config.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "Estimate from step count: console setup, scopes, Composio auth config, optional redirect proxy, and testing with a second workspace. See c2, c3, c4."
+        },
+        "waiting": {
+          "estimate": "None documented for this path",
+          "basis": "Docs say submission is needed to make the app available beyond your own organization (c2), but the researched pages do not state a wait for Any-workspace use without a directory listing. Open question.",
+          "max_days": null
+        },
+        "approval": "Docs say submission is only needed to make the app available to users in any workspace beyond your own organization (c2). Enterprise admins can approve or block apps (c5).",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4",
+          "c5"
+        ]
+      },
+      {
+        "id": "s3",
+        "label": "Public App Directory listing",
+        "when_this_applies": "You want the app discoverable in Asana's App Directory.",
+        "difficulty": "hard",
+        "hands_on": {
+          "estimate": "4-10 hours",
+          "basis": "Estimate from step count: listing copy, icon and images, privacy policy and support pages, screencast, test account, setup instructions. See c6, c7."
+        },
+        "waiting": {
+          "estimate": "About 1 week target; community reports of about 6 weeks",
+          "basis": "c12 states the one-week target; c13 is an anecdotal 2024 report of about 6 weeks with a backlog acknowledged by Asana staff. The 6-week report is converted to 42 days.",
+          "max_days": 42
+        },
+        "approval": "Asana review via \"Submit for review\". Apps with app components get additional security and QA review.",
+        "claim_ids": [
+          "c6",
+          "c7",
+          "c12",
+          "c13",
+          "c14"
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Asana account with a workspace",
+        "detail": "You need to log in to the Asana developer console and, for specific-workspace sharing, belong to the target workspace.",
+        "claim_ids": [
+          "c9"
+        ]
+      },
+      {
+        "title": "Paid plan (unverified)",
+        "detail": "Free domains get a lower rate limit (150/min vs 1,500/min). A 2022 community post says free accounts also lack the search-tasks endpoint. Verify against current Asana pricing.",
+        "claim_ids": [
+          "c10",
+          "c15"
+        ]
+      },
+      {
+        "title": "HTTPS redirect URL",
+        "detail": "Non-native apps must supply an https redirect URL that exactly matches the redirect_uri parameter. With Composio, copy the callback URI from your Composio dashboard.",
+        "claim_ids": [
+          "c16"
+        ]
+      },
+      {
+        "title": "Listing assets (directory only)",
+        "detail": "Icon, app images, short and long descriptions (long at least 250 characters), company info, support URL, privacy policy URL, screencast link, setup instructions and test account credentials.",
+        "claim_ids": [
+          "c6",
+          "c7"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Decide managed vs own app",
+        "owner": "you",
+        "detail": "For a prototype, use the Composio managed Asana app and stop here. For production branding, scopes or quota, continue.",
+        "inputs": [],
+        "done_when": "You have chosen managed or custom.",
+        "scenario_ids": [],
+        "link": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "claim_ids": [
+          "c17"
+        ]
+      },
+      {
+        "title": "List the scopes you need",
+        "owner": "agent",
+        "detail": "An agent maps the Composio tools you will use to Asana scopes (format <resource>:<action>, e.g. tasks:read) and drafts the list. Fields from related objects need extra scopes.",
+        "inputs": [
+          "List of Composio Asana tools you plan to use"
+        ],
+        "done_when": "You have a minimal scope list.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/oauth",
+        "claim_ids": [
+          "c18",
+          "c19"
+        ]
+      },
+      {
+        "title": "Create the app in the developer console",
+        "owner": "you",
+        "detail": "Select Create new app, enter the app name and the redirect URL, and register scopes under OAuth > Permission scopes (or toggle Full permissions). Copy the client ID and secret.",
+        "inputs": [
+          "Asana login",
+          "Redirect URL"
+        ],
+        "done_when": "You have a client ID and client secret.",
+        "scenario_ids": [
+          "s1",
+          "s2",
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/oauth",
+        "claim_ids": [
+          "c9",
+          "c16",
+          "c18"
+        ]
+      },
+      {
+        "title": "Get the callback URI from Composio",
+        "owner": "agent",
+        "detail": "An agent creates the Composio auth config for toolkit asana via the Composio API with your client ID and secret, and reads the redirect URI from the Composio dashboard rather than hard-coding it. Paste that URI into the Asana app's redirect URL.",
+        "inputs": [
+          "Composio API key",
+          "Asana client ID and secret"
+        ],
+        "done_when": "The Composio auth config exists and the Asana redirect URL matches its callback URI exactly.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://docs.composio.dev/toolkits/asana",
+        "claim_ids": [
+          "c16",
+          "c17"
+        ]
+      },
+      {
+        "title": "Optional: proxy the callback through your domain",
+        "owner": "agent",
+        "detail": "If you do not want backend.composio.dev visible during redirect-back, an agent writes a proxy endpoint on your domain that 302-redirects to Composio's callback, and you set that URL as the Asana redirect URL. Asana docs show no domain-verification step; whether Asana accepts it is untested.",
+        "inputs": [
+          "Your domain"
+        ],
+        "done_when": "The proxy returns a 302 to Composio and a test authorization completes.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "claim_ids": [
+          "c20"
+        ]
+      },
+      {
+        "title": "Set distribution",
+        "owner": "you",
+        "detail": "In Manage distribution, choose Specific workspace (add your workspace) or Any workspace. New apps are not visible to any workspace until this is set.",
+        "inputs": [
+          "Workspace membership"
+        ],
+        "done_when": "A user in the target workspace can open the authorization URL.",
+        "scenario_ids": [
+          "s1",
+          "s2",
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/share-your-app",
+        "claim_ids": [
+          "c4",
+          "c3"
+        ]
+      },
+      {
+        "title": "Fill in app listing details",
+        "owner": "you",
+        "detail": "Add icon, descriptions, company name and URL, support URL, privacy policy URL. This is shown to enterprise admins deciding to approve or block, even without a directory listing.",
+        "inputs": [
+          "Company info",
+          "Privacy policy URL",
+          "Support URL"
+        ],
+        "done_when": "Listing details page is complete.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/share-your-app",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "title": "Draft listing copy and demo script",
+        "owner": "agent",
+        "detail": "An agent drafts short and long descriptions (long at least 250 characters; app name must not contain \"Asana\"), setup instructions and a 30 second to 2 minute screencast script.",
+        "inputs": [
+          "Product description"
+        ],
+        "done_when": "Drafts are ready for you to review.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/app-listing-guidelines",
+        "claim_ids": [
+          "c6",
+          "c7",
+          "c21",
+          "c22"
+        ]
+      },
+      {
+        "title": "Record the screencast and prepare test account",
+        "owner": "you",
+        "detail": "Record the demo video and set up test account credentials for reviewers.",
+        "inputs": [
+          "Screencast script",
+          "Test account"
+        ],
+        "done_when": "Video link and test credentials are ready.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/app-listing-guidelines",
+        "claim_ids": [
+          "c7",
+          "c22"
+        ]
+      },
+      {
+        "title": "Submit for review",
+        "owner": "you",
+        "detail": "Complete the pre-flight checklist and select Submit for review. The app is no longer editable after submission.",
+        "inputs": [
+          "Completed listing"
+        ],
+        "done_when": "Status shows under review on the Submit for review page.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/publish-your-app",
+        "claim_ids": [
+          "c6",
+          "c23"
+        ]
+      },
+      {
+        "title": "Wait for Asana review",
+        "owner": "waiting",
+        "detail": "You get an email when the app is ready to publish or when changes are required. Then click Publish app.",
+        "inputs": [],
+        "done_when": "You receive the approval email and publish the app.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developers.asana.com/docs/publish-your-app",
+        "claim_ids": [
+          "c12",
+          "c13",
+          "c23"
+        ]
+      },
+      {
+        "title": "Test the connection through Composio",
+        "owner": "you",
+        "detail": "Authorize an Asana account via a Composio connect link and call a tool. Check scopes with Asana's token introspection endpoint if calls return 403.",
+        "inputs": [
+          "Composio auth config id"
+        ],
+        "done_when": "A tool call returns data.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c19",
+          "c24"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Unregistered scopes fail",
+        "detail": "Requesting a scope not registered in the console gives a forbidden_scopes error. Apps with registered scopes must pass the scope parameter, and later requests are not additive.",
+        "claim_ids": [
+          "c19",
+          "c25"
+        ]
+      },
+      {
+        "title": "Switching distribution blocks users",
+        "detail": "Changing from Any workspace to Specific workspace blocks new authorizations from users outside the listed workspaces.",
+        "claim_ids": [
+          "c26"
+        ]
+      },
+      {
+        "title": "Access tokens expire after 1 hour",
+        "detail": "Refresh tokens are used to get new access tokens; Composio handles refresh for managed connections, but verify this for your custom config.",
+        "claim_ids": [
+          "c27"
+        ]
+      },
+      {
+        "title": "Rate limits are per token and free domains are low",
+        "detail": "Free domains get 150 requests/min, paid 1,500; search is capped at 60/min.",
+        "claim_ids": [
+          "c10",
+          "c28",
+          "c29"
+        ]
+      },
+      {
+        "title": "Directory names cannot include \"Asana\"",
+        "detail": "Choose a name without the word \"Asana\" if you plan to list.",
+        "claim_ids": [
+          "c21"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "forbidden_scopes error on the authorization page",
+        "what_it_means": "You requested a scope that is not registered in the app.",
+        "what_to_do": "Add the scope under OAuth > Permission scopes, or toggle Full permissions, then retry.",
+        "agent_can_help": "Compare the scopes in your Composio auth config with the registered list and report the difference.",
+        "claim_ids": [
+          "c19"
+        ]
+      },
+      {
+        "symptom": "Plain-text error on the authorization page",
+        "what_it_means": "client_id or redirect_uri does not match the app settings.",
+        "what_to_do": "Make the Asana redirect URL exactly match the Composio callback URI (or your proxy URL).",
+        "agent_can_help": "Compare the two URIs character by character.",
+        "claim_ids": [
+          "c16",
+          "c30"
+        ]
+      },
+      {
+        "symptom": "User cannot authorize in their workspace",
+        "what_it_means": "The app is not shared to that workspace, or an Enterprise admin blocked it.",
+        "what_to_do": "Set distribution to Any workspace or add the workspace; ask the customer's admin to approve the app.",
+        "agent_can_help": "Draft a note for the customer admin using your listing details.",
+        "claim_ids": [
+          "c3",
+          "c4",
+          "c5"
+        ]
+      },
+      {
+        "symptom": "Directory review taking weeks",
+        "what_it_means": "Asana targets a first response in one week, but backlogs have been reported.",
+        "what_to_do": "Complete the listing fully to avoid extra review cycles, and follow up on the Asana developer forum.",
+        "agent_can_help": "Check the listing against the guidelines before submission.",
+        "claim_ids": [
+          "c12",
+          "c13",
+          "c14"
+        ]
+      },
+      {
+        "symptom": "429 Too Many Requests",
+        "what_it_means": "A rate, concurrency or cost limit was hit.",
+        "what_to_do": "Honor the Retry-After header, request fewer fields and use limit=100.",
+        "agent_can_help": "Review request patterns and suggest opt_fields and pagination changes.",
+        "claim_ids": [
+          "c10",
+          "c28"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Does Asana accept a redirect URL on your own domain that proxies to Composio's callback? The probe was skipped and nothing was tested. Try it with a test app.",
+      "Is there a cap on users for unpublished apps shared to Any workspace? Not found in docs. Ask on the Asana developer forum or test with a second workspace.",
+      "Does Any-workspace distribution without directory listing have any Asana-side review or wait? Docs say submission is needed beyond your own organization (c2) but no timeline is given. Ask Asana developer support.",
+      "Does the developer account need a paid plan to use the API at full limits? Only a 2022 community post says so. Check Asana's current pricing page.",
+      "What are the Enterprise admin approval policies in detail? Not found. Ask the customer's Asana admin.",
+      "The Composio credential guide (composio.dev/auth/asana) was not read; check it for Composio-specific steps."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Submitting an app for review is not required to obtain a token.",
+        "source_url": "https://developers.asana.com/docs/publish-your-app",
+        "quote": "Submitting your app for review is not required to obtain a token.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "Submission is needed only to make the app available to users in any workspace beyond your own organization, or to list it publicly.",
+        "source_url": "https://developers.asana.com/docs/publish-your-app",
+        "quote": "Make your app available to users in any Asana workspace, beyond your own organization or development environment",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Selecting Any workspace lets users from any Asana workspace authorize the app when given the authorization URL.",
+        "source_url": "https://developers.asana.com/docs/share-your-app",
+        "quote": "This will allow users from any Asana workspace to authorize the app if they are given the authorization URL .",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "A new app is not visible to any workspace until you set how to share it.",
+        "source_url": "https://developers.asana.com/docs/share-your-app",
+        "quote": "After you create your app, it is not visible to any particular workspace yet.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "In many Enterprise organizations, admins manage which apps can be used from the admin console.",
+        "source_url": "https://developers.asana.com/docs/share-your-app",
+        "quote": "In many Enterprise organizations, admins manage which apps can be used from the admin console.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "The pre-flight checklist requires a longer description of at least 250 characters.",
+        "source_url": "https://developers.asana.com/docs/publish-your-app",
+        "quote": "Adding a longer description (at least 250 characters) to tell users about the features of your app.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "The listing guidelines ask for a screencast of 30 seconds to 2 minutes.",
+        "source_url": "https://developers.asana.com/docs/app-listing-guidelines",
+        "quote": "This should be a short, clear video (30 seconds to 2 minutes) that demonstrates key features and the integration process.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "Composio provides a managed OAuth app for Asana.",
+        "source_url": "https://docs.composio.dev/toolkits/asana",
+        "quote": "**Composio-managed OAuth available?** Yes",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "You register an app by visiting the developer console and selecting Create new app.",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "To do so, first visit the developer console and select Create new app , as shown below:",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "Standard rate limits are 150 requests per minute for free domains and 1,500 for paid.",
+        "source_url": "https://developers.asana.com/docs/rate-limits",
+        "quote": "Limits are based on minute-long windows and differ depending on whether the domain is free or paid (see pricing for available tiers).",
+        "probe_id": null,
+        "label": "unknown",
+        "note": "The claim states 150, 1500, which the quote does not contain."
+      },
+      {
+        "id": "c11",
+        "text": "You can create and use an OAuth app for an internal tool or testing without submitting it for review.",
+        "source_url": "https://developers.asana.com/docs/publish-your-app",
+        "quote": "If you're building an internal tool or testing your integration, you can create and use an OAuth app without submitting it for review.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "Asana aims to give an initial response to submissions within one week.",
+        "source_url": "https://developers.asana.com/docs/publish-your-app",
+        "quote": "We aim to provide an initial response on app submissions within one week .",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "A developer reported on the Asana forum that an app was about 6 weeks in review with no response; an Asana staff member acknowledged a backlog.",
+        "source_url": "https://forum.asana.com/t/app-approval-taking-too-long/900643",
+        "quote": "I have submitted our app about 6 weeks ago.",
+        "probe_id": null,
+        "label": "reported",
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "Incomplete or substandard listings may result in additional review cycles.",
+        "source_url": "https://developers.asana.com/docs/app-listing-guidelines",
+        "quote": "Incomplete or substandard listings may result in additional review cycles, slowing down the approval process and limiting your app’s visibility to potential users.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "A 2022 community answer says only free accounts are limited to 150 calls/minute and cannot access the search tasks endpoint (unofficial, possibly outdated).",
+        "source_url": "https://forum.asana.com/t/premium-vs-business-account-and-api-access/170667",
+        "quote": "Only free accounts are limited to 150 calls/minute, and they can’t access the “search tasks” endpoint.",
+        "probe_id": null,
+        "label": "reported",
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "The redirect URL must match the redirect_uri parameter, and non-native apps must use an https URL.",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "For security reasons, non-native applications must supply a \"https\" URL ( more on this below ).",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "Composio managed apps share quota across all Composio users, and a custom auth config can be used for branding, scopes, rate limits, polling intervals or custom instances.",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Managed apps share quota across all Composio users.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "Scopes are registered in the developer console, where you can toggle Full permissions or pick specific scopes.",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "You can always update the list of scopes later in the developer console (under OAuth > Permission scopes ).",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "Requesting a scope that is not registered in the app gives a forbidden_scopes error.",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "If you request a scope that is not in your app's approved (i.e., registered) list, the user will see a forbidden_scopes error on the authorization page.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "Composio documents a redirect proxy: set the OAuth app's redirect URI to your domain, and the endpoint 302-redirects to Composio.",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+        "probe_id": null,
+        "label": "unknown",
+        "note": "The claim states 302, which the quote does not contain."
+      },
+      {
+        "id": "c21",
+        "text": "Directory app names should not include the word \"Asana\".",
+        "source_url": "https://developers.asana.com/docs/app-listing-guidelines",
+        "quote": "To help users clearly distinguish third-party apps from those built by Asana, app names should not include the word “Asana.”",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "Listing guidelines ask for test account credentials, used only for review.",
+        "source_url": "https://developers.asana.com/docs/app-listing-guidelines",
+        "quote": "Provide any test account credentials necessary for your app (this is only used for the review process and will not be published publicly)",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "Once an app is submitted for review, it is no longer open for edits.",
+        "source_url": "https://developers.asana.com/docs/publish-your-app",
+        "quote": "At this point, the app will no longer be open for further edits.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "The token introspection endpoint can be used to check which scopes are authorized for a token.",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "To check which scopes are authorized for a given access token or refresh token, you may use the token introspection endpoint .",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "Requesting additional scopes is not additive; you must specify the full set of scopes needed.",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "Subsequent requests will not be additive.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "Changing sharing from Any workspace to Specific workspace blocks new authorizations from users outside the specified workspace.",
+        "source_url": "https://developers.asana.com/docs/share-your-app",
+        "quote": "Note that that changing the sharing settings from Any workspace to Specific workspace will block any new authorizations from users outside the specified workspace:",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c27",
+        "text": "OAuth access tokens expire in 1 hour (3600 seconds).",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "OAuth access tokens expire in 1 hour (3600 seconds)",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c28",
+        "text": "Calls to the search API are limited to 60 requests per minute.",
+        "source_url": "https://developers.asana.com/docs/rate-limits",
+        "quote": "Calls to the search API are limited to 60 requests per minute .",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c29",
+        "text": "Rate limits are allocated per authorization token.",
+        "source_url": "https://developers.asana.com/docs/rate-limits",
+        "quote": "Limits are allocated per authorization token .",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c30",
+        "text": "If client_id or redirect_uri do not match, the user sees a plain-text error.",
+        "source_url": "https://developers.asana.com/docs/oauth",
+        "quote": "If either the client_id or redirect_uri do not match, the user will simply see a plain-text error.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-20T11:33:30.346Z",
+    "generated_by": "research claude-haiku-5-5 + writing claude-sonnet-5-5 + composio_search",
+    "duration_ms": 84509,
+    "query": "Asana",
+    "partial": false,
+    "warnings": [],
+    "usage": {
+      "usd": 0.1523,
+      "input_tokens": 144350,
+      "output_tokens": 12446,
+      "cache_read_tokens": 90253,
+      "web_searches": 0
+    },
+    "verification": {
+      "claims_total": 30,
+      "quotes_checked": 28,
+      "quotes_verified": 26,
+      "downgraded": 2
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:10.543Z",
+        "via": "direct",
+        "chars": 20290
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:10.546Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:10.546Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/asana",
+        "title": null,
+        "fetched_at": "2026-10-20T11:32:10.546Z",
+        "via": "direct",
+        "chars": 520
+      },
+      {
+        "url": "https://developers.asana.com/docs/oauth",
+        "title": "OAuth",
+        "fetched_at": "2026-10-20T11:32:13.740Z",
+        "via": "direct",
+        "chars": 25617
+      },
+      {
+        "url": "https://developers.asana.com/docs/rate-limits",
+        "title": "Rate limits",
+        "fetched_at": "2026-10-20T11:32:16.627Z",
+        "via": "direct",
+        "chars": 12587
+      },
+      {
+        "url": "https://developers.asana.com/docs/share-your-app",
+        "title": "Share your app",
+        "fetched_at": "2026-10-20T11:32:16.739Z",
+        "via": "direct",
+        "chars": 5007
+      },
+      {
+        "url": "https://developers.asana.com/docs/app-listing-guidelines",
+        "title": "App listing guidelines",
+        "fetched_at": "2026-10-20T11:32:20.690Z",
+        "via": "direct",
+        "chars": 9663
+      },
+      {
+        "url": "https://forum.asana.com/t/app-approval-taking-too-long/900643",
+        "title": "App Approval taking too long - API & Developers - Asana Community",
+        "fetched_at": "2026-10-20T11:32:23.877Z",
+        "via": "direct",
+        "chars": 2292
+      },
+      {
+        "url": "https://developers.asana.com/docs/publish-your-app",
+        "title": "Publish your app",
+        "fetched_at": "2026-10-20T11:32:24.555Z",
+        "via": "direct",
+        "chars": 8587
+      },
+      {
+        "url": "https://forum.asana.com/t/premium-vs-business-account-and-api-access/170667",
+        "title": "Premium vs Business Account and API Access - API & Developers - Asana Community",
+        "fetched_at": "2026-10-20T11:32:30.269Z",
+        "via": "direct",
+        "chars": 4996
+      }
+    ],
+    "probes": []
+  }
+}

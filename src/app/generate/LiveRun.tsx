@@ -305,8 +305,8 @@ export function LiveRun() {
           <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5">
             <p className="font-semibold text-amber-200">{error}</p>
             <div className="mt-3 flex flex-wrap gap-2 text-sm">
-              <Link href="/generate?replay=gmail" className="rounded-lg bg-amber-300 px-3 py-1.5 font-medium text-bg hover:bg-amber-200">
-                Watch a recorded run (Gmail)
+              <Link href="/generate?replay=asana" className="rounded-lg bg-amber-300 px-3 py-1.5 font-medium text-bg hover:bg-amber-200">
+                Watch a recorded run (Asana)
               </Link>
               <Link href="/" className="rounded-lg border border-amber-300/40 px-3 py-1.5 text-amber-100 hover:bg-amber-500/20">
                 Browse the library
