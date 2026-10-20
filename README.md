@@ -71,7 +71,7 @@ Scripts. None of them call a model unless noted.
 
 ## Verification (`/verification`)
 
-- **Quote checks:** 361 of 366 quotes across 11 guides match their live source pages word for word.
+- **Quote checks:** 357 of 362 quotes across 11 guides match their live source pages word for word.
 - **Ledger:** material claims marked confirmed, corrected or unverifiable. Corrections include:
   - My initial plan wrongly said Slack distribution was fine without the Marketplace. Unlisted apps are actually rate-limited.
   - A generated Box guide wrongly said every enterprise admin must authorize the app. The cause was the fetcher; it's fixed and the guide was corrected.
