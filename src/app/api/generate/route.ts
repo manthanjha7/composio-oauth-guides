@@ -44,6 +44,10 @@ export async function POST(req: Request) {
   const existing = !fresh ? await getGuide(slugify(query)) : null;
   if (existing) return Response.json({ existing: existing.slug });
 
+  if (process.env.GENERATION_PAUSED === "1") {
+    return Response.json({ error: "Live generation is paused on this deployment. The library guides still work." }, { status: 503 });
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return Response.json(
       { error: "Live generation is not configured on this deployment (ANTHROPIC_API_KEY is missing). The library guides still work." },
