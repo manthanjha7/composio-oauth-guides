@@ -1,5 +1,7 @@
 # OAuth App Setup Guides for agent builders
 
+**Live:** https://composio-oauth-guides-one.vercel.app
+
 A developer building an AI agent on Composio wants their users to connect an app. Composio's managed OAuth apps cover prototyping for many apps. Production use (your own name on the consent screen, your own quota, extra scopes), and every "bring your own" toolkit, means creating a provider OAuth app and getting it approved. That path differs per provider and per scenario, and it is rarely written down in one place.
 
 This project gives developers:
