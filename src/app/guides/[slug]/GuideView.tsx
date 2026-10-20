@@ -69,6 +69,15 @@ export function GuideView({ record }: { record: GuideRecord }) {
         </p>
       </header>
 
+      {(record.meta.warnings ?? []).length > 0 && (
+        <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">Automatic evidence check flagged:</p>
+          <ul className="mt-1 list-disc pl-5">
+            {record.meta.warnings!.map((w) => <li key={w}>{w}</li>)}
+          </ul>
+        </section>
+      )}
+
       <section className="rounded-xl border border-violet-200 bg-violet-50/60 p-5">
         <h2 className="font-semibold">Do you need your own OAuth app?</h2>
         <p className="mt-1 text-stone-700">{g.need_own_app.answer}</p>

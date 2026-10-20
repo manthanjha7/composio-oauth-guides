@@ -1,6 +1,6 @@
 import { runAgent, type AgentEvent } from "@/lib/agent/run";
 import { slugify } from "@/lib/slug";
-import { getGuide, listSeedGuides, saveGuide } from "@/lib/store";
+import { getGuide, listSeedGuides, saveGuide, storageMode } from "@/lib/store";
 
 // The agent needs ~1-3 minutes; the research loop stops itself at ~150s and writes from what it has.
 export const maxDuration = 300;
@@ -47,6 +47,13 @@ export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return Response.json(
       { error: "Live generation is not configured on this deployment (ANTHROPIC_API_KEY is missing). The library guides still work." },
+      { status: 503 },
+    );
+  }
+
+  if (storageMode() === "unavailable") {
+    return Response.json(
+      { error: "Live generation needs durable storage on this deployment (BLOB_READ_WRITE_TOKEN is missing), otherwise share links would not work." },
       { status: 503 },
     );
   }

@@ -140,6 +140,7 @@ export const GuideRecordSchema = z.object({
     duration_ms: z.number().nullable(),
     query: z.string().nullable(),
     partial: z.boolean(),
+    warnings: z.array(z.string()).optional(),
     verification: z.object({
       claims_total: z.number(),
       quotes_checked: z.number(),

@@ -24,8 +24,20 @@ function isPrivateIp(ip: string): boolean {
     );
   }
   const v6 = ip.toLowerCase();
-  if (v6.startsWith("::ffff:")) return isPrivateIp(v6.slice(7));
-  return v6 === "::1" || v6 === "::" || v6.startsWith("fc") || v6.startsWith("fd") || v6.startsWith("fe80");
+  // IPv4-mapped (::ffff:a.b.c.d, which URL() normalises to ::ffff:7f00:1): classify the embedded IPv4.
+  const mapped = v6.match(/^(?:0{0,4}:){0,5}:?ffff:(.+)$/);
+  if (mapped) {
+    const tail = mapped[1];
+    if (net.isIPv4(tail)) return isPrivateIp(tail);
+    const hex = tail.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (!hex) return true;
+    const hi = parseInt(hex[1], 16);
+    const lo = parseInt(hex[2], 16);
+    return isPrivateIp(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+  }
+  // Other forms that embed IPv4 (IPv4-compatible ::a.b.c.d, NAT64 64:ff9b::/96, 6to4 2002::/16) are refused outright.
+  if (v6.startsWith("::") || v6.startsWith("64:ff9b:") || v6.startsWith("2002:")) return true;
+  return v6.startsWith("fc") || v6.startsWith("fd") || v6.startsWith("fe8") || v6.startsWith("fe9") || v6.startsWith("fea") || v6.startsWith("feb") || v6.startsWith("ff");
 }
 
 export async function assertPublicUrl(raw: string): Promise<URL> {
@@ -77,8 +89,7 @@ export async function safeGet(
       current = new URL(location, url).toString();
       continue;
     }
-    const buf = await res.arrayBuffer();
-    const body = new TextDecoder("utf-8", { fatal: false }).decode(buf.slice(0, maxBytes));
+    const body = await readCapped(res, maxBytes);
     return {
       url: url.toString(),
       status: res.status,
@@ -89,6 +100,30 @@ export async function safeGet(
     };
   }
   throw new Error("Too many redirects");
+}
+
+/** Read at most `maxBytes` of the (decoded) body, then cancel the stream instead of buffering everything. */
+export async function readCapped(res: Response, maxBytes: number): Promise<string> {
+  if (!res.body) return "";
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (size < maxBytes) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    size += value.byteLength;
+  }
+  if (size >= maxBytes) await reader.cancel().catch(() => {});
+  const all = new Uint8Array(Math.min(size, maxBytes));
+  let off = 0;
+  for (const c of chunks) {
+    const take = Math.min(c.byteLength, all.length - off);
+    all.set(c.subarray(0, take), off);
+    off += take;
+    if (off >= all.length) break;
+  }
+  return new TextDecoder("utf-8", { fatal: false }).decode(all);
 }
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", mdash: "—", ndash: "–", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", hellip: "…" };

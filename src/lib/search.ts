@@ -33,6 +33,10 @@ export async function createComposioSearch(runId: string): Promise<ComposioSearc
     sessionPreset: SessionPreset.DIRECT_TOOLS,
   });
 
+  // Composio calls get their own timeout so a slow search can't stall the run.
+  const timed = <T,>(p: Promise<T>, ms = 20_000) =>
+    Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Composio call timed out after ${ms / 1000}s`)), ms))]);
+
   let last = 0;
   const throttle = async () => {
     // Composio Search asks for ~1-2 requests/second; bursts get HTTP 429.
@@ -44,12 +48,12 @@ export async function createComposioSearch(runId: string): Promise<ComposioSearc
   return {
     async search(query) {
       await throttle();
-      const res = await session.execute(SEARCH, { query });
+      const res = await timed(session.execute(SEARCH, { query }));
       return extractHits(res).slice(0, 8);
     },
     async fetch(url) {
       await throttle();
-      const res = await session.execute(FETCH, { urls: [url], text: true, max_characters: 60_000 });
+      const res = await timed(session.execute(FETCH, { urls: [url], text: true, max_characters: 60_000 }));
       const pages = extractPages(res);
       return pages[0] ?? null;
     },

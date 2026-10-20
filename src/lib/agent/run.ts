@@ -39,6 +39,8 @@ export interface RunOptions {
   maxSearches?: number;
   maxFetches?: number;
   researchBudgetMs?: number;
+  /** Whole run, including writing. Keep below the route's maxDuration (300s) to leave time to save. */
+  totalBudgetMs?: number;
   signal?: AbortSignal;
 }
 
@@ -127,20 +129,24 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const maxSearches = opts.maxSearches ?? 5;
   const maxFetches = opts.maxFetches ?? 8;
   const researchDeadline = started + (opts.researchBudgetMs ?? 150_000);
+  const runDeadline = started + (opts.totalBudgetMs ?? 270_000);
   const runId = Math.random().toString(36).slice(2, 10);
 
   let search: ComposioSearch | null = null;
   if (opts.search !== undefined) search = opts.search;
   else {
     try {
-      search = await createComposioSearch(runId);
+      search = await Promise.race([
+        createComposioSearch(runId),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("session setup timed out")), 15_000)),
+      ]);
     } catch (e) {
       emit({ type: "warning", message: `Composio Search unavailable (${(e as Error).message}); using Anthropic web search instead.` });
     }
   }
   const searchVia = search ? "composio_search" : "anthropic_web_search";
 
-  const ctx: EvidenceContext = { pages: new Map(), seenUrls: new Set(), probes: [] };
+  const ctx: EvidenceContext = { pages: new Map(), seenUrls: new Set(), probes: [], officialDomains: [] };
   const sources: SourceRecordT[] = [];
   const hits: SearchHit[] = [];
   let lookup: ComposioLookup | null = null;
@@ -162,13 +168,24 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     tools.push({ type: "web_search_20260209", name: "web_search", max_uses: maxSearches } as BetaToolUnion);
   }
 
+  // Anthropic's server-side web search counts max_uses per request, so pass the remaining run budget each turn.
+  const toolsForTurn = (): BetaToolUnion[] =>
+    search
+      ? tools
+      : tools.map((t) => ("type" in t && t.type === "web_search_20260209" ? { ...t, max_uses: Math.max(1, maxSearches - searches) } : t));
+
   // Server-side refusal fallback is on by default; if the API rejects it for this request shape, retry once without it.
+  // Every call gets a timeout derived from a deadline so a slow response can't outlive the serverless function.
   let useFallbacks = process.env.AGENT_FALLBACKS !== "off";
   type StreamParams = Parameters<typeof client.beta.messages.stream>[0];
-  async function callModel(params: StreamParams) {
+  async function callModel(params: StreamParams, deadlineAt: number) {
     const run = (withFallbacks: boolean) =>
       client.beta.messages
-        .stream(withFallbacks ? { ...params, betas: BETAS, fallbacks: "default" } : params, { signal: opts.signal })
+        .stream(withFallbacks ? { ...params, betas: BETAS, fallbacks: "default" } : params, {
+          signal: opts.signal,
+          timeout: Math.max(10_000, deadlineAt - Date.now()),
+          maxRetries: 1,
+        })
         .finalMessage();
     if (!useFallbacks) return run(false);
     try {
@@ -293,14 +310,17 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         break;
       }
       opts.signal?.throwIfAborted();
-      const msg = await callModel({
-        model: MODEL,
-        max_tokens: 32000,
-        output_config: { effort: EFFORT },
-        system: researchSystem(maxSearches, maxFetches),
-        tools,
-        messages,
-      });
+      const msg = await callModel(
+        {
+          model: MODEL,
+          max_tokens: 32000,
+          output_config: { effort: EFFORT },
+          system: researchSystem(maxSearches, maxFetches),
+          tools: toolsForTurn(),
+          messages,
+        },
+        Math.min(researchDeadline + 30_000, runDeadline - 90_000),
+      );
 
       for (const block of msg.content) {
         if (block.type === "text" && block.text.trim()) emit({ type: "note", text: block.text.trim().slice(0, 300) });
@@ -343,14 +363,19 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       messages.push({ role: "user", content: results });
     }
   } catch (e) {
-    if (e instanceof Anthropic.APIError) {
+    if (opts.signal?.aborted) return { outcome: "error", message: "Cancelled" };
+    if (e instanceof Anthropic.APIConnectionTimeoutError) {
+      // A slow research turn: stop researching and write from what we have.
+      partial = true;
+      emit({ type: "warning", message: "A research step took too long; writing the guide from what was found so far." });
+    } else if (e instanceof Anthropic.APIError) {
       emit({ type: "error", message: `Model API error (${e.status ?? "network"}): ${e.message}` });
       return { outcome: "error", message: e.message };
+    } else {
+      // Non-API failure mid-research: keep going with what we have.
+      partial = true;
+      emit({ type: "warning", message: `Research stopped early: ${(e as Error).message}` });
     }
-    if (opts.signal?.aborted) return { outcome: "error", message: "Cancelled" };
-    // Non-API failure mid-research: keep going with what we have.
-    partial = true;
-    emit({ type: "warning", message: `Research stopped early: ${(e as Error).message}` });
   }
 
   const ident = identified as z.infer<typeof ConfirmApp> | null;
@@ -376,6 +401,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
   let generated: z.infer<typeof GeneratedGuideSchema> | null = null;
   for (let attempt = 0; attempt < 2 && !generated; attempt++) {
+    if (attempt > 0 && runDeadline - Date.now() < 45_000) break;
     try {
       const msg = await callModel({
         model: MODEL,
@@ -391,7 +417,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
                 : `${dossier}\n\nYour previous answer did not match the schema. Return only valid JSON for the schema.`,
           },
         ],
-      });
+      }, runDeadline - 10_000);
       if (msg.stop_reason === "refusal") throw new Error("The model declined to write this guide.");
       if (msg.stop_reason === "max_tokens") throw new Error("The guide was cut off (max_tokens).");
       const text = msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
@@ -417,7 +443,10 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
   // ---- Phase 3: enforce evidence rules ----
   emit({ type: "stage", stage: "verify", message: "Checking every quoted claim against the pages actually read" });
-  const { guide, stats } = enforceEvidence(generated, ctx);
+  if (ident?.website) ctx.officialDomains!.push(ident.website);
+  if (ident?.developer_docs_url) ctx.officialDomains!.push(ident.developer_docs_url);
+  const { guide, stats, warnings } = enforceEvidence(generated, ctx);
+  warnings.forEach((w) => emit({ type: "warning", message: w }));
   emit({ type: "verify", total: stats.claims_total, checked: stats.quotes_checked, verified: stats.quotes_verified, downgraded: stats.downgraded });
 
   const record: GuideRecord = {
@@ -432,6 +461,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       duration_ms: Date.now() - started,
       query: opts.query,
       partial,
+      warnings,
       verification: stats,
       sources,
       probes: ctx.probes,

@@ -16,8 +16,10 @@ const LOCAL_DIR = process.env.LOCAL_GUIDE_DIR || path.join(process.cwd(), ".data
 const blobEnabled = () => !!process.env.BLOB_READ_WRITE_TOKEN;
 const blobPath = (slug: string) => `guides/${slug}.json`;
 
-export function storageMode(): "blob" | "local" {
-  return blobEnabled() ? "blob" : "local";
+export function storageMode(): "blob" | "local" | "unavailable" {
+  if (blobEnabled()) return "blob";
+  // Deployed serverless filesystems are read-only (and ephemeral), so live guides need Blob there.
+  return process.env.VERCEL ? "unavailable" : "local";
 }
 
 async function readJsonDir(dir: string): Promise<GuideRecord[]> {

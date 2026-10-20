@@ -5,7 +5,7 @@
  * in meta.verification.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { quoteInText } from "../src/lib/evidence";
+import { baseDomain, quoteInText, supportIssue } from "../src/lib/evidence";
 import { GuideRecordSchema } from "../src/lib/schema";
 import { fetchPageText } from "../src/lib/web";
 
@@ -29,6 +29,9 @@ const refs = [
 const dangling = refs.filter((r) => !ids.has(r));
 if (dangling.length) console.error("DANGLING CLAIM IDS:", [...new Set(dangling)].join(", "));
 const probeIds = new Set(rec.meta.probes.map((p) => p.id));
+// Official domains: the provider's website and docs host, plus any extra passed as --official=a.com,b.dev
+const extra = (process.argv.find((a) => a.startsWith("--official=")) ?? "").replace("--official=", "").split(",").filter(Boolean);
+const official = new Set([rec.guide.app.website, rec.guide.app.developer_docs_url, ...extra].filter((x): x is string => !!x).map(baseDomain));
 
 const cache = new Map<string, string | Error>();
 let checked = 0, verified = 0;
@@ -44,8 +47,24 @@ for (const c of rec.guide.claims) {
   }
   const page = cache.get(c.source_url)!;
   if (page instanceof Error) { failures.push(`${c.id}: could not fetch ${c.source_url} (${page.message})`); continue; }
-  if (quoteInText(c.quote, page)) verified++;
-  else failures.push(`${c.id}: quote NOT found on ${c.source_url}\n      "${c.quote.slice(0, 160)}"`);
+  if (!quoteInText(c.quote, page)) {
+    failures.push(`${c.id}: quote NOT found on ${c.source_url}\n      "${c.quote.slice(0, 160)}"`);
+    continue;
+  }
+  const issue = supportIssue(c.text, c.quote);
+  if (issue) {
+    failures.push(`${c.id}: ${issue}\n      claim: "${c.text.slice(0, 160)}"\n      quote: "${c.quote.slice(0, 160)}"`);
+    continue;
+  }
+  if (c.label === "composio_docs" && baseDomain(c.source_url) !== "composio.dev") {
+    failures.push(`${c.id}: composio_docs claim cites a non-Composio page ${c.source_url}`);
+    continue;
+  }
+  if (c.label === "provider_docs" && official.size && !official.has(baseDomain(c.source_url))) {
+    failures.push(`${c.id}: provider_docs claim cites a non-official domain ${baseDomain(c.source_url)} (official: ${[...official].join(", ")})`);
+    continue;
+  }
+  verified++;
 }
 console.log(`${file}: ${rec.guide.claims.length} claims, ${checked} quoted, ${verified} verified on live pages, ${failures.length} problems`);
 failures.forEach((f) => console.log("  - " + f));

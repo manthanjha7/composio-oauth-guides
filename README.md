@@ -24,14 +24,14 @@ Every claim carries an evidence label: 🧪 Tested · 🔎 Probed · 📘 Provid
 npm install
 cp .env.example .env.local   # add ANTHROPIC_API_KEY to enable live generation
 npm run dev                  # http://localhost:3000
-npm test                     # 22 unit tests, incl. a scripted run of the full agent loop
+npm test                     # 34 unit tests, incl. a scripted run of the full agent loop
 ```
 
 | Env var | Needed for |
 |---|---|
 | `ANTHROPIC_API_KEY` | Live generation. The library works without it. |
 | `COMPOSIO_API_KEY` | Optional. Research via the **Composio Search** toolkit in a Composio session, and managed-auth status from the toolkit API. Without it, the agent uses Anthropic web search and Composio's public docs. |
-| `BLOB_READ_WRITE_TOKEN` | Optional. Durable storage for generated guides on Vercel. Without it, guides go to `./.data` (fine locally, ephemeral on serverless). |
+| `BLOB_READ_WRITE_TOKEN` | Durable storage for generated guides. **Required on Vercel** (live generation refuses to run without it, so share links never break). Locally, guides go to `./.data`. |
 
 Useful scripts:
 
@@ -51,9 +51,11 @@ Useful scripts:
 4. **Probe** (`probe_url`): one request to the provider's real authorize endpoint with a dummy client, recording what comes back. For example, Google redirects with a base64 error that decodes to "invalid_client: The OAuth client was not found".
 5. **Write**: a second call fills a fixed Zod schema via structured output, from a dossier of everything read.
 6. **Enforce evidence, in code** (`src/lib/evidence.ts`):
-   - A docs claim survives only if its quote appears verbatim in a page the agent actually fetched.
+   - A docs claim survives only if its quote appears verbatim in a page the agent actually fetched, on the right authority (the provider's own domains, or composio.dev).
+   - Every number in the claim must also appear in the quote; negation mismatches get a visible note.
    - Probed claims need a recorded probe. Reported claims need a URL the agent saw.
-   - Everything else is downgraded to ❓ Unknown, with a note.
+   - Everything else is downgraded to ❓ Unknown (or 💬 Reported for real, non-official pages), with a note.
+   - A wait estimate with no verified backing becomes "Unknown"; unbacked time spans in the summary are shown as warnings.
    - The generator can't assign 🧪 Tested.
 7. **Save, read back, then link.** Research stops itself at about 150 s and writes a partial guide rather than timing out. Progress streams to the browser as real agent events over SSE.
 
@@ -79,9 +81,13 @@ The planning doc (user flows, system design, reviewer feedback) is in `docs/plan
 - Seed guides were researched at build time by Claude research agents under the same schema and evidence rules as the live agent (`docs/seed-research-brief.md`), because no Anthropic API key was configured yet.
 - Hands-on setup attempts are tracked in `attempts/`. Until they're done, no claim is labelled 🧪 Tested.
 
+Agents also reviewed the work: Claude and Codex reviewed the plan, and Codex reviewed the code. Every code finding has a regression test. See `docs/reviews.md`.
+
 ## Limitations
 
 - **Freshness.** Guides are dated research aids. Provider policies change. Re-run the agent to refresh. There's no scheduled refresh yet.
+- **Claim support is heuristic.** Code proves the quote exists on an authoritative page and that the claim's numbers are in it. It can't fully prove meaning, so the quote is always shown next to the claim.
+- **Search budget.** With Anthropic web search, the per-run search budget can overshoot by about one search per turn (the server tool needs at least one allowed use).
 - **Logged-in areas.** The agent can't see behind developer-console logins. Those parts come from docs or human attempts.
 - **Review timelines.** These are rarely published. When they're missing, guides say Unknown, plus labelled developer reports.
 - **Rate limiting** on `/api/generate` is in-memory, per instance: good enough for a demo, not for production.
