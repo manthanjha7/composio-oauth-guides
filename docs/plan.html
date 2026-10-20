@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OAuth App Setup Guides: Flows & System Design (v0.2)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root { --ink:#16181d; --muted:#5b6170; --line:#e3e5ea; --bg:#fafafa; --card:#fff; --accent:#4f46e5; --good:#0f8a4b; --warn:#b26a00; --bad:#c0392b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color:var(--ink); background:var(--bg); }
+  .wrap { max-width:1100px; margin:0 auto; padding:32px 24px 80px; }
+  header { border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:8px; }
+  h1 { font-size:28px; margin:0 0 6px; }
+  h2 { font-size:22px; margin:48px 0 8px; padding-top:12px; border-top:1px solid var(--line); }
+  h3 { font-size:17px; margin:28px 0 8px; }
+  .sub { color:var(--muted); margin:0; }
+  .tag { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#eef0ff; color:var(--accent); margin-right:6px; }
+  .tag.new { background:#effaf3; color:var(--good); }
+  nav { position:sticky; top:0; background:var(--bg); padding:10px 0; z-index:5; border-bottom:1px solid var(--line); font-size:13px; }
+  nav a { color:var(--muted); text-decoration:none; margin-right:14px; white-space:nowrap; }
+  nav a:hover { color:var(--accent); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:14px 0; }
+  .callout { border-left:4px solid var(--accent); background:#f4f5ff; padding:12px 16px; border-radius:6px; margin:14px 0; }
+  .callout.warn { border-color:var(--warn); background:#fff8ec; }
+  .callout.good { border-color:var(--good); background:#effaf3; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin:10px 0; background:var(--card); }
+  th, td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f3f4f7; font-weight:600; }
+  .mermaid { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin:14px 0; overflow-x:auto; }
+  code { background:#f1f2f5; padding:1px 5px; border-radius:4px; font-size:13px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; }
+  .y { color:var(--good); } .n { color:var(--bad); } .m { color:var(--warn); }
+  .chosen { background:#effaf3; font-weight:600; }
+  ul { padding-left:20px; } li { margin:3px 0; }
+  .small { font-size:13px; color:var(--muted); }
+  .mock { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; white-space:pre; background:#0f1115; color:#e6e6e6; border-radius:10px; padding:16px; overflow-x:auto; line-height:1.5; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="tag">Composio APM take-home</span><span class="tag new">Plan v0.2: after Claude + Codex review</span><span class="tag">19 October 2026</span>
+  <h1>OAuth App Setup Guides: User Flows &amp; System Design</h1>
+  <p class="sub">What a developer goes through, what we're building to help them, how it works, and why we chose each piece. Plain-language version for review. <a href="#changes">What changed in v0.2 →</a> · <a href="v0.1.html">v0.1</a></p>
+</header>
+
+<nav>
+  <a href="#problem">1. Problem</a><a href="#actors">2. Who's involved</a><a href="#journey">3. Journey today</a><a href="#providers">3b. Providers differ</a><a href="#exists">4. Composio today</a><a href="#flows">5. Our flows</a><a href="#guide">6. Guide anatomy</a><a href="#design">7. System design</a><a href="#decisions">8. Decisions</a><a href="#scope">9. Scope</a><a href="#plan">10. Plan</a><a href="#open">11. Risks</a><a href="#changes">12. Review changes</a>
+</nav>
+
+<!-- 1 -->
+<h2 id="problem">1. The problem, in one line</h2>
+<div class="callout"><b>"I want my users to connect App X to my agent. Do I need my own OAuth app, how do I get it created and approved, how long will it take, what will block me, and which parts can an agent do for me?"</b></div>
+
+<h3>What the brief asks for (our checklist, nothing more)</h3>
+<table>
+<tr><th>#</th><th>The brief says</th><th>Where we answer it</th></tr>
+<tr><td>B1</td><td>Look up an app, get a guide they can <b>use and share</b>, know what to do next</td><td>Flow A · each guide has a link + a Markdown version for agent builders (§5, §6)</td></tr>
+<tr><td>B2</td><td>How <b>easy or difficult</b> it is to get the OAuth app ready</td><td>Verdict card, <b>per scenario</b> (scopes × audience × distribution) (§6)</td></tr>
+<tr><td>B3</td><td>Likely <b>time and effort, including the wait for approval</b></td><td>Hands-on time vs waiting on review, each with its basis (§6)</td></tr>
+<tr><td>B4</td><td><b>Requirements and nuances</b> that could affect setup</td><td>Prerequisites + "what changes your path" + traps (§6)</td></tr>
+<tr><td>B5</td><td>What <b>an agent can do</b> for them vs where <b>they take over</b></td><td>Every step has an owner: 🤖 agent / 👤 you / ⏳ waiting (§6)</td></tr>
+<tr><td>B6</td><td>How to proceed when they <b>hit a blocker</b></td><td>"Stuck?" section per guide (§6)</td></tr>
+<tr><td>B7</td><td>Submit a name or website → an agent <b>investigates and generates a guide live</b>, including apps outside the library</td><td>Flow B, including apps <b>Composio doesn't support at all</b> (§5, §7)</td></tr>
+<tr><td>B8</td><td>Library goal is 100 apps; <b>demo a few varied ones</b></td><td>3 seed guides (+1 stretch) and a stated route to 100 (§10)</td></tr>
+<tr><td>B9</td><td>Use agents to <b>investigate and attempt</b> setup; be clear on <b>tested vs sourced vs uncertain</b></td><td>Agent probes live endpoints · one recorded agent-driven setup attempt · evidence labels with quotes (§5 Flow E, §6)</td></tr>
+<tr><td>B10</td><td><b>Check a sample</b> against real sources/attempts; show what was corrected or unverifiable</td><td>Verification ledger with counts (Flow D)</td></tr>
+<tr><td>B11</td><td>Link to working experience + repo + short README (setup, decisions, limitations)</td><td>§10 deliverables</td></tr>
+<tr><td>B12</td><td>No paid accounts, no completed approvals, not production-ready, no credentials in the repo</td><td>§9 out of scope</td></tr>
+</table>
+
+<!-- 2 -->
+<h2 id="actors">2. Who's involved, and how the pieces connect</h2>
+<p>Example: <b>SalesBot</b> (an AI sales-assistant startup) wants its users to connect Gmail.</p>
+<pre class="mermaid">
+flowchart LR
+  P["👩 Priya, end user<br/>(sales rep at Acme)"] -- "clicks 'Connect Gmail'<br/>sees consent screen" --> G
+  subgraph A ["Company A: SalesBot (the developer) = OUR USER"]
+    D["🧑‍💻 Developer"]
+    F["👔 Founder / PM<br/>(owns domain, company docs)"]
+  end
+  D -- "builds agent with" --> C["⚙️ Composio<br/>tools + auth + runtime"]
+  C -- "OAuth app: Composio's (managed)<br/>or SalesBot's own (custom)" --> G["🏢 Company AA: Google<br/>(the provider, approves OAuth apps)"]
+  D -. "shares guide with" .-> F
+</pre>
+<div class="callout"><b>The chain to remember:</b> <b>1 provider OAuth app</b> → <b>1 Composio auth config</b> (holds its Client ID/Secret + scopes) → <b>many connected accounts</b> (one per end user). Creating or approving the OAuth app connects nobody. Every user still clicks "Allow" on the consent screen.</div>
+<table>
+<tr><th>Who</th><th>What they need from us</th></tr>
+<tr><td><b>Developer at Company A</b> (primary user)</td><td>Do I need my own app? Where to start, the next step, how long, what blocks approval, what to do when stuck</td></tr>
+<tr><td><b>Founder / PM at Company A</b> (gets the shared link)</td><td>"Can we launch on the 15th?" and "what do <i>I</i> need to provide?" (domain, privacy policy, company documents, money for an audit)</td></tr>
+<tr><td><b>Priya</b> (end user, benefits indirectly)</td><td>Sees "SalesBot wants access," not a warning screen or "Composio"</td></tr>
+<tr><td><b>Composio</b></td><td>Customers reach production faster → more connected accounts → more tool calls (revenue)</td></tr>
+</table>
+
+<!-- 3 -->
+<h2 id="journey">3. The developer's journey today (where it hurts)</h2>
+<p>The real-world path, before our product exists. Red = where developers get stuck or surprised.</p>
+<pre class="mermaid">
+flowchart TD
+  S(["I want my users to connect App X to my agent"]) --> Q1{"Does App X support OAuth?"}
+  Q1 -- "No (API key / none)" --> K["Paste key into Composio ✅<br/><i>not our problem</i>"]
+  Q1 -- Yes --> Q2{"Does Composio have a<br/>managed OAuth app for X?<br/>(123 yes · 211 no · or X not in Composio at all)"}
+  Q2 -- "Yes (e.g. Gmail, Slack, Notion)" --> M["Prototype today with Composio's app ✅<br/>consent screen says 'Composio'"]
+  M --> Q4{"Do I need any of: my own name on the consent screen,<br/>scopes beyond Composio's defaults, my own rate-limit quota,<br/>faster triggers, or a customer who demands it?"}
+  Q4 -- "No" --> OK2["Managed can be fine, even in production ✅<br/>(users see 'Composio', shared quota)"]
+  Q4 -- "Yes" --> OWN
+  Q2 -- "No: bring your own<br/>(e.g. Shopify, Xero, DocuSign)" --> OWN["Must create OWN OAuth app<br/>(even just to prototype)"]
+
+  OWN --> S1["1 · Get access to the developer program<br/>free account? partner program? paid plan? apply by email?"]
+  S1 --> S2["2 · Create the app + register the callback URI<br/>copied from YOUR Composio dashboard"]
+  S2 --> S3["3 · Pick scopes<br/>(this choice decides how hard step 6 is)"]
+  S3 --> S4["4 · Create a Composio auth config<br/>(Client ID + Secret + scopes)"]
+  S4 --> S5["5 · Test in limited mode<br/>test users / own workspace / one store"]
+  S5 --> S6["6 · Approval / review, IF your scenario needs it<br/>none · brand check · manual review · marketplace review · security assessment"]
+  S6 --> LIVE(["Live: users see YOUR app ✅"])
+  LIVE --> S7["7 · Maintain<br/>re-review on scope change, annual re-assessment, secret rotation"]
+
+  classDef pain fill:#fdecea,stroke:#c0392b,color:#16181d;
+  classDef ok fill:#effaf3,stroke:#0f8a4b,color:#16181d;
+  class S1,S3,S6,S7 pain;
+  class K,OK2,LIVE,M ok;
+</pre>
+<div class="callout warn"><b>Where it hurts:</b> steps 1, 3, 6 and 7 differ wildly by provider and depend on the developer's <b>scenario</b> (which scopes, who the users are, how the app is distributed, whether data touches their servers). The developer can't tell if it's <b>1 hour or months + a paid assessment</b> until they're in it. Steps 2 and 4 (mechanical) are already covered by Composio's existing credential guides.</div>
+
+<h2 id="providers">3b. Same steps, very different difficulty (desk-checked against official docs, 19 Oct)</h2>
+<p class="small">📘 = official provider docs (linked). ❓ = not confirmable from docs; will be resolved by Manthan's hands-on test. These are exactly the claims the product must get right, and v0.1 got several wrong (see §12).</p>
+<table>
+<tr><th></th><th>Gmail (Google)</th><th>Slack</th><th>Shopify</th><th>Notion (stretch)</th></tr>
+<tr><td>Composio managed?</td><td class="y">Yes 🟣</td><td class="y">Yes 🟣</td><td class="n">No, bring your own 🟣</td><td class="y">Yes 🟣</td></tr>
+<tr><td>Access to build</td><td>Free Google Cloud project</td><td>Free, any workspace</td><td>Partner / developer account ❓</td><td>Free ❓</td></tr>
+<tr><td>What changes the path</td><td><b>Scopes:</b> <code>gmail.send</code> is sensitive; <code>readonly</code>, <code>modify</code>, <code>compose</code>, <code>metadata</code> are <b>restricted</b> 📘<br/><b>Audience:</b> Internal (same Workspace org) or personal use skips verification 📘</td><td><b>Distribution:</b> own workspace → unlisted install link → Marketplace 📘</td><td><b>Distribution:</b> custom (one store / one Plus org) → no app review; public App Store → review 📘</td><td>Public connection submitted for review before its auth URL works ❓📘</td></tr>
+<tr><td>Before approval</td><td>Testing: ≤100 test users; their grants expire after 7 days (basic profile scopes exempt). Published but unverified: 100 new users <b>lifetime</b>, can't be reset 📘</td><td>Unlisted commercial apps (created after 29 May 2025): <code>conversations.history</code>/<code>replies</code> limited to ~1 request/min 📘. Painful for agents that read channels</td><td>Works on the one store it's distributed to</td><td>❓</td></tr>
+<tr><td>Approval</td><td>Sensitive → verification. Restricted → verification + <b>security assessment if restricted data is stored on or passes through your servers</b>, redone at least every 12 months 📘. Brand verification to show name/logo 📘</td><td>Marketplace: needs 10+ active workspaces + demo video; preliminary review up to ~10 business days, then up to ~10 weeks 📘</td><td>App Store review (public apps only) 📘</td><td>Review for public connections / Marketplace listing 📘</td></tr>
+<tr><td>Gut difficulty</td><td class="n">Hard (server-side Gmail agent)</td><td class="m">Easy to pilot, Hard to sell at scale</td><td class="m">Easy for one store, Hard for the App Store</td><td>❓</td></tr>
+</table>
+<p class="small">Sources: <a href="https://developers.google.com/workspace/gmail/api/auth/scopes">Gmail scopes</a> · <a href="https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification">Google restricted-scope verification</a> · <a href="https://support.google.com/cloud/answer/15549945">Google Audience settings</a> · <a href="https://support.google.com/cloud/answer/13464321">Google verification exemptions</a> · <a href="https://docs.slack.dev/distribution">Slack distribution</a> · <a href="https://docs.slack.dev/changelog/2025/05/29/rate-limit-changes-for-non-marketplace-apps">Slack non-Marketplace rate limits</a> · <a href="https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide">Slack Marketplace review</a> · <a href="https://shopify.dev/docs/apps/launch/distribution">Shopify distribution</a> · <a href="https://developers.notion.com/docs/authorization">Notion authorization</a>. Fetched by the review agent on 19 Oct 2026; re-verified during build.</p>
+<div class="callout good"><b>Product insight from this:</b> difficulty is not a property of the <i>app</i>. It's a property of the developer's <b>scenario</b>. "Gmail" is easy for an internal tool, medium for <code>gmail.send</code>, and hard for a server-side agent that reads inboxes. So every guide starts by asking or assuming the scenario, then gives the verdict for it.</div>
+
+<!-- 4 -->
+<h2 id="exists">4. What Composio already publishes (we build on it, not around it)</h2>
+<table>
+<tr><th>Existing Composio asset</th><th>What it gives the developer</th><th>What it does NOT give</th><th>How we use it</th></tr>
+<tr><td><b>Toolkit metadata API</b> (<code>composio_managed_auth_schemes</code>) + managed-auth directory</td><td>Whether Composio supplies the OAuth app, per auth method</td><td>What to do if it doesn't</td><td>Agent's <b>first call</b> for every app (API, with the directory page as fallback)</td></tr>
+<tr><td><b>Toolkit pages</b> <code>docs.composio.dev/toolkits/&lt;slug&gt;.md</code></td><td>Auth type, FAQ of known errors ("App is blocked", quota)</td><td>Approval path, time, requirements</td><td>Agent reads <b>only the header + FAQ</b> (pages can be 600KB of tool definitions)</td></tr>
+<tr><td><b>Credential guides</b> <code>composio.dev/auth/&lt;app&gt;</code> (Google, Shopify, Notion, HubSpot, Salesforce, LinkedIn…)</td><td>Click-by-click: create the OAuth client, paste into a Composio auth config</td><td><b>Stops where the pain starts.</b> Google's ends with "you may need to submit the app for Google verification."</td><td>Linked for the mechanical clicks, <b>but</b> our steps stay a complete ordered path with inputs and a "done when" check</td></tr>
+<tr><td><b>Knowledge base</b> <code>docs.composio.dev/kb</code></td><td>Troubleshooting for specific errors</td><td>The planning view</td><td>Source for "Stuck?"</td></tr>
+<tr><td><b>Composio Search toolkit</b> (<code>COMPOSIO_SEARCH_WEB</code>, <code>FETCH_URL_CONTENT</code>; no auth)</td><td>Web search + page fetch for any Composio agent</td><td>n/a</td><td><b>Research agent's tools</b>, via a Composio session using the direct-tools preset. (<code>EXA_ANSWER</code> is deprecated, so we don't use it)</td></tr>
+</table>
+<div class="callout good"><b>Our gap, precisely:</b> do-I-need-my-own-app · difficulty per scenario · time incl. approval wait · prerequisites · approval requirements · traps · blockers · 🤖/👤 ownership · evidence and uncertainty, plus coverage for apps Composio has no guide or toolkit for.</div>
+<div class="callout warn"><b>Documentation conflict (to verify by hands-on):</b> Composio's Google credential guide gives redirect URI <code>…/api/v1/auth-apps/add</code>; the white-labeling doc shows <code>…/api/v3/toolkits/auth/callback</code>; the KB says "register the exact callback URI shown by the current dashboard; do not copy one from an old example." Until Manthan's setup shows which one works, our guides say <b>"copy it from your Composio dashboard."</b> This is a ledger entry (Flow D).</div>
+
+<!-- 5 -->
+<h2 id="flows">5. Our product's user flows</h2>
+
+<h3>Flow A: Look up an app that's already in the library</h3>
+<pre class="mermaid">
+flowchart LR
+  A1(["Developer opens the site"]) --> A2["Library: app cards with<br/>managed? · difficulty range · reviewed/agent badge"]
+  A2 --> A3["Searches or clicks 'Gmail'"]
+  A3 --> A4["Guide page: 'Your scenario' picker<br/>(scopes · audience · distribution)"]
+  A4 --> A5{"Do I need my<br/>own OAuth app?"}
+  A5 -- "No" --> A6(["Use Composio managed ✅<br/>+ 'when you'd need your own'"])
+  A5 -- Yes --> A7["Verdict + steps for that scenario<br/>🤖 agent / 👤 you / ⏳ waiting"]
+  A7 --> A8["Share link (or copy Markdown)<br/>→ founder / legal / their coding agent"]
+</pre>
+
+<h3>Flow B: Submit an unfamiliar app → agent generates a guide live</h3>
+<pre class="mermaid">
+flowchart TD
+  B1(["Developer types an app name or website<br/>e.g. 'Calendly' or 'calendly.com'"]) --> B2{"Already in library?"}
+  B2 -- Yes --> B3(["Open existing guide"])
+  B2 -- No --> R1["① Identify: official provider + domain + developer docs URL<br/>SHOWN ON SCREEN FIRST so a wrong match is obvious"]
+  R1 -- "ambiguous ('Linear', 'Box')" --> AMB(["Ask: 'Did you mean…?'"])
+  R1 --> R2["② Composio check: toolkit exists? managed or bring-your-own?<br/>not in Composio ≠ no OAuth, so keep going"]
+  R2 --> R3["③ Provider docs: app creation, scopes, review rules, limits<br/>(bounded: max ~6 searches, ~8 page fetches)"]
+  R3 --> R4["④ 🤖 Probe: hit the real authorize endpoint with a dummy client,<br/>check signup + review pages are reachable, record what came back"]
+  R4 --> R5["⑤ Write guide sections; each stream to the screen + saves as it finishes"]
+  R5 --> R6["⑥ Check: every docs claim must carry a quote found in the fetched page,<br/>else downgrade to ❓ Unknown"]
+  R6 --> B5(["Saved FIRST, then share link shown<br/>badge: 'Agent-generated · not human-reviewed'"])
+  R1 -- "no OAuth found" --> X(["Honest result: 'X uses API keys, no OAuth app needed'<br/>or 'couldn't find X's developer docs'"])
+  R3 -- "time budget hit" --> PART(["Partial guide saved, with what's missing listed"])
+</pre>
+<p class="small">The progress shown is the agent's <b>real</b> events (searches run, pages read, sources found), not canned messages. Target: under ~2 minutes; hard cap with a partial result instead of a timeout.</p>
+
+<h3>Flow C: Following a guide and hitting a blocker</h3>
+<pre class="mermaid">
+flowchart LR
+  C1["Developer on the approval step:<br/>'Google wants a security assessment'"] --> C2["Opens 'Stuck?' section"]
+  C2 --> C3["What it means · does it apply to MY scenario ·<br/>typical time (with basis) · what to try · source"]
+  C3 --> C4["🤖 what an agent can do (draft scope justifications,<br/>privacy-policy checklist, demo-video script)<br/>👤 what you must do (record video, pay assessor, verify domain)"]
+</pre>
+<p class="small">Guidance only. We don't build drafting tools in the product (avoids scope creep).</p>
+
+<h3>Flow D: How we verify the guides (the verification ledger)</h3>
+<pre class="mermaid">
+flowchart LR
+  D1["3 seed guides<br/>+ 2 live-generated guides"] --> D2["Sample ~25 material claims<br/>(eligibility · review trigger · scopes · time · cost)"]
+  D2 --> D3["Check each against:<br/>• Manthan's hands-on attempt<br/>• the agent-driven attempt<br/>• official docs (quote)"]
+  D3 --> D4{"Outcome"}
+  D4 -- Confirmed --> D5["keep, upgrade label"]
+  D4 -- Wrong --> D6["fix + log original vs corrected"]
+  D4 -- "Can't verify" --> D7["❓ Unknown + why"]
+  D5 & D6 & D7 --> D8(["Ledger page: 'N checked · X confirmed ·<br/>Y corrected · Z unverifiable'"])
+</pre>
+
+<h3>Flow E: One recorded agent-driven setup attempt (preparation, not in the product) <span class="tag new">new</span></h3>
+<pre class="mermaid">
+flowchart LR
+  E1["🤖 Agent writes a Slack app manifest<br/>(scopes, redirect URL, bot user)"] --> E2["👤 Manthan logs in (2FA)<br/>imports manifest at api.slack.com"]
+  E2 --> E3["🤖 Agent reads the result / error,<br/>fixes the manifest, tries again"]
+  E3 --> E4["👤 Install to own workspace,<br/>create Composio auth config, connect"]
+  E4 --> E5(["Recorded: actions, where it stopped,<br/>what it changed in the guide → 🧪 Tested"])
+</pre>
+<p class="small">The human does logins only; the agent does the configuration and reacts to what the provider says. This is the "attempt as much of the setup as practical" evidence, without building a browser bot.</p>
+
+<!-- 6 -->
+<h2 id="guide">6. Anatomy of a guide (what the developer actually sees)</h2>
+<div class="mock">┌──────────────────────────────────────────────────────────────────────┐
+│ Gmail (Google)            [Share link] [Copy as Markdown]  Checked 19 Oct│
+│ YOUR SCENARIO  Scopes: read inbox ▾  Users: external ▾  Server-side ▾ │
+├──────────────────────────────────────────────────────────────────────┤
+│ DO YOU NEED YOUR OWN APP?  Composio has a managed Gmail app. Use it   │
+│   unless you need your own branding / extra scopes / own quota.       │
+│ DIFFICULTY   Hard (restricted scope + server-side data)               │
+│ HANDS-ON     ~2–4 hrs  [basis: Manthan's test, starting from nothing] │
+│ WAITING      ❓ weeks+; Google publishes no timeline  [reports only]  │
+├──────────────────────────────────────────────────────────────────────┤
+│ 1. What changes your path   scopes · audience · distribution · data   │
+│ 2. Before you start         domain, privacy policy, company details…  │
+│ 3. Steps (in order, each with inputs + "done when")                   │
+│      👤 create Google Cloud project …                                 │
+│      🤖 draft scope justifications for review …                       │
+│      ⏳ wait for verification …                                        │
+│ 4. Traps                    100-user lifetime cap · 7-day test expiry │
+│ 5. Stuck?                   blocker → applies to you? → what to do    │
+│ 6. Evidence & sources       every claim labelled, quotes on hover     │
+└──────────────────────────────────────────────────────────────────────┘</div>
+<h3>Evidence labels (on every claim)</h3>
+<table>
+<tr><th>Label</th><th>Meaning</th><th>Who can assign it</th></tr>
+<tr><td>🧪 <b>Tested</b></td><td>A recorded setup attempt observed it</td><td><b>Only a human or recorded attempt.</b> The generator can never award itself this</td></tr>
+<tr><td>🔎 <b>Probed</b></td><td>The agent hit a live endpoint/page and observed the response (e.g. the authorize URL error)</td><td>Agent, with the observed response stored</td></tr>
+<tr><td>📘 <b>Provider docs</b></td><td>Official docs say so</td><td>Agent, <b>only with a verbatim quote that matches the fetched page</b> + URL + date</td></tr>
+<tr><td>🟣 <b>Composio docs/API</b></td><td>Composio's docs or API say so</td><td>Agent, same quote rule</td></tr>
+<tr><td>💬 <b>Reported</b></td><td>Developers report it (forums, GitHub, blogs); not official</td><td>Agent, link required; never shown as fact</td></tr>
+<tr><td>❓ <b>Unknown</b></td><td>Couldn't confirm; we say so instead of guessing</td><td>Default when evidence is missing. No invented ranges</td></tr>
+</table>
+
+<!-- 7 -->
+<h2 id="design">7. System design</h2>
+<pre class="mermaid">
+flowchart LR
+  subgraph UI ["Web app (Next.js, TypeScript)"]
+    L["Library page"]
+    G["Guide page /guides/&lt;app&gt;<br/>+ /guides/&lt;app&gt;.md"]
+    N["'Generate a guide'<br/>input + live progress"]
+  end
+  subgraph API ["Server route"]
+    GEN["/api/generate<br/>streams real agent events (SSE)<br/>time-boxed"]
+  end
+  subgraph AG ["Research agent"]
+    LLM["Claude<br/>(via Composio's Anthropic provider)"]
+    TOOLS["Composio session, direct-tools preset<br/>COMPOSIO_SEARCH_WEB · FETCH_URL_CONTENT"]
+    CAPI["Composio toolkit API<br/>managed auth schemes"]
+    PROBE["Probe<br/>authorize endpoint · page reachability"]
+    SCHEMA["Guide schema validation<br/>+ quote check + 1 repair retry"]
+  end
+  subgraph STORE ["Storage"]
+    SEED["Seed guides<br/>JSON in repo (human-reviewed)"]
+    GENS["Generated guides<br/>durable key-value store"]
+  end
+  N --> GEN --> LLM
+  LLM <--> TOOLS
+  LLM <--> CAPI
+  LLM <--> PROBE
+  LLM --> SCHEMA --> GENS
+  L & G --> SEED
+  L & G --> GENS
+</pre>
+<ul>
+  <li><b>One pipeline, two uses:</b> the same agent writes the seed library (then we hand-check it) and the live guides. The library is "agent output a human reviewed." <b>Route to 100:</b> batch-run the same pipeline over Composio's bring-your-own and top managed toolkits, then human-review in priority order.</li>
+  <li><b>Built on Composio:</b> research tools come through a Composio session; managed status comes from Composio's own API.</li>
+  <li><b>Structured output:</b> a fixed, small schema (scenario, verdict, time + basis, steps with owner/inputs/done-when, traps, blockers, claims with label + quote + URL + date). Same shape for every app, so 100 guides stay comparable.</li>
+  <li><b>Fail soft:</b> per-step time limits, sections saved as they finish, a partial guide beats a timeout, and the share link is shown only after the save succeeds.</li>
+</ul>
+
+<!-- 8 -->
+<h2 id="decisions">8. Decisions: options considered → chosen → why</h2>
+<table>
+<tr><th>Decision</th><th>Options considered</th><th>Chosen</th><th>Why</th></tr>
+<tr><td>Where knowledge comes from</td><td>(a) pre-built dataset of all provider docs (RAG) · (b) live research per request · (c) hand-written guides only</td><td class="chosen">(b) live research; library = saved, human-checked output</td><td>The brief requires unfamiliar apps live (a dataset can't have them). Docs go stale. No vector-database infrastructure needed.</td></tr>
+<tr><td>Unit of guidance</td><td>one verdict per app · verdict per scenario</td><td class="chosen">Per scenario (scopes × audience × distribution)</td><td>The desk check showed difficulty depends on the scenario, not the app (Gmail: easy internal, hard server-side restricted).</td></tr>
+<tr><td>Research tools</td><td>own scrapers · a separate search API · Composio Search via Composio SDK</td><td class="chosen">Composio Search (WEB + FETCH_URL) via Composio SDK; plain fetch as fallback</td><td>Builds on Composio's own stack. Fallback avoids a single point of failure. Proven by a smoke test <b>before</b> any UI.</td></tr>
+<tr><td>Evidence</td><td>none · a source list · a label per claim · label + verbatim quote</td><td class="chosen">Label + quote + URL + date; "Tested" reserved for recorded attempts</td><td>A URL alone doesn't prove support. String-matching the quote against the fetched page is a cheap anti-hallucination check.</td></tr>
+<tr><td>Time estimate</td><td>one number · hands-on vs waiting, with basis</td><td class="chosen">Split, each with its basis; ❓ if no evidence</td><td>"1 hour of work + 4 weeks waiting" is a different plan from "4 weeks of work." No invented ranges.</td></tr>
+<tr><td>"Attempt the setup"</td><td>(a) browser bot in the product · (b) only read public pages · (c) agent probes live endpoints + one recorded agent-driven attempt + human hands-on</td><td class="chosen">(c)</td><td>(a) is fragile (2FA, captchas, terms of service). (b) isn't really "attempting." (c) shows agents acting, honestly, within 6–8 hours.</td></tr>
+<tr><td>Mechanical steps</td><td>rewrite them · link only · ordered steps + link for clicks</td><td class="chosen">Ordered steps (inputs, done-when) + link to Composio's credential guide</td><td>Don't rewrite what exists, but links alone aren't actionable.</td></tr>
+<tr><td>Live experience</td><td>spinner · canned progress · real events streamed</td><td class="chosen">Real agent events, sections saved as they land</td><td>Reviewers "watch the agent generate live"; real sources on screen build trust; partial results survive timeouts.</td></tr>
+<tr><td>Sharing</td><td>accounts · public URL · URL + Markdown</td><td class="chosen">Public URL + <code>.md</code> version</td><td>"Shareable" = a link. Markdown serves agent builders and coding agents (~10 min of work).</td></tr>
+<tr><td>Stack &amp; hosting</td><td>Python app · TypeScript/Next.js on Vercel</td><td class="chosen">TypeScript + <code>@composio/core</code> + Next.js on Vercel</td><td>Composio's TS SDK, one deployable link, streaming server routes. Function duration limit configured and tested.</td></tr>
+</table>
+
+<!-- 9 -->
+<h2 id="scope">9. In scope / out of scope</h2>
+<div class="grid">
+<div class="card"><b class="y">In scope</b>
+<ul>
+<li>Library page + <b>3 seed guides</b> (Gmail, Slack, Shopify); Notion as stretch</li>
+<li>Live "generate a guide" for any app name/URL, incl. apps outside Composio</li>
+<li>Guide page: scenario, do-I-need-my-own-app, verdict, time + basis, ordered steps with 🤖/👤/⏳, traps, "Stuck?", evidence</li>
+<li>Share link + Markdown export per guide</li>
+<li>One recorded agent-driven setup attempt (Slack)</li>
+<li>Verification ledger with counts</li>
+<li>README: setup, decisions, limitations, route to 100</li>
+</ul></div>
+<div class="card"><b class="n">Out of scope (deliberately)</b>
+<ul>
+<li>Building any OAuth / auth flow (Composio has it)</li>
+<li>Vector database / RAG over scraped docs</li>
+<li>All 100 guides</li>
+<li>User accounts, login, history</li>
+<li>Browser bot in the product</li>
+<li>Drafting tools (justifications, policies) as product features</li>
+<li>Forum research on every live run (one capped search at most)</li>
+<li>Actually getting any app approved; paid accounts; credentials in the repo</li>
+<li>Auto-refreshing guides (stated as a next step)</li>
+</ul></div>
+</div>
+
+<!-- 10 -->
+<h2 id="plan">10. Plan (~7 hours of build, after Manthan approves this)</h2>
+<table>
+<tr><th>Step</th><th>Who</th><th>What</th><th>Time</th></tr>
+<tr><td>0</td><td>👤 Manthan</td><td>Hands-on: Gmail, Slack (incl. Flow E with Claude), Shopify; Notion if time. Checklist provided</td><td>~2h (in parallel)</td></tr>
+<tr><td>1</td><td>🤖 Claude</td><td><b>Smoke test first:</b> Composio session → search → fetch → Claude → one cited, schema-valid guide, deployed. Measure latency and free-tier limits</td><td>1h</td></tr>
+<tr><td>2</td><td>🤖 Claude</td><td>Full agent: identify, Composio check, probe, quote check, streaming, partial results, durable save</td><td>2h</td></tr>
+<tr><td>3</td><td>🤖 Claude</td><td>Web app: library, guide page (scenario picker), generate page, Markdown export</td><td>1.5h</td></tr>
+<tr><td>4</td><td>🤖 + 👤</td><td>Seed 3 guides → check against hands-on + docs → verification ledger</td><td>1h</td></tr>
+<tr><td>5</td><td>🤖 + 👤</td><td>Dry-run live on ~10 unfamiliar inputs (incl. one not in Composio, one ambiguous, one API-key-only), README, final deploy</td><td>1h</td></tr>
+</table>
+<p><b>Needs from Manthan before build:</b> an Anthropic API key and a free Composio API key (environment variables only, never in the repo), a Vercel account to deploy, and a free Slack workspace for Flow E.</p>
+
+<!-- 11 -->
+<h2 id="open">11. Risks &amp; mitigations</h2>
+<table>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+<tr><td>Wrong app identified ("Linear", "Box")</td><td>Show the resolved provider + domain first; ask "did you mean" when ambiguous</td></tr>
+<tr><td>Too slow / hits the server time limit</td><td>Bounded searches and fetches, per-step time limits, partial guide saved, function duration configured</td></tr>
+<tr><td>Schema fails after all the research</td><td>Sections saved as they finish; one automatic repair retry</td></tr>
+<tr><td>Composio Search throttled on the free tier</td><td>Smoke test on day 1; plain fetch of official docs URLs as fallback</td></tr>
+<tr><td>Huge pages blow the context</td><td>Read only toolkit header + FAQ; fetch Composio's <code>.md</code> pages; trim fetched pages</td></tr>
+<tr><td>Hallucinated facts</td><td>Quote-match rule, ❓ Unknown as a valid answer, "Tested" never self-awarded</td></tr>
+<tr><td>Guides go stale</td><td>"Checked on" date per guide and per claim; refresh is a stated next step</td></tr>
+</table>
+
+<!-- 12 -->
+<h2 id="changes">12. What changed from v0.1 → v0.2 (review outcomes)</h2>
+<p>Reviewed by a Claude agent (with an official-docs fact-check) and by Codex (GPT-6.1), independently. Both said: <b>sound plan, revise before building.</b></p>
+<table>
+<tr><th>Finding</th><th>Raised by</th><th>Change</th></tr>
+<tr><td>Agents never really <i>attempt</i> setup</td><td>Both</td><td>Added 🔎 Probed step + Flow E (recorded agent-driven Slack setup)</td></tr>
+<tr><td>Provider facts wrong: Slack "directory optional" missed Marketplace bar + unlisted rate limits; Shopify custom distribution needs no review; Notion has a review step; Google brand verification + exemptions; security assessment is conditional on server-side data</td><td>Both</td><td>§3b rewritten with official sources; v0.1 hypotheses become ledger corrections</td></tr>
+<tr><td>Difficulty depends on scenario, not app</td><td>Codex (implied by Claude's facts)</td><td>Scenario picker + verdict per scenario</td></tr>
+<tr><td>Setup order wrong (Composio config came after approval)</td><td>Codex</td><td>Journey reordered: auth config before testing</td></tr>
+<tr><td>Contradiction: "own app for prod" vs "managed OK in prod"</td><td>Codex</td><td>Resolved: own app only if you need branding / scopes / quota / triggers / a customer demands it</td></tr>
+<tr><td>URL ≠ evidence; generator could self-award "Tested"</td><td>Both</td><td>Verbatim quote check; Tested reserved for recorded attempts; ledger with counts</td></tr>
+<tr><td>Exa Answer deprecated; huge toolkit pages; use toolkit API</td><td>Codex + Claude</td><td>WEB + FETCH_URL only; header+FAQ only; managed status via API</td></tr>
+<tr><td>Live demo fragility</td><td>Both</td><td>Identify-first, bounded calls, partial results, save-before-link, 10-input dry run</td></tr>
+<tr><td>"Not in Composio" ≠ "no OAuth"</td><td>Codex</td><td>Flow B keeps researching off-catalog apps</td></tr>
+<tr><td>Too much content for 6–8h</td><td>Both</td><td>3 seeds (+1 stretch), forum research capped, "who does what" merged into step owners</td></tr>
+<tr><td>Agent builders + route to 100 missing</td><td>Claude</td><td>Markdown export; batch-run route to 100 stated</td></tr>
+</table>
+<p class="small">Full reviews: <code>.context/plan/review-codex.md</code> and the Claude review (summarized in chat).</p>
+</div>
+<script>mermaid.initialize({ startOnLoad:true, theme:"neutral", flowchart:{ htmlLabels:true, curve:"basis" }, securityLevel:"loose" });</script>
+</body>
+</html>

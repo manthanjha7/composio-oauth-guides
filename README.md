@@ -1,0 +1,89 @@
+# OAuth App Setup Guides for agent builders
+
+A developer building an AI agent on Composio wants their users to connect an app. Composio's managed OAuth apps cover prototyping for many apps. Production use (your own name on the consent screen, your own quota, extra scopes), and every "bring your own" toolkit, means creating a provider OAuth app and getting it approved. That path differs per provider and per scenario, and it is rarely written down in one place.
+
+This project gives developers:
+
+- **A library of guides.** Seed apps: Gmail, Slack, Shopify, Notion.
+- **A live agent.** Type any app name or website, watch it research the app, and get a shareable guide, including for apps outside the library and outside Composio's catalog.
+
+Each guide answers six questions:
+
+- **Do I need my own OAuth app?**
+- **How hard is it for my scenario?** Scenarios cover scopes × audience × distribution.
+- **How much of my own time does it take, and how long will I wait on the provider?** These are reported separately.
+- **What do I need first?**
+- **What will block me, and what do I do then?**
+- **Which steps can an agent do (🤖) and which must I do (👤)?** Waiting steps are marked ⏳.
+
+Every claim carries an evidence label: 🧪 Tested · 🔎 Probed · 📘 Provider docs · 🟣 Composio docs · 💬 Reported · ❓ Unknown.
+
+## Quick start
+
+```bash
+npm install
+cp .env.example .env.local   # add ANTHROPIC_API_KEY to enable live generation
+npm run dev                  # http://localhost:3000
+npm test                     # 22 unit tests, incl. a scripted run of the full agent loop
+```
+
+| Env var | Needed for |
+|---|---|
+| `ANTHROPIC_API_KEY` | Live generation. The library works without it. |
+| `COMPOSIO_API_KEY` | Optional. Research via the **Composio Search** toolkit in a Composio session, and managed-auth status from the toolkit API. Without it, the agent uses Anthropic web search and Composio's public docs. |
+| `BLOB_READ_WRITE_TOKEN` | Optional. Durable storage for generated guides on Vercel. Without it, guides go to `./.data` (fine locally, ephemeral on serverless). |
+
+Useful scripts:
+
+- `npx tsx scripts/check-guide.mts data/guides/gmail.json` re-fetches every cited page and string-matches each quote.
+- `npx tsx scripts/probe.mts <url>` runs the same probe the agent uses.
+- `npx tsx scripts/composio-lookup.mts <app>` returns the Composio facts the agent sees.
+
+## How the agent works
+
+`src/lib/agent/run.ts` is a manual tool-use loop on Claude Opus 5.5 (adaptive thinking, effort `medium`, server-side refusal fallback enabled).
+
+1. **Composio check** (`composio_lookup`): the managed-auth directory, the toolkit page header + FAQ (not the 600 KB of tool definitions), the `composio.dev/auth/<app>` credential guide, and the toolkit API's `composio_managed_auth_schemes` when a key is set.
+2. **Identify** (`confirm_app`): name, website, docs URL and OAuth support are shown on screen first, so a wrong match is obvious. Ambiguous input gets a "did you mean". Apps without OAuth get an honest "no OAuth app needed".
+3. **Research**: `web_search` and `fetch_page`, with budgets of about 5 searches and 8 reads.
+   - Search uses Composio Search (`COMPOSIO_SEARCH_WEB`) through a direct-tools session, falling back to Anthropic's `web_search` server tool.
+   - Fetch is a direct, SSRF-guarded fetch, falling back to `COMPOSIO_SEARCH_FETCH_URL_CONTENT` for JS-rendered pages.
+4. **Probe** (`probe_url`): one request to the provider's real authorize endpoint with a dummy client, recording what comes back. For example, Google redirects with a base64 error that decodes to "invalid_client: The OAuth client was not found".
+5. **Write**: a second call fills a fixed Zod schema via structured output, from a dossier of everything read.
+6. **Enforce evidence, in code** (`src/lib/evidence.ts`):
+   - A docs claim survives only if its quote appears verbatim in a page the agent actually fetched.
+   - Probed claims need a recorded probe. Reported claims need a URL the agent saw.
+   - Everything else is downgraded to ❓ Unknown, with a note.
+   - The generator can't assign 🧪 Tested.
+7. **Save, read back, then link.** Research stops itself at about 150 s and writes a partial guide rather than timing out. Progress streams to the browser as real agent events over SSE.
+
+## Key decisions
+
+| Decision | Chosen | Why |
+|---|---|---|
+| Knowledge source | Live research. The library is agent output that a human checked. | Unfamiliar apps must work, and docs go stale. No RAG infrastructure needed. |
+| Unit of guidance | A verdict per **scenario** | Desk research showed difficulty depends on the scenario. Gmail is easy for an internal tool and hard for a server-side agent reading inboxes. |
+| Time | Hands-on time vs. waiting time, each with its basis | "1 hour of work + weeks of review" is a different plan from "a week of work". No invented ranges. |
+| Evidence | Per-claim label + verbatim quote, checked by code | A URL alone doesn't prove support. Reviewers asked for sound judgment about evidence. |
+| "Attempt the setup" | The agent probes live endpoints, plus recorded agent-driven setup attempts (`attempts/`) | Logins, 2FA and ToS make a signup bot fragile. The agent does the config work, a human does the logins. |
+| Stack | Composio Search + Composio docs/API, Next.js on Vercel | Built on what Composio already ships. Links to Composio's credential walkthroughs instead of rewriting them. |
+| Sharing | Public URL + Markdown export per guide | "Shareable" means a link. The Markdown serves coding agents and docs. |
+
+The planning doc (user flows, system design, reviewer feedback) is in `docs/plan.html`.
+
+## Verification
+
+- `/verification` shows two things:
+  - the automatic quote check per guide (e.g. Slack: 75/75 quotes verified on live pages)
+  - a manual ledger of material claims: what we believed, how we checked it, and whether it was confirmed, corrected or unverifiable
+- Seed guides were researched at build time by Claude research agents under the same schema and evidence rules as the live agent (`docs/seed-research-brief.md`), because no Anthropic API key was configured yet.
+- Hands-on setup attempts are tracked in `attempts/`. Until they're done, no claim is labelled 🧪 Tested.
+
+## Limitations
+
+- **Freshness.** Guides are dated research aids. Provider policies change. Re-run the agent to refresh. There's no scheduled refresh yet.
+- **Logged-in areas.** The agent can't see behind developer-console logins. Those parts come from docs or human attempts.
+- **Review timelines.** These are rarely published. When they're missing, guides say Unknown, plus labelled developer reports.
+- **Rate limiting** on `/api/generate` is in-memory, per instance: good enough for a demo, not for production.
+- **Review status.** Seed guides and live guides share a schema, but live guides are marked "not human-reviewed" until someone checks them.
+- **Scale.** 4 seed guides, not 100. The route to 100: batch-run the same pipeline over Composio's 211 bring-your-own toolkits and its top managed ones, then human-review them in order of usage.
