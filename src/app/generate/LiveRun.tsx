@@ -14,7 +14,7 @@ const PHASES = [
   { id: "composio", label: "Composio check" },
   { id: "identify", label: "Identify" },
   { id: "research", label: "Read docs" },
-  { id: "probe", label: "Probe" },
+  { id: "probe", label: "Test endpoint" },
   { id: "write", label: "Write guide" },
   { id: "verify", label: "Check evidence" },
   { id: "save", label: "Save" },
@@ -477,7 +477,7 @@ function EventRow({ e, t }: { e: Ev; t: number }) {
           <ul className="mt-1 space-y-0.5 text-xs text-muted">
             {e.results.map((r) => (
               <li key={r.url} className="truncate">
-                ↳ {r.title} <span className="text-faint">{host(r.url).split("/")[0]}</span>
+                → {r.title} <span className="text-faint">{host(r.url).split("/")[0]}</span>
               </li>
             ))}
           </ul>
