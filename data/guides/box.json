@@ -1,0 +1,561 @@
+{
+  "slug": "box",
+  "guide": {
+    "app": {
+      "name": "Box",
+      "website": "https://www.box.com",
+      "developer_docs_url": "https://developer.box.com/"
+    },
+    "oauth_supported": "yes",
+    "summary": "Box supports standard OAuth 2.0 for third-party user apps, and Composio has a managed Box OAuth app, so prototyping needs no setup of your own. If you bring your own app, creating it is easy. The slow part is that a Box Admin must authorize your Client ID in each enterprise that uses it. Box publishes no timeline for that or for the optional Integrations listing review.",
+    "composio": {
+      "toolkit_slug": "box",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio lists Box under Composio-managed OAuth. No Box-specific credential guide was found in the dossier. See https://docs.composio.dev/toolkits/managed-auth for managed vs custom auth."
+    },
+    "need_own_app": {
+      "answer": "Not for a prototype on your own Box account: Composio's managed app works. Bring your own Box app for production with your own branding, scopes or quota, or when many customer enterprises will connect.",
+      "reasons": [
+        "Your own app name and branding on the consent screen (the managed app is shared)",
+        "Control over the scopes and access level configured on the app",
+        "Your own quota rather than a shared app's",
+        "Distribution to many customer enterprises, each of whose admins must authorize your Client ID",
+        "Optional Box Integrations listing, which requires your own OAuth 2.0 app"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Prototype on your own Box account",
+        "when_this_applies": "You test with your own free developer (Individual) account, or just use Composio's managed app.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "15-45 min",
+          "basis": "Estimate from step count, not measured. Free developer apps are authorized automatically (c3)."
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "Free developer accounts authorize automatically (c3)."
+        },
+        "approval": "None for free developer accounts.",
+        "claim_ids": [
+          "c3",
+          "c1"
+        ]
+      },
+      {
+        "id": "s2",
+        "label": "Internal tool in your company's Box enterprise",
+        "when_this_applies": "Your own app runs against your employer's Box enterprise and you are not a Box Admin.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "30-60 min",
+          "basis": "Estimate from step count, not measured."
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "Depends on your enterprise admin. No timeline is published (c4, c9)."
+        },
+        "approval": "A Box Admin or Co-Admin must authorize or enable the app's Client ID.",
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c9"
+        ]
+      },
+      {
+        "id": "s3",
+        "label": "Multi-customer B2B product",
+        "when_this_applies": "Customers from different enterprises connect their Box accounts to your product, with no marketplace listing.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-3 hours for setup, plus ongoing onboarding support",
+          "basis": "Estimate from step count, not measured."
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "Each customer's admin must approve, and the timing is theirs (c4, c9)."
+        },
+        "approval": "Per-customer-enterprise admin authorization. No global Box review.",
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c9"
+        ]
+      },
+      {
+        "id": "s4",
+        "label": "Public Box Integrations listing",
+        "when_this_applies": "You want to be listed in Box Integrations so other enterprises can discover the app.",
+        "difficulty": "hard",
+        "hands_on": {
+          "estimate": "Unknown",
+          "basis": "Checklist, assets and descriptions are required (c6), but no time basis exists."
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "Docs say only that the Box Partner team reviews 'as soon as possible'. No SLA is published (c6)."
+        },
+        "approval": "Box Partner team review of the Integrations submission.",
+        "claim_ids": [
+          "c6",
+          "c7"
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Box developer account",
+        "detail": "A free developer (Individual) account or an enterprise account with access to the Developer Console.",
+        "claim_ids": [
+          "c3"
+        ]
+      },
+      {
+        "title": "Composio account and dashboard access",
+        "detail": "Needed to create an auth config and copy its redirect/callback URI.",
+        "claim_ids": []
+      },
+      {
+        "title": "Box Admin contact (enterprise scenarios)",
+        "detail": "Someone who can authorize your Client ID in Admin Console > Platform > Platform Apps. If you don't know your admin, check the Admin Contact at the bottom of your Box Account Settings page.",
+        "claim_ids": [
+          "c4",
+          "c5"
+        ]
+      },
+      {
+        "title": "Listing assets (only for the Integrations listing)",
+        "detail": "Categories, short and long descriptions, Add button URL, screenshots and an app icon. The app must be production-ready and use OAuth 2.0.",
+        "claim_ids": [
+          "c6",
+          "c7"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Decide whether managed OAuth is enough",
+        "owner": "you",
+        "detail": "For a prototype, use Composio's managed Box app and skip the rest. For production with your own branding, scopes or many customers, continue.",
+        "inputs": [],
+        "done_when": "You've chosen managed or your own app.",
+        "scenario_ids": [],
+        "link": "https://docs.composio.dev/toolkits/managed-auth",
+        "claim_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      {
+        "title": "Create a Box Platform App of type User (OAuth 2.0)",
+        "owner": "you",
+        "detail": "In the Box Developer Console, create a Platform App and choose the User app type. Server types (JWT/CCG) are not end-user consent flows.",
+        "inputs": [
+          "Box developer login"
+        ],
+        "done_when": "The app exists and its Configuration tab shows a Client ID and Client Secret.",
+        "scenario_ids": [
+          "s2",
+          "s3",
+          "s4"
+        ],
+        "link": "https://developer.box.com/",
+        "claim_ids": [
+          "c8",
+          "c10"
+        ]
+      },
+      {
+        "title": "Create a Composio auth config with your own credentials and copy the callback URI",
+        "owner": "you",
+        "detail": "In the Composio dashboard, create a Box auth config using your own client ID and secret. Copy the redirect/callback URI that Composio shows. Do not hard-code one.",
+        "inputs": [
+          "Client ID",
+          "Client Secret",
+          "Composio dashboard"
+        ],
+        "done_when": "The auth config is saved and you have the callback URI copied.",
+        "scenario_ids": [
+          "s2",
+          "s3",
+          "s4"
+        ],
+        "link": null,
+        "claim_ids": []
+      },
+      {
+        "title": "Register the Composio redirect URI in the Box app",
+        "owner": "you",
+        "detail": "Paste the copied callback URI into the redirect URI setting on the Box app's Configuration tab and set the scopes you need. An agent can check the pasted URI matches exactly.",
+        "inputs": [
+          "Composio callback URI"
+        ],
+        "done_when": "The Box app lists the Composio URI as a redirect URI.",
+        "scenario_ids": [
+          "s2",
+          "s3",
+          "s4"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c1"
+        ]
+      },
+      {
+        "title": "Get the app authorized by a Box Admin",
+        "owner": "you",
+        "detail": "Use the Enablement tab to submit to the Primary Admin, or copy the Client ID to an admin who adds it under Admin Console > Platform > Platform Apps. For customers, their admin must do the same. An agent can draft the request email with the Client ID and scopes.",
+        "inputs": [
+          "Client ID",
+          "Admin contact"
+        ],
+        "done_when": "The admin has approved and you get the approval email.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "claim_ids": [
+          "c4",
+          "c5"
+        ]
+      },
+      {
+        "title": "Wait for admin approval",
+        "owner": "waiting",
+        "detail": "Timing depends on the admin. Re-authorization is needed again whenever scopes or access level change.",
+        "inputs": [],
+        "done_when": "The app shows as authorized or enabled.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c9",
+          "c11"
+        ]
+      },
+      {
+        "title": "Connect a test account through Composio",
+        "owner": "you",
+        "detail": "Run the Composio connect flow for a Box user and complete the consent screen. Each end user must consent for their own connected account.",
+        "inputs": [
+          "Composio auth config"
+        ],
+        "done_when": "A connected account is active and a Box tool call succeeds.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c10"
+        ]
+      },
+      {
+        "title": "Prepare listing materials",
+        "owner": "agent",
+        "detail": "An agent can draft the descriptions, check the submission checklist items and list the required assets.",
+        "inputs": [
+          "Product details"
+        ],
+        "done_when": "Drafts are ready for you to review.",
+        "scenario_ids": [
+          "s4"
+        ],
+        "link": "https://developer.box.com/guides/applications/integrations",
+        "claim_ids": [
+          "c6"
+        ]
+      },
+      {
+        "title": "Submit for approval in the Publishing tab",
+        "owner": "you",
+        "detail": "Confirm the checklist, fill in the form, preview, and click Submit for Approval. Questions go to integrate@box.com.",
+        "inputs": [
+          "Listing assets"
+        ],
+        "done_when": "The submission is sent.",
+        "scenario_ids": [
+          "s4"
+        ],
+        "link": "https://developer.box.com/guides/applications/integrations",
+        "claim_ids": [
+          "c6",
+          "c7"
+        ]
+      },
+      {
+        "title": "Wait for Box Partner review",
+        "owner": "waiting",
+        "detail": "No timeline is published.",
+        "inputs": [],
+        "done_when": "The app is approved or Box asks for changes.",
+        "scenario_ids": [
+          "s4"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c6",
+          "c9"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Server auth types are not the right choice here",
+        "detail": "JWT and Client Credentials Grant apps are server-side, not end-user consent flows. For Composio user connections choose the User (OAuth 2.0) type.",
+        "claim_ids": [
+          "c8"
+        ]
+      },
+      {
+        "title": "Scope changes force re-authorization",
+        "detail": "Enterprise developers must resubmit to the admin after changing scopes or access level, otherwise the changes don't take effect.",
+        "claim_ids": [
+          "c11"
+        ]
+      },
+      {
+        "title": "Approval is per enterprise",
+        "detail": "A listing or approval in one enterprise doesn't cover others. Plan customer-admin authorization into onboarding.",
+        "claim_ids": [
+          "c4",
+          "c5"
+        ]
+      },
+      {
+        "title": "Listing requires OAuth 2.0 only",
+        "detail": "Integrations do not support any other authentication methods.",
+        "claim_ids": [
+          "c7"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Configuration tab shows 'Submit app for authorization'",
+        "what_it_means": "You are not a Box Admin or Co-Admin, so an admin must approve the app.",
+        "what_to_do": "Select Submit. Your admin gets an email, and you get an email on approval or denial.",
+        "agent_can_help": "Draft a message to the admin with the Client ID, scopes and purpose.",
+        "claim_ids": [
+          "c4"
+        ]
+      },
+      {
+        "symptom": "Users in a customer's enterprise can't use the app",
+        "what_it_means": "That enterprise's admin hasn't authorized your Client ID yet.",
+        "what_to_do": "Send the customer admin your Client ID and the steps under Admin Console > Platform > Platform Apps.",
+        "agent_can_help": "Write customer-facing admin instructions.",
+        "claim_ids": [
+          "c4",
+          "c5"
+        ]
+      },
+      {
+        "symptom": "Changed scopes aren't taking effect",
+        "what_it_means": "The app needs re-authorization after scope or access level changes.",
+        "what_to_do": "Resubmit to the admin, or have the admin choose Reauthorize in the Platform Apps tab.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c11"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Box Integrations review time: not published. Ask integrate@box.com.",
+      "Admin approval time: depends on each admin, with no published figure.",
+      "Whether Box charges for listing or partner tiers: not found in the docs read.",
+      "Whether unpublished user-auth apps in free developer accounts have a user cap: not found in the docs read.",
+      "The exact scope list was not enumerated from the pages read; check the app's Configuration tab.",
+      "The probe of the authorize endpoint did not show how Box rejects invalid client IDs, so no rejection behavior is claimed."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Composio can provide the OAuth app so you don't need to register your own; if not, you register your own client ID and secret.",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "You do not need to register an OAuth app or supply its client ID and client secret.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "Box has Composio-managed OAuth available.",
+        "source_url": "https://docs.composio.dev/toolkits/box",
+        "quote": "**Composio-managed OAuth available?** Yes",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Apps created by free developer accounts are authorized automatically.",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "Apps created by free developer (Individual) accounts are authorized",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "Enterprise developers who aren't admins must submit the app to an admin for authorization.",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "For enterprise accounts, a Box Admin must approve the application.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": "The claim is phrased as a negative but the quote is not. Read the quote before relying on it."
+      },
+      {
+        "id": "c5",
+        "text": "An admin needs the app's Client ID to authorize or enable it in the Admin Console.",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "A Box Admin or Co-Admin needs an application\u2019s Client ID to authorize or",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "Integrations submissions are reviewed by the Box Partner team 'as soon as possible', with no stated timeline.",
+        "source_url": "https://developer.box.com/guides/applications/integrations",
+        "quote": "Once a request for approval is received, the Box Partner team will be notified and review your request as soon as possible.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": "The claim is phrased as a negative but the quote is not. Read the quote before relying on it."
+      },
+      {
+        "id": "c7",
+        "text": "Integrations require a production-ready app using OAuth 2.0 and no other authentication method.",
+        "source_url": "https://developer.box.com/guides/applications/integrations",
+        "quote": "The platform app leverages OAuth 2.0 authentication, as Integrations do not support any other authentication methods.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "When creating a Platform App, User type is for OAuth 2.0 user-facing apps; Server type uses CCG or JWT.",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration",
+        "quote": "User \u2014 for user-facing apps (OAuth 2.0)",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "No review or approval timeline for admin approval or Integrations listing was found in the sources.",
+        "source_url": null,
+        "quote": null,
+        "probe_id": null,
+        "label": "unknown",
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "With OAuth 2.0 the user logs in to Box and approves the scopes the app asks for, so each end user consents.",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2",
+        "quote": "The user logs in to Box and approves the scopes your application asks for.",
+        "probe_id": null,
+        "label": "unknown",
+        "note": "The claim states 2, which the quote does not contain."
+      },
+      {
+        "id": "c11",
+        "text": "When scopes or access level change, the app must be re-authorized.",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "When an application\u2019s scopes or access level change, the application must be re-authorized for the changes to take effect.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-20T08:50:11.992Z",
+    "generated_by": "research claude-haiku-5-5 + writing claude-sonnet-5-5 + composio_search",
+    "duration_ms": 53994,
+    "query": "Box",
+    "partial": false,
+    "warnings": [],
+    "verification": {
+      "claims_total": 11,
+      "quotes_checked": 10,
+      "quotes_verified": 9,
+      "downgraded": 1
+    },
+    "usage": {
+      "usd": 0.0804,
+      "input_tokens": 48101,
+      "output_tokens": 8184,
+      "cache_read_tokens": 25636,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-20T08:49:20.135Z",
+        "via": "direct",
+        "chars": 20290
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/box",
+        "title": null,
+        "fetched_at": "2026-10-20T08:49:20.137Z",
+        "via": "direct",
+        "chars": 303
+      },
+      {
+        "url": "https://developer.box.com/guides/authentication/oauth2",
+        "title": "OAuth 2.0 authentication - Box Dev Docs",
+        "fetched_at": "2026-10-20T08:49:21.869Z",
+        "via": "direct",
+        "chars": 1281
+      },
+      {
+        "url": "https://developer.box.com/guides/applications",
+        "title": "Applications - Box Dev Docs",
+        "fetched_at": "2026-10-20T08:49:23.176Z",
+        "via": "direct",
+        "chars": 1613
+      },
+      {
+        "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "title": "Platform app approval - Box Dev Docs",
+        "fetched_at": "2026-10-20T08:49:28.463Z",
+        "via": "direct",
+        "chars": 4617
+      },
+      {
+        "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "title": "Plan your integration - Box Dev Docs",
+        "fetched_at": "2026-10-20T08:49:28.630Z",
+        "via": "direct",
+        "chars": 5031
+      },
+      {
+        "url": "https://developer.box.com/guides/applications/integrations",
+        "title": "Integrations - Box Dev Docs",
+        "fetched_at": "2026-10-20T08:49:30.503Z",
+        "via": "direct",
+        "chars": 2254
+      }
+    ],
+    "probes": [
+      {
+        "id": "p1",
+        "url": "https://account.box.com/api/oauth2/authorize?response_type=code&client_id=invalid-client-id-test&redirect_uri=https://example.com/callback",
+        "purpose": "Observe Box OAuth authorize endpoint response to invalid client_id",
+        "status": 200,
+        "location": null,
+        "observation": "Page title: \"Box\". Body starts: \"Box - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\"",
+        "at": "2026-10-20T08:49:23.301Z"
+      }
+    ]
+  }
+}

@@ -137,7 +137,7 @@ describe("[P1/P2] agent deadlines and search budget", () => {
     expect(r.outcome).toBe("ok");
     if (r.outcome === "ok") expect(r.record.meta.partial).toBe(true);
     // Server web search is offered with the remaining budget.
-    const ws = (toolsSeen[0] as { type?: string; max_uses?: number }[]).find((t) => t.type === "web_search_20260209");
+    const ws = (toolsSeen[0] as { name?: string; type?: string; max_uses?: number }[]).find((t) => t.name === "web_search" && !!t.type);
     expect(ws?.max_uses).toBe(3);
   });
 });

@@ -224,6 +224,8 @@ function EventRow({ e, t }: { e: Ev; t: number }) {
       return row("💭", <span className="text-stone-500">{e.text}</span>);
     case "verify":
       return row("✅", <>Evidence check: {e.verified}/{e.checked} quotes found on the source pages · {e.downgraded} claims downgraded to Unknown · {e.total} claims total</>);
+    case "cost":
+      return row("💲", <span className="text-stone-500">Model cost for this run: ~${e.usd.toFixed(3)} ({Math.round(e.input_tokens / 1000)}k input, {Math.round(e.output_tokens / 1000)}k output tokens{e.web_searches ? `, ${e.web_searches} web searches` : ""})</span>);
     case "warning":
       return row("⚠️", e.message, "text-amber-700");
     case "error":

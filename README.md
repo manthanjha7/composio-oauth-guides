@@ -29,7 +29,7 @@ npm test                     # 34 unit tests, incl. a scripted run of the full a
 
 | Env var | Needed for |
 |---|---|
-| `ANTHROPIC_API_KEY` | Live generation. The library works without it. |
+| `ANTHROPIC_API_KEY` | Live generation. The library works without it. `AGENT_RESEARCH_MODEL` / `AGENT_MODEL` override the Haiku/Sonnet defaults; `GENERATE_DAILY_CAP` limits spend. |
 | `COMPOSIO_API_KEY` | Optional. Research via the **Composio Search** toolkit in a Composio session, and managed-auth status from the toolkit API. Without it, the agent uses Anthropic web search and Composio's public docs. |
 | `BLOB_READ_WRITE_TOKEN` | Durable storage for generated guides. **Required on Vercel** (live generation refuses to run without it, so share links never break). Locally, guides go to `./.data`. |
 
@@ -38,10 +38,11 @@ Useful scripts:
 - `npx tsx scripts/check-guide.mts data/guides/gmail.json` re-fetches every cited page and string-matches each quote.
 - `npx tsx scripts/probe.mts <url>` runs the same probe the agent uses.
 - `npx tsx scripts/composio-lookup.mts <app>` returns the Composio facts the agent sees.
+- `npx tsx --env-file=.env.local scripts/generate.mts <app>` runs the full agent from the terminal and saves the guide.
 
 ## How the agent works
 
-`src/lib/agent/run.ts` is a manual tool-use loop on Claude Opus 5.5 (adaptive thinking, effort `medium`, server-side refusal fallback enabled).
+`src/lib/agent/run.ts` is a manual tool-use loop. Research turns run on **Claude Haiku 5.5** (many cheap tool calls, prompt-cached conversation); the guide is written by **Claude Sonnet 5.5** (server-side refusal fallback on). A typical run takes 50-110 s and costs **$0.07-0.30** (tracked per run and stored in the guide's metadata).
 
 1. **Composio check** (`composio_lookup`): the managed-auth directory, the toolkit page header + FAQ (not the 600 KB of tool definitions), the `composio.dev/auth/<app>` credential guide, and the toolkit API's `composio_managed_auth_schemes` when a key is set.
 2. **Identify** (`confirm_app`): name, website, docs URL and OAuth support are shown on screen first, so a wrong match is obvious. Ambiguous input gets a "did you mean". Apps without OAuth get an honest "no OAuth app needed".
@@ -49,7 +50,7 @@ Useful scripts:
    - Search uses Composio Search (`COMPOSIO_SEARCH_WEB`) through a direct-tools session, falling back to Anthropic's `web_search` server tool.
    - Fetch is a direct, SSRF-guarded fetch, falling back to `COMPOSIO_SEARCH_FETCH_URL_CONTENT` for JS-rendered pages.
 4. **Probe** (`probe_url`): one request to the provider's real authorize endpoint with a dummy client, recording what comes back. For example, Google redirects with a base64 error that decodes to "invalid_client: The OAuth client was not found".
-5. **Write**: a second call fills a fixed Zod schema via structured output, from a dossier of everything read.
+5. **Write**: a second call writes the guide as JSON against a fixed schema, from a dossier of everything read. Zod validates it, with one repair turn on errors. (API structured outputs reject this schema as too large: "compiled grammar is too large".)
 6. **Enforce evidence, in code** (`src/lib/evidence.ts`):
    - A docs claim survives only if its quote appears verbatim in a page the agent actually fetched, on the right authority (the provider's own domains, or composio.dev).
    - Every number in the claim must also appear in the quote; negation mismatches get a visible note.
@@ -78,6 +79,7 @@ The planning doc (user flows, system design, reviewer feedback) is in `docs/plan
 - `/verification` shows two things:
   - the automatic quote check per guide (e.g. Slack: 75/75 quotes verified on live pages)
   - a manual ledger of material claims: what we believed, how we checked it, and whether it was confirmed, corrected or unverifiable
+- Live dry run (5 apps, $0.63 total): Calendly, HubSpot, Xero, Box, and Gmail compared against its seed (9/10 key facts matched). Results are in the ledger (v17, v18).
 - Seed guides were researched at build time by Claude research agents under the same schema and evidence rules as the live agent (`docs/seed-research-brief.md`), because no Anthropic API key was configured yet.
 - Hands-on setup attempts are tracked in `attempts/`. Until they're done, no claim is labelled 🧪 Tested.
 

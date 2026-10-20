@@ -141,6 +141,9 @@ export const GuideRecordSchema = z.object({
     query: z.string().nullable(),
     partial: z.boolean(),
     warnings: z.array(z.string()).optional(),
+    usage: z
+      .object({ usd: z.number(), input_tokens: z.number(), output_tokens: z.number(), cache_read_tokens: z.number(), web_searches: z.number() })
+      .optional(),
     verification: z.object({
       claims_total: z.number(),
       quotes_checked: z.number(),

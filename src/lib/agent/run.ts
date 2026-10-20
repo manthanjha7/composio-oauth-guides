@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { BetaMessageParam, BetaToolUnion, BetaToolUseBlock } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
 import { composioLookup, type ComposioLookup } from "../composio";
@@ -11,9 +10,34 @@ import { fetchPageText, probe, trimForModel } from "../web";
 import { researchSystem, WRITE_SYSTEM } from "./prompt";
 
 
-export const MODEL = process.env.AGENT_MODEL || "claude-opus-5-5";
-const EFFORT = (process.env.AGENT_EFFORT || "medium") as "low" | "medium" | "high";
+// Research (many cheap tool-calling turns) runs on Haiku; writing the guide (one careful structured call) on Sonnet.
+export const RESEARCH_MODEL = process.env.AGENT_RESEARCH_MODEL || "claude-haiku-5-5";
+export const MODEL = process.env.AGENT_MODEL || "claude-sonnet-5-5";
+type Effort = "low" | "medium" | "high";
+const RESEARCH_EFFORT = (process.env.AGENT_RESEARCH_EFFORT || "medium") as Effort;
+const EFFORT = (process.env.AGENT_EFFORT || "medium") as Effort;
 const BETAS: Anthropic.Beta.AnthropicBeta[] = ["server-side-fallback-2026-07-01"];
+
+// Server-side refusal fallback ("default" form) is supported on these model families; Haiku has none.
+const supportsFallback = (m: string) => /claude-(opus|sonnet|fable)-5/.test(m);
+// Dynamic-filtering web search needs Sonnet/Opus 4.6+; other models use the basic variant.
+const webSearchType = (m: string) => (/claude-(opus|sonnet|fable)-/.test(m) ? "web_search_20260209" : "web_search_20250305");
+
+// USD per million tokens (input, output). Cache writes ~1.25x input, cache reads 0.1x input. Web search $10/1k.
+const PRICES: Record<string, [number, number]> = {
+  "claude-haiku-5-5": [0.1, 0.5],
+  "claude-sonnet-5-5": [2, 10],
+  "claude-opus-5-5": [4, 20],
+};
+type Usage = { input_tokens: number; output_tokens: number; cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null; server_tool_use?: { web_search_requests?: number } | null };
+export function estimateCost(model: string, u: Usage): number {
+  const [pin, pout] = PRICES[model] ?? [4, 20];
+  const searches = u.server_tool_use?.web_search_requests ?? 0;
+  return (
+    (u.input_tokens * pin + (u.cache_creation_input_tokens ?? 0) * pin * 1.25 + (u.cache_read_input_tokens ?? 0) * pin * 0.1 + u.output_tokens * pout) / 1e6 +
+    searches * 0.01
+  );
+}
 
 export type AgentEvent =
   | { type: "stage"; stage: "start" | "composio" | "identify" | "research" | "probe" | "write" | "verify" | "save"; message: string }
@@ -24,6 +48,7 @@ export type AgentEvent =
   | { type: "probe"; id: string; url: string; status: number | null; observation: string }
   | { type: "note"; text: string }
   | { type: "verify"; total: number; checked: number; verified: number; downgraded: number }
+  | { type: "cost"; usd: number; input_tokens: number; output_tokens: number; web_searches: number }
   | { type: "warning"; message: string }
   | { type: "done"; slug: string; partial: boolean }
   | { type: "ambiguous"; candidates: string[] }
@@ -81,7 +106,7 @@ function customTools(useComposioSearch: boolean): BetaToolUnion[] {
       input_schema: {
         type: "object",
         properties: {
-          name: { type: "string" },
+          name: { type: "string", description: "Short official product name only, e.g. 'Gmail' or 'Box' (no parentheses or company suffixes)" },
           website: { type: ["string", "null"] },
           developer_docs_url: { type: ["string", "null"] },
           oauth_for_third_party_apps: { type: "string", enum: ["yes", "no", "unclear"] },
@@ -127,7 +152,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const emit = opts.emit;
   const client = opts.client ?? new Anthropic();
   const maxSearches = opts.maxSearches ?? 5;
-  const maxFetches = opts.maxFetches ?? 8;
+  const maxFetches = opts.maxFetches ?? 6;
   const researchDeadline = started + (opts.researchBudgetMs ?? 150_000);
   const runDeadline = started + (opts.totalBudgetMs ?? 270_000);
   const runId = Math.random().toString(36).slice(2, 10);
@@ -165,29 +190,40 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
   const tools = customTools(!!search);
   if (!search) {
-    tools.push({ type: "web_search_20260209", name: "web_search", max_uses: maxSearches } as BetaToolUnion);
+    tools.push({ type: webSearchType(RESEARCH_MODEL), name: "web_search", max_uses: maxSearches } as BetaToolUnion);
   }
 
   // Anthropic's server-side web search counts max_uses per request, so pass the remaining run budget each turn.
   const toolsForTurn = (): BetaToolUnion[] =>
     search
       ? tools
-      : tools.map((t) => ("type" in t && t.type === "web_search_20260209" ? { ...t, max_uses: Math.max(1, maxSearches - searches) } : t));
+      : tools.map((t) => ("name" in t && t.name === "web_search" && "type" in t ? { ...t, max_uses: Math.max(1, maxSearches - searches) } : t));
 
   // Server-side refusal fallback is on by default; if the API rejects it for this request shape, retry once without it.
   // Every call gets a timeout derived from a deadline so a slow response can't outlive the serverless function.
   let useFallbacks = process.env.AGENT_FALLBACKS !== "off";
+  const spend = { usd: 0, input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, web_searches: 0 };
   type StreamParams = Parameters<typeof client.beta.messages.stream>[0];
   async function callModel(params: StreamParams, deadlineAt: number) {
-    const run = (withFallbacks: boolean) =>
-      client.beta.messages
+    const run = async (withFallbacks: boolean) => {
+      const msg = await client.beta.messages
         .stream(withFallbacks ? { ...params, betas: BETAS, fallbacks: "default" } : params, {
           signal: opts.signal,
           timeout: Math.max(10_000, deadlineAt - Date.now()),
           maxRetries: 1,
         })
         .finalMessage();
-    if (!useFallbacks) return run(false);
+      const u = msg.usage as Usage | undefined;
+      if (u) {
+        spend.usd += estimateCost(params.model, u);
+        spend.input_tokens += u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+        spend.output_tokens += u.output_tokens;
+        spend.cache_read_tokens += u.cache_read_input_tokens ?? 0;
+        spend.web_searches += u.server_tool_use?.web_search_requests ?? 0;
+      }
+      return msg;
+    };
+    if (!useFallbacks || !supportsFallback(params.model)) return run(false);
     try {
       return await run(true);
     } catch (e) {
@@ -256,7 +292,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
           addPage(page.url, page.text, "direct", page.title);
           if (page.url !== url) ctx.pages.set(canonicalUrl(url), page.text);
           emit({ type: "fetch", url: page.url, ok: true, chars: page.text.length, via: "direct" });
-          return { content: `URL: ${page.url}\nTITLE: ${page.title ?? ""}\n\n${trimForModel(page.text)}` };
+          return { content: `URL: ${page.url}\nTITLE: ${page.title ?? ""}\n\n${trimForModel(page.text, 10_000)}` };
         } catch (e) {
           if (search) {
             try {
@@ -265,14 +301,17 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
                 addPage(page.url, page.text, "composio_fetch", page.title);
                 if (page.url !== url) ctx.pages.set(canonicalUrl(url), page.text);
                 emit({ type: "fetch", url: page.url, ok: true, chars: page.text.length, via: "Composio fetch" });
-                return { content: `URL: ${page.url}\nTITLE: ${page.title ?? ""}\n\n${trimForModel(page.text)}` };
+                return { content: `URL: ${page.url}\nTITLE: ${page.title ?? ""}\n\n${trimForModel(page.text, 10_000)}` };
               }
             } catch {
               /* fall through */
             }
           }
           emit({ type: "fetch", url, ok: false, chars: 0, via: "direct", error: (e as Error).message });
-          return { content: `Could not fetch: ${(e as Error).message}`, isError: true };
+          return {
+            content: `Could not fetch: ${(e as Error).message}. If the docs site renders with JavaScript, try a Markdown version (same URL + ".md"), the site's /llms.txt, or search for the fact instead.`,
+            isError: true,
+          };
         }
       }
       case "probe_url": {
@@ -312,9 +351,11 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       opts.signal?.throwIfAborted();
       const msg = await callModel(
         {
-          model: MODEL,
+          model: RESEARCH_MODEL,
           max_tokens: 32000,
-          output_config: { effort: EFFORT },
+          // Auto-cache the growing conversation so each research turn re-reads it at 0.1x price.
+          cache_control: { type: "ephemeral" },
+          output_config: { effort: RESEARCH_EFFORT },
           system: researchSystem(maxSearches, maxFetches),
           tools: toolsForTurn(),
           messages,
@@ -394,46 +435,47 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     return { outcome: "error", message };
   }
 
-  // ---- Phase 2: write the guide from a dossier (structured output) ----
+  // ---- Phase 2: write the guide from a dossier ----
   emit({ type: "stage", stage: "write", message: "Writing the guide from the evidence gathered" });
   const lk = lookup as ComposioLookup | null;
   const dossier = buildDossier({ query: opts.query, ident, lookup: lk, notes, ctx, hits, partial });
 
+  // JSON-in-text validated by Zod, rather than API structured outputs: the guide schema is too large for the
+  // constrained-decoding grammar ("compiled grammar is too large"). One repair turn feeds back the exact errors.
+  const schemaText = JSON.stringify(z.toJSONSchema(GeneratedGuideSchema));
+  const system = `${WRITE_SYSTEM}\n\nReturn ONLY one JSON object (no prose, no code fences) that validates against this JSON Schema:\n${schemaText}`;
+  const writeMessages: BetaMessageParam[] = [{ role: "user", content: dossier }];
   let generated: z.infer<typeof GeneratedGuideSchema> | null = null;
   for (let attempt = 0; attempt < 2 && !generated; attempt++) {
     if (attempt > 0 && runDeadline - Date.now() < 45_000) break;
     try {
-      const msg = await callModel({
-        model: MODEL,
-        max_tokens: 64000,
-        output_config: { effort: EFFORT, format: betaZodOutputFormat(GeneratedGuideSchema) },
-        system: WRITE_SYSTEM,
-        messages: [
-          {
-            role: "user",
-            content:
-              attempt === 0
-                ? dossier
-                : `${dossier}\n\nYour previous answer did not match the schema. Return only valid JSON for the schema.`,
-          },
-        ],
-      }, runDeadline - 10_000);
+      const msg = await callModel(
+        { model: MODEL, max_tokens: 48000, output_config: { effort: EFFORT }, system, messages: writeMessages },
+        runDeadline - 10_000,
+      );
       if (msg.stop_reason === "refusal") throw new Error("The model declined to write this guide.");
       if (msg.stop_reason === "max_tokens") throw new Error("The guide was cut off (max_tokens).");
       const text = msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
-      const parsed = GeneratedGuideSchema.safeParse(JSON.parse(text));
-      if (parsed.success) generated = parsed.data;
-      else emit({ type: "warning", message: "Guide did not match the schema; retrying once." });
+      let problem: string;
+      try {
+        const parsed = GeneratedGuideSchema.safeParse(JSON.parse(extractJson(text)));
+        if (parsed.success) {
+          generated = parsed.data;
+          break;
+        }
+        problem = parsed.error.issues.slice(0, 15).map((i) => `${i.path.join(".")}: ${i.message}`).join("\n");
+      } catch (err) {
+        problem = `Not valid JSON: ${(err as Error).message}`;
+      }
+      emit({ type: "warning", message: "Guide did not match the schema; asking the model to repair it once." });
+      writeMessages.push({ role: "assistant", content: msg.content }, { role: "user", content: `Fix these problems and return the complete corrected JSON object only:\n${problem}` });
     } catch (e) {
       if (e instanceof Anthropic.APIError) {
         emit({ type: "error", message: `Model API error while writing (${e.status ?? "network"}): ${e.message}` });
         return { outcome: "error", message: e.message };
       }
-      if (attempt === 1) {
-        emit({ type: "error", message: `Could not produce a valid guide: ${(e as Error).message}` });
-        return { outcome: "error", message: (e as Error).message };
-      }
-      emit({ type: "warning", message: `Retrying guide generation: ${(e as Error).message}` });
+      emit({ type: "error", message: `Could not produce a valid guide: ${(e as Error).message}` });
+      return { outcome: "error", message: (e as Error).message };
     }
   }
   if (!generated) {
@@ -449,25 +491,37 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   warnings.forEach((w) => emit({ type: "warning", message: w }));
   emit({ type: "verify", total: stats.claims_total, checked: stats.quotes_checked, verified: stats.quotes_verified, downgraded: stats.downgraded });
 
+  emit({ type: "cost", usd: spend.usd, input_tokens: spend.input_tokens, output_tokens: spend.output_tokens, web_searches: spend.web_searches });
   const record: GuideRecord = {
-    slug: slugify(guide.app.name || opts.query),
+    // Prefer the user's query for the URL (short, predictable); fall back to the identified name.
+    slug: slugify(opts.query) || slugify(guide.app.name),
     guide,
     meta: {
       origin: "live",
       reviewed: false,
       review_note: null,
       generated_at: new Date().toISOString(),
-      generated_by: `${MODEL} (effort ${EFFORT}) + ${searchVia}`,
+      generated_by: `research ${RESEARCH_MODEL} + writing ${MODEL} + ${searchVia}`,
       duration_ms: Date.now() - started,
       query: opts.query,
       partial,
       warnings,
       verification: stats,
+      usage: { ...spend, usd: Math.round(spend.usd * 10000) / 10000 },
       sources,
       probes: ctx.probes,
     },
   };
   return { outcome: "ok", record };
+}
+
+/** Pull the JSON object out of a reply that may include code fences or a stray sentence. */
+export function extractJson(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const body = fenced ? fenced[1] : text;
+  const a = body.indexOf("{");
+  const b = body.lastIndexOf("}");
+  return a >= 0 && b > a ? body.slice(a, b + 1) : body;
 }
 
 function buildDossier(d: {

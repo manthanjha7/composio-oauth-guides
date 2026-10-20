@@ -28,7 +28,7 @@ export default function HowItWorks() {
           <li><b>Identify:</b> states which provider it is researching, with website and docs URL, so a wrong match is visible immediately. Ambiguous names get a &quot;did you mean&quot;.</li>
           <li><b>Research:</b> searches (Composio Search toolkit via a Composio session; Anthropic web search as a fallback) and reads official docs. Budgets: about 5 searches and 8 page reads.</li>
           <li><b>Probe:</b> sends a request to the provider&apos;s real OAuth authorize endpoint with a dummy client and records what comes back (e.g. Google: &quot;invalid_client: The OAuth client was not found&quot;).</li>
-          <li><b>Write:</b> fills a fixed guide schema (structured output): scenarios, time split, steps with owners, traps, blockers, claims.</li>
+          <li><b>Write:</b> a stronger model (Sonnet) writes the guide against a fixed schema: scenarios, time split, steps with owners, traps, blockers, claims. Research uses a cheaper model (Haiku). A run costs roughly $0.07-0.30.</li>
           <li><b>Check:</b> code (not the model) verifies every docs claim&apos;s quote appears verbatim in a page the agent actually read. Failures are downgraded to Unknown, with a note.</li>
           <li><b>Save, then link:</b> the share link is shown only after the guide is saved and read back.</li>
         </ol>

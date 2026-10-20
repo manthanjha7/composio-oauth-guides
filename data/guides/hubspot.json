@@ -1,0 +1,668 @@
+{
+  "slug": "hubspot",
+  "guide": {
+    "app": {
+      "name": "HubSpot",
+      "website": "https://www.hubspot.com",
+      "developer_docs_url": "https://developers.hubspot.com/docs/api/oauth/quickstart"
+    },
+    "oauth_supported": "yes",
+    "summary": "You can start without your own OAuth app because Composio provides a managed HubSpot app, but users see an unverified-app warning. Creating your own public HubSpot app and a Composio auth config is a moderate amount of work. The hard part is Marketplace listing: it needs 3 active unaffiliated installs first, then a manual HubSpot review.",
+    "composio": {
+      "toolkit_slug": "hubspot",
+      "managed_oauth": "yes",
+      "credential_guide_url": "https://composio.dev/auth/hubspot",
+      "note": "Composio's managed HubSpot app exists but is still awaiting HubSpot approval, with no ETA. With managed auth you can only remove optional scopes, not add any. Custom auth configs must use the same required/optional scope categories as your HubSpot app."
+    },
+    "need_own_app": {
+      "answer": "Not for a prototype or internal test: Composio's managed app works, with a warning. For production with end users across many HubSpot portals, you probably want your own public HubSpot app, mainly for your own branding, scopes and review control.",
+      "reasons": [
+        "You need scopes that the managed app does not include (scopes cannot be added to the managed app).",
+        "You want your own app name and branding on the consent screen.",
+        "You want control over app review status and rollout, so the 'unverified app' warning is tied to your own app.",
+        "Your team should own the production setup and its credentials.",
+        "You need webhooks, which require a public app with an App ID and Developer API Key."
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Prototype or internal use on Composio managed auth",
+        "when_this_applies": "You are testing, or the managed app's scopes cover your needs and users can accept an unverified-app warning.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "Under 30 min",
+          "basis": "Estimate from step count, not measured. No HubSpot app registration is needed (c1)."
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No HubSpot review is required to use the managed app (c2)."
+        },
+        "approval": "None from you. Users see a 'Connecting an unverified app' warning and must accept it.",
+        "claim_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      {
+        "id": "s2",
+        "label": "Own public HubSpot app, unlisted (custom auth config)",
+        "when_this_applies": "You need your own scopes or branding, or want to own the app, but you are not yet listed on the Marketplace.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-3 hours",
+          "basis": "Estimate from step count, not measured. Includes creating the app, configuring scopes and matching them in Composio (c5, c6)."
+        },
+        "waiting": {
+          "estimate": "None for the install itself",
+          "basis": "No review is needed to install an unlisted app, but installers see a confirmation dialog (c3)."
+        },
+        "approval": "No review required. HubSpot shows a confirmation dialog for unlisted or unverified apps. Installing users must be Super Admin or have Marketplace Access permission.",
+        "claim_ids": [
+          "c3",
+          "c4",
+          "c5",
+          "c6"
+        ]
+      },
+      {
+        "id": "s3",
+        "label": "Marketplace-listed public app",
+        "when_this_applies": "You want to remove the unverified confirmation dialog for end users by getting reviewed and listed.",
+        "difficulty": "hard",
+        "hands_on": {
+          "estimate": "Unknown",
+          "basis": "No evidence for the effort of preparing the listing, public docs, privacy policy and ToS, or of obtaining 3 installs."
+        },
+        "waiting": {
+          "estimate": "Initial review within 10 business days of submission; overall process up to 60 days from when feedback is shared",
+          "basis": "Stated in HubSpot's listing requirements (c9). The time to get 3 installs beforehand is Unknown."
+        },
+        "approval": "Manual review by the HubSpot Ecosystem Quality team. Requires 3 active unique installs, OAuth as the sole auth method, only used scopes, live public URLs, and the Technology Partner Program Agreement.",
+        "claim_ids": [
+          "c7",
+          "c8",
+          "c9",
+          "c10",
+          "c11"
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "HubSpot developer account",
+        "detail": "You need a HubSpot developer account to create the public app. You or someone on your team must log in and create it.",
+        "claim_ids": []
+      },
+      {
+        "title": "Decide the scope list",
+        "detail": "List the HubSpot scopes your tools need. Keep 'oauth' as the only required scope and put the rest as optional, as Composio recommends.",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "title": "Super Admin or Marketplace Access on the install target",
+        "detail": "The user who installs the app in a HubSpot account must be a Super Admin or have HubSpot Marketplace Access permissions.",
+        "claim_ids": [
+          "c4"
+        ]
+      },
+      {
+        "title": "For listing: public pages and legal docs",
+        "detail": "Live privacy policy, Terms of Service, setup documentation, support URL, pricing page and at least one support contact. You must also agree to the Technology Partner Program Agreement.",
+        "claim_ids": [
+          "c8",
+          "c10"
+        ]
+      },
+      {
+        "title": "For listing: 3 real installs",
+        "detail": "At least three unique, unaffiliated HubSpot production accounts with OAuth activity in the last 30 days.",
+        "claim_ids": [
+          "c7"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Check whether the managed app is enough",
+        "owner": "agent",
+        "detail": "Compare the scopes your tools need against the Composio managed HubSpot app. Managed auth lets you only remove optional scopes. If you need more or different scopes, or your own branding, go to the custom path.",
+        "inputs": [
+          "List of Composio HubSpot tools you plan to use"
+        ],
+        "done_when": "You have decided managed vs custom.",
+        "scenario_ids": [
+          "s1",
+          "s2",
+          "s3"
+        ],
+        "link": "https://docs.composio.dev/toolkits/hubspot",
+        "claim_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      {
+        "title": "Use managed auth (prototype path)",
+        "owner": "you",
+        "detail": "Create a Composio auth config for HubSpot using Composio-managed auth and connect an account. Accept the unverified-app warning when HubSpot shows it.",
+        "inputs": [
+          "Composio account and API key"
+        ],
+        "done_when": "A HubSpot connected account shows as active.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": "https://docs.composio.dev/toolkits/managed-auth",
+        "claim_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      {
+        "title": "Create the HubSpot public app",
+        "owner": "you",
+        "detail": "In your HubSpot developer account, create an app. Open its Auth settings to get the client ID and client secret.",
+        "inputs": [
+          "HubSpot developer account login"
+        ],
+        "done_when": "You have a client ID and client secret.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/working-with-oauth",
+        "claim_ids": [
+          "c4",
+          "c6"
+        ]
+      },
+      {
+        "title": "Draft the scope plan",
+        "owner": "agent",
+        "detail": "Produce a scope list: 'oauth' required, tool scopes optional. Write a one-line justification per scope, remove unused scopes, and note which scopes apply only to some users so they are conditional or optional.",
+        "inputs": [
+          "Tool list",
+          "Draft scope list"
+        ],
+        "done_when": "You have a scope table with required/optional category and justification.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c5",
+          "c10"
+        ]
+      },
+      {
+        "title": "Get the callback URI from Composio",
+        "owner": "you",
+        "detail": "In the Composio dashboard, start creating a HubSpot auth config with custom credentials and copy the redirect/callback URI shown there. Do not hard-code a URL.",
+        "inputs": [
+          "Composio dashboard access"
+        ],
+        "done_when": "You have copied the redirect URI from your dashboard.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://composio.dev/auth/hubspot",
+        "claim_ids": [
+          "c6"
+        ]
+      },
+      {
+        "title": "Configure the HubSpot app's redirect URL and scopes",
+        "owner": "you",
+        "detail": "Paste the Composio redirect URI into the HubSpot app's Auth settings. It must be https in production and a domain, not an IP. Mark 'oauth' as Required and tool scopes as Optional.",
+        "inputs": [
+          "Composio redirect URI",
+          "Scope plan"
+        ],
+        "done_when": "The HubSpot app shows the redirect URL and scope categories you planned.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/working-with-oauth",
+        "claim_ids": [
+          "c5",
+          "c6",
+          "c12"
+        ]
+      },
+      {
+        "title": "Create the Composio auth config with your credentials",
+        "owner": "you",
+        "detail": "Create a HubSpot auth config in Composio with your client ID and secret. Set scopes to 'oauth' and optional_scopes to your tool scopes, matching the HubSpot app's categories exactly.",
+        "inputs": [
+          "Client ID",
+          "Client secret",
+          "Scope plan"
+        ],
+        "done_when": "The auth config is saved and its credentials.scopes and credentials.optional_scopes match HubSpot.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://composio.dev/auth/hubspot",
+        "claim_ids": [
+          "c5",
+          "c6"
+        ]
+      },
+      {
+        "title": "Connect a test account and verify scopes",
+        "owner": "you",
+        "detail": "Connect a HubSpot account using the new auth config, expect the confirmation dialog for an unlisted app, and run a tool. If a scope error appears, fix the category mismatch and reconnect.",
+        "inputs": [
+          "HubSpot account where you are Super Admin"
+        ],
+        "done_when": "Connection succeeds and a read tool returns data.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c3",
+          "c4",
+          "c5"
+        ]
+      },
+      {
+        "title": "Get 3 real production installs",
+        "owner": "you",
+        "detail": "Have at least three unaffiliated HubSpot production accounts install the app and generate OAuth-authenticated API activity within 30 days.",
+        "inputs": [
+          "Three unaffiliated customer accounts"
+        ],
+        "done_when": "Three distinct accounts show successful activity in the past 30 days.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "claim_ids": [
+          "c7"
+        ]
+      },
+      {
+        "title": "Prepare listing materials",
+        "owner": "agent",
+        "detail": "Draft the listing copy, shared-data table matching your scopes, setup documentation, pricing text, and a checklist for privacy policy and ToS. Check against the restricted-industries and AI-connector rules, and that the HubSpot name is not combined with your app name.",
+        "inputs": [
+          "Scope plan",
+          "Product details"
+        ],
+        "done_when": "A draft listing and checklist exist for you to review.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/marketplace-restrictions",
+        "claim_ids": [
+          "c8",
+          "c10",
+          "c11",
+          "c13"
+        ]
+      },
+      {
+        "title": "Submit the listing",
+        "owner": "you",
+        "detail": "Publish the privacy policy, ToS, setup docs and support pages, agree to the Technology Partner Program Agreement, and submit the listing. Submit only one app at a time.",
+        "inputs": [
+          "Live public URLs",
+          "Support contact",
+          "Pricing"
+        ],
+        "done_when": "The listing shows as submitted for review.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "claim_ids": [
+          "c8",
+          "c9",
+          "c14"
+        ]
+      },
+      {
+        "title": "Wait for HubSpot review",
+        "owner": "waiting",
+        "detail": "HubSpot's initial review is within 10 business days. Respond to any feedback.",
+        "inputs": [],
+        "done_when": "The listing is approved or you receive feedback to address.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c9"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Scope category mismatch",
+        "detail": "Scopes in Composio 'scopes' must be Required or Conditionally required in HubSpot, and 'optional_scopes' must be Optional. A mismatch causes scope or callback errors.",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "title": "Adding a required scope later breaks installs",
+        "detail": "If you add a new scope as required in HubSpot, every Composio auth config using that app must also request it or new installs can fail. Keep tool scopes optional.",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "title": "Existing connections keep old scopes",
+        "detail": "After changing scopes, reconnect affected accounts, because existing connections keep the scopes granted at original authorization.",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "title": "Chicken-and-egg with listing",
+        "detail": "Listing needs 3 active installs from unaffiliated production accounts, so a new app will show the unverified confirmation dialog while you gather them.",
+        "claim_ids": [
+          "c3",
+          "c7"
+        ]
+      },
+      {
+        "title": "Webhooks need a public app",
+        "detail": "Private or internal apps cannot receive HubSpot webhooks. Use a public app with an App ID and Developer API Key.",
+        "claim_ids": [
+          "c15"
+        ]
+      },
+      {
+        "title": "Composio-style products may not be listable",
+        "detail": "HubSpot's restrictions exclude credential and token brokering, developer-only infrastructure and white-label integration infrastructure. If your product is an agent platform for other developers, check this before planning to list.",
+        "claim_ids": [
+          "c13"
+        ]
+      },
+      {
+        "title": "AI connectors need user-level permissions to list",
+        "detail": "An app that lets an AI agent act on HubSpot CRM data must enforce user-level permissions, and standard OAuth tokens are not sufficient for that.",
+        "claim_ids": [
+          "c13",
+          "c11"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Users see 'Connecting an unverified app' or an install confirmation dialog",
+        "what_it_means": "The managed Composio app is awaiting HubSpot approval, or your own app is unlisted and has not been reviewed by the HubSpot Marketplace Ecosystem Quality team.",
+        "what_to_do": "For prototypes, accept it. For production, use your own app and pursue Marketplace listing, and make the app name, description and scopes clear.",
+        "agent_can_help": "Draft a clear app description and scope justifications.",
+        "claim_ids": [
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "symptom": "Authorization page error or callback error about scopes",
+        "what_it_means": "A scope in the request is not enabled in the HubSpot app, or its Required/Optional category differs between HubSpot and Composio. An account that lacks access to a required scope also errors.",
+        "what_to_do": "Align categories in both places, put tier-dependent scopes in optional_scopes, then reconnect.",
+        "agent_can_help": "Compare the HubSpot app scope list with the Composio auth config JSON and flag mismatches.",
+        "claim_ids": [
+          "c5",
+          "c12"
+        ]
+      },
+      {
+        "symptom": "Tool fails with a missing-scope error",
+        "what_it_means": "The user did not grant a needed optional scope, or the scope is absent from the auth config.",
+        "what_to_do": "Add the scope to both the HubSpot app and the auth config, then reconnect the account.",
+        "agent_can_help": "Identify which scope the failing tool needs.",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "symptom": "Listing rejected or fewer than 3 active installs",
+        "what_it_means": "HubSpot manually reviews listings and rejects those that do not meet the minimum requirements.",
+        "what_to_do": "Fix the listed gaps, then resubmit. Only one app can be in review at a time.",
+        "agent_can_help": "Check the listing draft against the published requirements list.",
+        "claim_ids": [
+          "c7",
+          "c8",
+          "c14"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Whether HubSpot charges a fee for Marketplace listing: not found in the fetched docs. Check the Technology Partner Program Agreement.",
+      "When Composio's managed HubSpot app will be approved: Composio gives no ETA.",
+      "How long listings take in practice: community threads about listings stuck in review exist but were not read. HubSpot's stated 10 business days and 60 days are the only evidence.",
+      "How the HubSpot new developer-platform (project-based) OAuth setup differs from the legacy public app flow used here: those doc pages were partly unavailable.",
+      "The probe of the authorize endpoint with an invalid client ID returned an HTTP 200 page, and the in-page error was not captured, so invalid-credential behavior is unverified.",
+      "Whether a Composio-hosted agent product qualifies as an 'AI connector' or 'credential brokering' under HubSpot's listing rules: confirm with the HubSpot Technology Partner team."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Composio provides a managed OAuth app for HubSpot, so you do not have to register your own to use it.",
+        "source_url": "https://docs.composio.dev/toolkits/hubspot",
+        "quote": "**Composio-managed OAuth available?** Yes",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": "The claim is phrased as a negative but the quote is not. Read the quote before relying on it."
+      },
+      {
+        "id": "c2",
+        "text": "The default Composio-managed HubSpot app is awaiting HubSpot approval, so users see an unverified-app warning; Composio gives no ETA.",
+        "source_url": "https://docs.composio.dev/toolkits/hubspot",
+        "quote": "HubSpot shows this warning because the default Composio-managed HubSpot OAuth app is still awaiting HubSpot approval.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": "The claim is phrased as a negative but the quote is not. Read the quote before relying on it."
+      },
+      {
+        "id": "c3",
+        "text": "HubSpot shows a confirmation dialog when users install unlisted or unverified third-party apps; listed and approved Marketplace apps are unchanged.",
+        "source_url": "https://developers.hubspot.com/changelog/new-confirmation-step-for-unverified-third-party-app-installs",
+        "quote": "Show a confirmation dialog before completing the installation.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "Users installing an app must be a Super Admin or have HubSpot Marketplace Access permissions.",
+        "source_url": "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/working-with-oauth",
+        "quote": "Users installing apps in their HubSpot account must either be a Super Admin or have HubSpot Marketplace Access permissions.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Composio recommends keeping only 'oauth' as the required scope and putting tool permissions in optional_scopes, with categories matching the HubSpot app.",
+        "source_url": "https://docs.composio.dev/toolkits/hubspot",
+        "quote": "What matters is that Composio and HubSpot agree on which scopes are required and which scopes are optional.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "Composio recommends using your own HubSpot OAuth app credentials in a custom auth config when you need your own branding, scopes, or review control.",
+        "source_url": "https://docs.composio.dev/toolkits/hubspot",
+        "quote": "If this warning blocks your rollout, use your own HubSpot OAuth app credentials in a custom Composio auth config.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Marketplace listing requires at least three active, unique installs, defined as unaffiliated production accounts with activity in the past 30 days.",
+        "source_url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "quote": "Installs: your app must have at least three active, unique installs.",
+        "probe_id": null,
+        "label": "unknown",
+        "note": "The claim states 30, which the quote does not contain."
+      },
+      {
+        "id": "c8",
+        "text": "Listing submissions are manually reviewed by the HubSpot Ecosystem Quality team, and all URLs in the listing must be live and public.",
+        "source_url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "quote": "All URLs in your HubSpot Marketplace listing must lead to live, publicly available, and functional pages.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "HubSpot does an initial review within 10 business days, and the whole review and feedback process should take no more than 60 days from when feedback is shared.",
+        "source_url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "quote": "The entire app review and feedback process should take no more than 60 days from the time feedback is shared.",
+        "probe_id": null,
+        "label": "unknown",
+        "note": "The claim states 10, which the quote does not contain."
+      },
+      {
+        "id": "c10",
+        "text": "A listed app must use OAuth as its sole authorization method and must only request scopes it needs.",
+        "source_url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "quote": "OAuth: your app must use OAuth as its sole authorization method.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "AI connector apps must require user-level permissions or be built with HubSpot's MCP Server to be listed.",
+        "source_url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "quote": "it must require user-level permissions by setting access to user-level or be built with HubSpot’s MCP Server .",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "The redirect_uri must use https in production and be a domain, not an IP address; scopes checked in the app's Auth settings are treated as required and must be in the scope parameter.",
+        "source_url": "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/working-with-oauth",
+        "quote": "You also must use a domain, as IP addresses are not supported.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "Apps whose primary offering is storing or distributing end-user OAuth tokens on behalf of third-party developers are not eligible for listing.",
+        "source_url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/marketplace-restrictions",
+        "quote": "Credential and token brokering : apps with a primary commercial offering of storing, managing, or distributing end-user OAuth tokens or API credentials on behalf of third-party developers.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": "The claim is phrased as a negative but the quote is not. Read the quote before relying on it."
+      },
+      {
+        "id": "c14",
+        "text": "Only one app can be submitted for approval at a time; additional apps submitted meanwhile are automatically rejected.",
+        "source_url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "quote": "Any additional apps submitted while the initial app is being processed will automatically be rejected.",
+        "probe_id": null,
+        "label": "provider_docs",
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "HubSpot webhooks require a public app with an App ID and Developer API Key; private or internal apps cannot receive them.",
+        "source_url": "https://docs.composio.dev/toolkits/hubspot",
+        "quote": "HubSpot webhooks require a public app with an App ID and Developer API Key.",
+        "probe_id": null,
+        "label": "composio_docs",
+        "note": "The claim is phrased as a negative but the quote is not. Read the quote before relying on it."
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-20T08:50:27.581Z",
+    "generated_by": "research claude-haiku-5-5 + writing claude-sonnet-5-5 + composio_search",
+    "duration_ms": 69529,
+    "query": "HubSpot",
+    "partial": false,
+    "warnings": [],
+    "verification": {
+      "claims_total": 15,
+      "quotes_checked": 15,
+      "quotes_verified": 13,
+      "downgraded": 2
+    },
+    "usage": {
+      "usd": 0.1174,
+      "input_tokens": 88011,
+      "output_tokens": 10818,
+      "cache_read_tokens": 55488,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-20T08:49:20.258Z",
+        "via": "direct",
+        "chars": 20290
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/hubspot",
+        "title": null,
+        "fetched_at": "2026-10-20T08:49:20.260Z",
+        "via": "direct",
+        "chars": 6371
+      },
+      {
+        "url": "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/working-with-oauth",
+        "title": "Working with OAuth - HubSpot docs",
+        "fetched_at": "2026-10-20T08:49:22.719Z",
+        "via": "direct",
+        "chars": 5925
+      },
+      {
+        "url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/marketplace-restrictions",
+        "title": "HubSpot Marketplace restrictions - HubSpot docs",
+        "fetched_at": "2026-10-20T08:49:29.398Z",
+        "via": "direct",
+        "chars": 4090
+      },
+      {
+        "url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+        "title": "App listing requirements in the HubSpot Marketplace - HubSpot docs",
+        "fetched_at": "2026-10-20T08:49:29.419Z",
+        "via": "direct",
+        "chars": 9481
+      },
+      {
+        "url": "https://developers.hubspot.com/changelog/new-confirmation-step-for-unverified-third-party-app-installs",
+        "title": "New Confirmation Step for Unverified Third-Party App Installs",
+        "fetched_at": "2026-10-20T08:49:35.558Z",
+        "via": "direct",
+        "chars": 1635
+      }
+    ],
+    "probes": [
+      {
+        "id": "p1",
+        "url": "https://app.hubspot.com/oauth/authorize?client_id=invalid-client-id-test&scope=oauth&redirect_uri=https://example.com/callback",
+        "purpose": "Observe HubSpot authorize endpoint response to invalid client_id and example redirect_uri",
+        "status": 200,
+        "location": null,
+        "observation": "Page title: \"HubSpot OAuth\". Body starts: \"- - - HubSpot OAuth - - - -\"",
+        "at": "2026-10-20T08:49:26.477Z"
+      }
+    ]
+  }
+}

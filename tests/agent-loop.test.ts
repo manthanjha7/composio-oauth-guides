@@ -102,7 +102,7 @@ describe("runAgent (scripted model)", () => {
 
     // No Composio key -> Anthropic server-side web search is offered as the search tool.
     const firstTools = (calls[0] as { tools: { name: string; type?: string }[] }).tools;
-    expect(firstTools.some((t) => t.type === "web_search_20260209")).toBe(true);
+    expect(firstTools.some((t) => t.name === "web_search" && t.type?.startsWith("web_search_"))).toBe(true);
     // Tool results for parallel calls come back in ONE user message.
     const history = (calls[3] as { messages: { role: string; content: string | { type: string }[] }[] }).messages;
     const parallel = history.find((m) => Array.isArray(m.content) && m.content.filter((c) => c.type === "tool_result").length === 2);
