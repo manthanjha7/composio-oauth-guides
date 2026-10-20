@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge, DifficultyBadge, ManagedBadge, OriginBadge } from "@/components/badges";
 import { LABEL_INFO } from "@/lib/evidence";
 import type { ClaimT, GuideRecord } from "@/lib/schema";
@@ -33,11 +33,20 @@ const SECTIONS = [
 ];
 
 type Jump = (id: string) => void;
+type PreviewState = { id: string; el: HTMLElement; pinned: boolean; tick: number } | null;
+interface ChipHandlers {
+  jump: Jump;
+  show: (id: string, el: HTMLElement, pinned?: boolean) => void;
+  hide: () => void;
+  openId: string | null;
+}
 
 export function GuideView({ record }: { record: GuideRecord }) {
   const g = record.guide;
   const [scenarioId, setScenarioId] = useState(g.scenarios[0]?.id ?? "");
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
+  const [preview, setPreview] = useState<PreviewState>(null);
+  const hideTimer = useRef<number | undefined>(undefined);
   const [flash, setFlash] = useState<{ id: string; n: number } | null>(null);
   const [labelFilter, setLabelFilter] = useState<ClaimT["label"] | "all">("all");
   const claims = useMemo(() => new Map(g.claims.map((c) => [c.id, c])), [g.claims]);
@@ -56,20 +65,73 @@ export function GuideView({ record }: { record: GuideRecord }) {
   });
 
   const jump: Jump = useCallback((id) => {
+    setPreview(null);
     setLabelFilter("all");
     setFlash((f) => ({ id, n: (f?.n ?? 0) + 1 }));
     requestAnimationFrame(() => {
       const el = document.getElementById(`claim-${id}`);
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
       history.replaceState(null, "", `#claim-${id}`);
     });
   }, []);
 
+  // One shared, viewport-clamped claim preview (hover, focus, or first tap on touch). Esc closes it.
+  const showPreview = useCallback((id: string, el: HTMLElement, pinned = false) => {
+    window.clearTimeout(hideTimer.current);
+    setPreview({ id, el, pinned, tick: 0 });
+  }, []);
+  const hidePreview = useCallback(() => {
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setPreview((p) => (p?.pinned ? p : null)), 150);
+  }, []);
+  const keepPreview = useCallback(() => window.clearTimeout(hideTimer.current), []);
+  const chips: ChipHandlers = { jump, show: showPreview, hide: hidePreview, openId: preview?.id ?? null };
+  useEffect(() => {
+    if (!preview) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPreview(null);
+    // Follow the chip on scroll/resize (keyboard focus scrolls the page) instead of closing.
+    let frame = 0;
+    const follow = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setPreview((p) => (p ? { ...p, tick: p.tick + 1 } : p)));
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", follow, { passive: true });
+    window.addEventListener("resize", follow);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", follow);
+      window.removeEventListener("resize", follow);
+    };
+  }, [preview?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const copy = async () => {
-    await navigator.clipboard.writeText(window.location.href.split("#")[0]);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
+    const url = window.location.href.split("#")[0];
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch {
+      // Clipboard API refused (permissions, insecure context): fall back to a selected textarea.
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        ok = document.execCommand("copy");
+      } catch {
+        ok = false;
+      }
+      ta.remove();
+    }
+    setCopyState(ok ? "ok" : "fail");
+    setTimeout(() => setCopyState("idle"), 2500);
   };
 
   return (
@@ -87,8 +149,8 @@ export function GuideView({ record }: { record: GuideRecord }) {
           </h1>
           <p className="max-w-3xl text-lg leading-relaxed text-muted">{g.summary}</p>
           <div className="flex flex-wrap gap-2 text-sm">
-            <button onClick={copy} className="rounded-lg bg-ink px-3.5 py-2 font-medium text-bg transition hover:bg-white" aria-live="polite">
-              {copied ? "✓ Link copied" : "Copy share link"}
+            <button onClick={copy} className="rounded-lg bg-ink px-3.5 py-2 font-medium text-bg transition hover:bg-white">
+              <span aria-live="polite">{copyState === "ok" ? "✓ Link copied" : copyState === "fail" ? "Couldn't copy: use the address bar" : "Copy share link"}</span>
             </button>
             <a href={`/guides/${record.slug}/md`} className="rounded-lg border border-line-strong px-3.5 py-2 text-ink transition hover:bg-surface-2">
               Markdown <span className="text-muted">(for docs or your coding agent)</span>
@@ -147,12 +209,25 @@ export function GuideView({ record }: { record: GuideRecord }) {
         {/* Scenario */}
         <section id="scenario" className="scroll-mt-24">
           <SectionTitle title="Pick your scenario" sub="Difficulty depends on what you're building (scopes, who your users are, how you distribute), not just on the app." />
-          <div role="tablist" aria-label="Scenarios" className="scrollbar-none -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
+          <label className="block md:hidden">
+            <span className="sr-only">Scenario</span>
+            <select
+              value={scenarioId}
+              onChange={(e) => setScenarioId(e.target.value)}
+              className="w-full rounded-lg border border-line-strong bg-surface-2 px-3 py-2.5 text-sm text-ink"
+            >
+              {g.scenarios.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label} ({s.difficulty})
+                </option>
+              ))}
+            </select>
+          </label>
+          <div role="group" aria-label="Scenarios" className="hidden flex-wrap gap-1.5 md:flex">
             {g.scenarios.map((s) => (
               <button
                 key={s.id}
-                role="tab"
-                aria-selected={s.id === scenarioId}
+                aria-pressed={s.id === scenarioId}
                 aria-controls="scenario-panel"
                 onClick={() => setScenarioId(s.id)}
                 className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ring-1 ring-inset transition ${
@@ -160,12 +235,13 @@ export function GuideView({ record }: { record: GuideRecord }) {
                 }`}
               >
                 <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${dot(s.difficulty)}`} />
-                <span className="max-w-[16rem] truncate font-medium md:max-w-none md:whitespace-normal">{s.label}</span>
+                <span className="font-medium">{s.label}</span>
+                <span className="sr-only"> ({s.difficulty})</span>
               </button>
             ))}
           </div>
           {scenario && (
-            <div id="scenario-panel" role="tabpanel" className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface">
+            <div id="scenario-panel" aria-live="polite" className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface">
               <p className="border-b border-line px-5 py-3 text-sm text-muted">
                 <span className="text-ink">When this applies:</span> {scenario.when_this_applies}
               </p>
@@ -184,7 +260,7 @@ export function GuideView({ record }: { record: GuideRecord }) {
                 <p className="font-mono text-[11px] uppercase tracking-wider text-faint">Review / approval</p>
                 <p className="mt-1 leading-relaxed text-ink/90">
                   {scenario.approval}
-                  <Chips ids={scenario.claim_ids} claims={claims} jump={jump} />
+                  <Chips ids={scenario.claim_ids} claims={claims} h={chips} />
                 </p>
               </div>
             </div>
@@ -201,7 +277,7 @@ export function GuideView({ record }: { record: GuideRecord }) {
                   <p className="font-medium">{p.title}</p>
                   <p className="mt-1 leading-relaxed text-muted">
                     {p.detail}
-                    <Chips ids={p.claim_ids} claims={claims} jump={jump} />
+                    <Chips ids={p.claim_ids} claims={claims} h={chips} />
                   </p>
                 </li>
               ))}
@@ -239,7 +315,7 @@ export function GuideView({ record }: { record: GuideRecord }) {
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted">
                     {s.detail}
-                    <Chips ids={s.claim_ids} claims={claims} jump={jump} />
+                    <Chips ids={s.claim_ids} claims={claims} h={chips} />
                   </p>
                   <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                     {s.inputs.length > 0 && (
@@ -281,7 +357,7 @@ export function GuideView({ record }: { record: GuideRecord }) {
                   <p className="font-medium text-amber-200">⚠ {t.title}</p>
                   <p className="mt-1 leading-relaxed text-muted">
                     {t.detail}
-                    <Chips ids={t.claim_ids} claims={claims} jump={jump} />
+                    <Chips ids={t.claim_ids} claims={claims} h={chips} />
                   </p>
                 </li>
               ))}
@@ -293,9 +369,9 @@ export function GuideView({ record }: { record: GuideRecord }) {
         {g.blockers.length > 0 && (
           <section id="stuck" className="scroll-mt-24">
             <SectionTitle title="Stuck?" sub="What you see, what it means, and what to do." />
-            <div className="hidden overflow-hidden rounded-xl border border-line md:block">
+            <div className="hidden rounded-xl border border-line md:block">
               <table className="w-full text-left text-sm">
-                <thead className="bg-surface-2 font-mono text-[11px] uppercase tracking-wider text-faint">
+                <thead className="rounded-t-xl bg-surface-2 font-mono text-[11px] uppercase tracking-wider text-faint">
                   <tr>
                     <th className="p-3 font-normal">You see</th>
                     <th className="p-3 font-normal">It means</th>
@@ -309,7 +385,7 @@ export function GuideView({ record }: { record: GuideRecord }) {
                       <td className="p-3 font-medium">{b.symptom}</td>
                       <td className="p-3 text-muted">
                         {b.what_it_means}
-                        <Chips ids={b.claim_ids} claims={claims} jump={jump} />
+                        <Chips ids={b.claim_ids} claims={claims} h={chips} />
                       </td>
                       <td className="p-3 text-ink/85">{b.what_to_do}</td>
                       <td className="p-3 text-muted">{b.agent_can_help ?? "—"}</td>
@@ -325,7 +401,7 @@ export function GuideView({ record }: { record: GuideRecord }) {
                   <p className="mt-2 text-muted">
                     <span className="text-faint">It means: </span>
                     {b.what_it_means}
-                    <Chips ids={b.claim_ids} claims={claims} jump={jump} />
+                    <Chips ids={b.claim_ids} claims={claims} h={chips} />
                   </p>
                   <p className="mt-1 text-ink/85">
                     <span className="text-faint">Do this: </span>
@@ -378,6 +454,7 @@ export function GuideView({ record }: { record: GuideRecord }) {
               <li
                 key={flash?.id === c.id ? `${c.id}-${flash.n}` : c.id}
                 id={`claim-${c.id}`}
+                tabIndex={-1}
                 className={`scroll-mt-24 rounded-xl border border-line bg-surface p-4 text-sm ${flash?.id === c.id ? "claim-flash" : ""}`}
               >
                 <div className="flex flex-wrap items-baseline gap-2">
@@ -448,6 +525,10 @@ export function GuideView({ record }: { record: GuideRecord }) {
         </p>
       </article>
 
+      {preview && claims.get(preview.id) && (
+        <ClaimPreview claim={claims.get(preview.id)!} anchor={preview.el} onEnter={keepPreview} onLeave={hidePreview} onJump={() => jump(preview.id)} />
+      )}
+
       {/* On this page */}
       <aside className="hidden lg:block">
         <nav aria-label="On this page" className="sticky top-24 space-y-1 text-sm">
@@ -511,8 +592,9 @@ function FilterChip({ active, onClick, title, children }: { active: boolean; onC
   );
 }
 
-/** Inline evidence chips: hover/focus previews the claim and quote; click jumps to it in Evidence. */
-function Chips({ ids, claims, jump }: { ids: string[]; claims: Map<string, ClaimT>; jump: Jump }) {
+/** Inline evidence chips. Hover/focus shows the shared preview; click jumps to the claim (on touch, the first tap previews). */
+function Chips({ ids, claims, h }: { ids: string[]; claims: Map<string, ClaimT>; h: ChipHandlers }) {
+  const lastPointer = useRef("mouse");
   if (!ids.length) return null;
   return (
     <span className="ml-1.5 inline-flex flex-wrap gap-1 align-middle">
@@ -521,32 +603,70 @@ function Chips({ ids, claims, jump }: { ids: string[]; claims: Map<string, Claim
         if (!c) return null;
         const info = LABEL_INFO[c.label];
         return (
-          <span key={id} className="group relative inline-block">
-            <button
-              type="button"
-              onClick={() => jump(id)}
-              aria-label={`${info.name} claim ${id}: ${c.text}. Jump to evidence.`}
-              className={`rounded px-1 py-px font-mono text-[11px] ring-1 ring-inset transition hover:ring-accent ${
-                c.label === "unknown" ? "bg-surface-2 text-faint ring-line" : "bg-surface-3 text-muted ring-line-strong"
-              }`}
-            >
-              {info.icon}
-              {id}
-            </button>
-            <span
-              role="tooltip"
-              className="pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 w-72 -translate-x-1/2 rounded-lg border border-line-strong bg-surface-3 p-3 text-left text-xs leading-relaxed opacity-0 shadow-2xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100"
-            >
-              <span className="block font-mono text-[10px] uppercase tracking-wider text-faint">
-                {info.icon} {info.name} · {id}
-              </span>
-              <span className="mt-1 block text-ink">{c.text}</span>
-              {c.quote && <span className="mt-1.5 block border-l-2 border-accent/50 pl-2 font-mono text-muted">“{c.quote.slice(0, 220)}{c.quote.length > 220 ? "…" : ""}”</span>}
-              <span className="mt-1.5 block text-accent">Click to jump to evidence</span>
-            </span>
-          </span>
+          <button
+            key={id}
+            type="button"
+            onPointerDown={(e) => (lastPointer.current = e.pointerType)}
+            onPointerEnter={(e) => e.pointerType === "mouse" && h.show(id, e.currentTarget)}
+            onPointerLeave={(e) => e.pointerType === "mouse" && h.hide()}
+            onFocus={(e) => h.show(id, e.currentTarget)}
+            onBlur={h.hide}
+            onClick={(e) => {
+              if (lastPointer.current === "touch" && h.openId !== id) {
+                h.show(id, e.currentTarget, true);
+                return;
+              }
+              h.jump(id);
+            }}
+            aria-label={`${info.name} claim ${id}. Jump to evidence.`}
+            aria-describedby={h.openId === id ? "claim-preview" : undefined}
+            className={`rounded px-1 py-px font-mono text-[11px] ring-1 ring-inset transition hover:ring-accent ${
+              c.label === "unknown" ? "bg-surface-2 text-faint ring-line" : "bg-surface-3 text-muted ring-line-strong"
+            }`}
+          >
+            {info.icon}
+            {id}
+          </button>
         );
       })}
     </span>
+  );
+}
+
+function ClaimPreview({ claim, anchor, onEnter, onLeave, onJump }: { claim: ClaimT; anchor: HTMLElement; onEnter: () => void; onLeave: () => void; onJump: () => void }) {
+  const info = LABEL_INFO[claim.label];
+  const rect = anchor.getBoundingClientRect();
+  if (rect.bottom < 0 || rect.top > window.innerHeight) return null; // chip scrolled out of view
+  const vw = window.innerWidth;
+  const width = Math.min(300, vw - 16);
+  const left = Math.max(8, Math.min(rect.left + rect.width / 2 - width / 2, vw - width - 8));
+  const above = rect.top > 240;
+  const style: React.CSSProperties = above
+    ? { left, width, top: rect.top - 8, transform: "translateY(-100%)" }
+    : { left, width, top: rect.bottom + 8 };
+  return (
+    <div
+      id="claim-preview"
+      role="tooltip"
+      style={style}
+      onPointerEnter={onEnter}
+      onPointerLeave={onLeave}
+      className="fixed z-50 rounded-lg border border-line-strong bg-surface-3 p-3 text-left text-xs leading-relaxed shadow-2xl"
+    >
+      <span className="block font-mono text-[10px] uppercase tracking-wider text-faint">
+        {info.icon} {info.name} · {claim.id}
+      </span>
+      <span className="mt-1 block text-ink">{claim.text}</span>
+      {claim.quote && (
+        <span className="mt-1.5 block border-l-2 border-accent/50 pl-2 font-mono text-muted">
+          “{claim.quote.slice(0, 220)}
+          {claim.quote.length > 220 ? "…" : ""}”
+        </span>
+      )}
+      {claim.note && <span className="mt-1.5 block italic text-amber-200/80">{claim.note}</span>}
+      <button type="button" onClick={onJump} className="mt-2 text-accent hover:underline">
+        Jump to evidence →
+      </button>
+    </div>
   );
 }

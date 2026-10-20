@@ -54,6 +54,7 @@ export function LiveRun() {
   const [replay, setReplay] = useState<Replay | null>(null);
   const [speed, setSpeed] = useState(4);
   const [virtual, setVirtual] = useState(0); // replay clock, in recorded seconds
+  const [endedAt, setEndedAt] = useState<number | null>(null);
   const speedRef = useRef(speed);
   const [started, setStarted] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
@@ -72,15 +73,20 @@ export function LiveRun() {
     // (one API request), instead of a duplicate or an aborted-and-never-restarted one.
     const ctrl = new AbortController();
     let cancelled = false;
+    // Terminal states also freeze the elapsed clock.
+    const stop = (st: Status) => {
+      setStatus(st);
+      setEndedAt((t) => t ?? Date.now());
+    };
     const handle = (e: AgentEvent, at: number, rt?: number) => {
       setEvents((xs) => [...xs, { ...e, at, rt }]);
       if (e.type === "done") {
-        setStatus("done");
+        stop("done");
       } else if (e.type === "error") {
         setError(e.message);
-        setStatus("error");
-      } else if (e.type === "ambiguous") setStatus("ambiguous");
-      else if (e.type === "not_oauth") setStatus("not_oauth");
+        stop("error");
+      } else if (e.type === "ambiguous") stop("ambiguous");
+      else if (e.type === "not_oauth") stop("not_oauth");
       else setStatus((s) => (s === "connecting" ? "running" : s));
     };
 
@@ -90,7 +96,7 @@ export function LiveRun() {
         const res = await fetch(`/replays/${encodeURIComponent(replayName ?? "")}.json`, { signal: ctrl.signal });
         if (!res.ok) {
           setError("Recorded run not found.");
-          setStatus("error");
+          stop("error");
           return;
         }
         const data = (await res.json()) as Replay;
@@ -114,7 +120,7 @@ export function LiveRun() {
       })().catch((e) => {
         if ((e as Error).name !== "AbortError") {
           setError((e as Error).message);
-          setStatus("error");
+          stop("error");
         }
       });
 
@@ -135,7 +141,7 @@ export function LiveRun() {
             return;
           }
           setError(json.error ?? `Request failed (${res.status})`);
-          setStatus(res.status === 503 ? "unavailable" : "error");
+          stop(res.status === 503 ? "unavailable" : "error");
           return;
         }
         setStatus("running");
@@ -159,12 +165,12 @@ export function LiveRun() {
         }
         if (!finished) {
           setError("The connection closed before the guide was finished.");
-          setStatus("error");
+          stop("error");
         }
       } catch (e) {
         if ((e as Error).name !== "AbortError") {
           setError((e as Error).message);
-          setStatus("error");
+          stop("error");
         }
       }
     })();
@@ -202,8 +208,7 @@ export function LiveRun() {
   const notOauth = find("not_oauth");
   const done = find("done");
   const running = status === "running" || status === "connecting";
-  const lastAt = events.at(-1)?.at ?? now;
-  const elapsed = replay ? Math.round(virtual) : Math.max(0, Math.round(((running ? now : lastAt) - started) / 1000));
+  const elapsed = replay ? Math.round(virtual) : Math.max(0, Math.round(((running ? now : (endedAt ?? now)) - started) / 1000));
 
   // Phase status: done if a later phase has started; active = latest seen.
   const seen = events.map(phaseOf).filter((p): p is PhaseId => !!p);
@@ -254,7 +259,8 @@ export function LiveRun() {
       </header>
 
       {/* Phase stepper */}
-      <ol aria-label="Progress" className="scrollbar-none flex gap-1 overflow-x-auto">
+      {status !== "unavailable" && (
+      <ol aria-label="Progress" className="scrollbar-none relative flex gap-1 overflow-x-auto">
         {PHASES.map((p, i) => {
           const st = status === "connecting" ? "pending" : phaseState(i);
           return (
@@ -268,6 +274,7 @@ export function LiveRun() {
           );
         })}
       </ol>
+      )}
 
       {/* Outcome banners */}
       <div aria-live="polite">
@@ -317,9 +324,9 @@ export function LiveRun() {
             <p className="font-semibold text-amber-200">&ldquo;{q}&rdquo; could mean several products. Which one?</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {ambiguous.candidates.map((c) => (
-                <a key={c} href={`/generate?q=${encodeURIComponent(c)}`} className="rounded-full border border-amber-300/40 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/20">
+                <Link key={c} href={`/generate?q=${encodeURIComponent(c)}`} className="rounded-full border border-amber-300/40 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/20">
                   {c}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
@@ -335,7 +342,7 @@ export function LiveRun() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-4">
           {writing && (
-            <div className="rounded-2xl border border-accent/30 bg-violet-500/[0.07] p-5">
+            <div role="status" className="rounded-2xl border border-accent/30 bg-violet-500/[0.07] p-5">
               <div className="flex items-center gap-2">
                 <span aria-hidden className="pulse-dot h-2 w-2 rounded-full bg-accent" />
                 <p className="font-semibold">Writing scenarios, steps and evidence…</p>

@@ -110,7 +110,11 @@ function Group({ title, subtitle, cards, empty, generated }: { title: string; su
 }
 
 function GuideCard({ c, generated }: { c: CardData; generated?: boolean }) {
-  const origin: [string, Tone] = c.reviewed ? ["Human-reviewed", "good"] : generated ? ["Agent-generated", "warn"] : ["Seed · review pending", "info"];
+  const origin: [string, Tone] = c.reviewed
+    ? ["Human-reviewed", "good"]
+    : generated
+      ? ["Agent-generated · not human-reviewed", "warn"]
+      : ["Seed guide · review pending", "info"];
   return (
     <Link
       href={`/guides/${c.slug}`}
@@ -125,7 +129,10 @@ function GuideCard({ c, generated }: { c: CardData; generated?: boolean }) {
             {generated && <span className="ml-2 font-mono text-xs font-normal text-faint">agent · {c.date}</span>}
           </h3>
         </div>
-        <ScenarioDots levels={c.levels} />
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-xs text-muted sm:inline">{c.range === "unknown" ? "Unknown" : c.range.split("–").map((x) => x[0].toUpperCase() + x.slice(1)).join(" → ")}</span>
+          <ScenarioDots levels={c.levels} />
+        </div>
       </div>
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted">{c.summary}</p>
       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -134,12 +141,12 @@ function GuideCard({ c, generated }: { c: CardData; generated?: boolean }) {
       </div>
       <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-line pt-3 text-xs">
         <dt className="text-faint">Hardest path</dt>
-        <dd className="flex min-w-0 items-center gap-2">
+        <dd className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <DifficultyBadge level={c.hardestLevel} />
-          <span className="truncate text-ink/90">{c.hardestLabel}</span>
+          <span className="min-w-0 text-ink/90">{c.hardestLabel}</span>
         </dd>
         <dt className="text-faint">Worst-case wait</dt>
-        <dd className="line-clamp-2 text-ink/90">{c.worstWait}</dd>
+        <dd className="text-ink/90">{c.worstWait}</dd>
         <dt className="text-faint">Evidence</dt>
         <dd className="font-mono text-muted">
           {c.scenarios} scenarios · {c.claims} claims · {c.verified} quotes verified

@@ -39,7 +39,7 @@ export function GenerateBox({ status }: { status: LiveStatus }) {
         <button
           type="submit"
           disabled={disabled || q.trim().length < 2}
-          className="whitespace-nowrap rounded-xl bg-accent-strong px-5 py-3 font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-faint"
+          className="whitespace-nowrap rounded-xl bg-accent-strong px-5 py-3 font-medium text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-faint"
         >
           Generate guide
         </button>
