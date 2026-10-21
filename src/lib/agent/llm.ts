@@ -11,8 +11,10 @@ export interface Spend {
   cache_read_tokens: number;
   web_searches: number;
   by_stage: Partial<Record<Stage, number>>;
+  /** Models that actually served each stage (a refusal fallback can switch models). */
+  served: Partial<Record<Stage, string[]>>;
 }
-export const newSpend = (): Spend => ({ usd: 0, input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, web_searches: 0, by_stage: {} });
+export const newSpend = (): Spend => ({ usd: 0, input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, web_searches: 0, by_stage: {}, served: {} });
 
 export interface CallParams {
   stage: Stage;
@@ -43,9 +45,12 @@ export function createLlm(client: Anthropic, opts: { signal?: AbortSignal; onWar
   const spend = newSpend();
   let fallbacks = process.env.AGENT_FALLBACKS !== "off";
 
-  const record = (stage: Stage, model: string, u: Usage | undefined) => {
+  const record = (stage: Stage, model: string, servedBy: string | undefined, u: Usage | undefined) => {
+    const by = servedBy || model;
+    const list = (spend.served[stage] ??= []);
+    if (!list.includes(by)) list.push(by);
     if (!u) return;
-    const usd = estimateCost(model, u);
+    const usd = estimateCost(by, u);
     spend.usd += usd;
     spend.by_stage[stage] = (spend.by_stage[stage] ?? 0) + usd;
     spend.input_tokens += u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
@@ -72,7 +77,7 @@ export function createLlm(client: Anthropic, opts: { signal?: AbortSignal; onWar
         maxRetries: 0, // retries are ours, bounded by the deadline
       })
       .finalMessage();
-    record(p.stage, p.model, msg.usage as Usage | undefined);
+    record(p.stage, p.model, (msg as { model?: string }).model, msg.usage as Usage | undefined);
     return msg;
   }
 
@@ -84,7 +89,8 @@ export function createLlm(client: Anthropic, opts: { signal?: AbortSignal; onWar
         return await once(p, deadlineAt, useFallback && fallbacks);
       } catch (e) {
         if (opts.signal?.aborted) throw e;
-        if (e instanceof Anthropic.BadRequestError && useFallback && fallbacks) {
+        // Only a rejection of the fallback parameter itself turns fallbacks off; other 400s are real request errors.
+        if (e instanceof Anthropic.BadRequestError && useFallback && fallbacks && /fallback/i.test(e.message)) {
           fallbacks = false;
           opts.onWarning?.("Retrying without the safety fallback");
           continue;

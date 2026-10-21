@@ -68,12 +68,34 @@ describe("official domains", () => {
     expect(store.official.has("github.com")).toBe(false); // linked, but not the brand
     expect(store.kindOf("https://dropboxforum-fan.example/x")).toBe("reported"); // brand-like, never linked
   });
-  it("counts a question as found only with verified evidence", () => {
+  it("counts a question as found only with verified evidence from an official page", () => {
     const store = new ResearchStore(null);
+    store.addOfficial("https://a.example");
     store.pages.set("https://a.example/p", { url: "https://a.example/p", title: null, text: "Apps need review before launch.", links: [], fetched_at: "", hash: "h", via: "direct" });
     store.addEvidence({ question: "G2", url: "https://a.example/p", quote: "This is not on the page anywhere.", answer: "x", via: "gapfill" });
     expect(store.status("G2")).toBe("not_found");
     store.addEvidence({ question: "G2", url: "https://a.example/p", quote: "Apps need review before launch.", answer: "x", via: "gapfill" });
     expect(store.status("G2")).toBe("found");
+    store.reject([store.verified("G2")[0].id]);
+    expect(store.status("G2")).toBe("not_found");
+  });
+  it("does not let a blog answer a docs question, and needs a stated time for G6", () => {
+    const store = new ResearchStore(null);
+    store.pages.set("https://blog.example/p", { url: "https://blog.example/p", title: null, text: "Apps need review. It was rejected twice. Approval took about three weeks in total.", links: [], fetched_at: "", hash: "b", via: "direct" });
+    store.addEvidence({ question: "G2", url: "https://blog.example/p", quote: "Apps need review.", answer: "x", via: "gapfill" });
+    expect(store.status("G2")).toBe("not_found");
+    store.addEvidence({ question: "R1", url: "https://blog.example/p", quote: "It was rejected twice.", answer: "x", via: "gapfill" });
+    expect(store.status("G6")).toBe("not_found");
+    store.addEvidence({ question: "R1", url: "https://blog.example/p", quote: "Approval took about three weeks in total.", answer: "x", via: "gapfill" });
+    expect(store.status("G6")).toBe("found");
+  });
+  it("rejects a linked look-alike domain and tenant hosts on shared platforms", () => {
+    const store = new ResearchStore(null);
+    store.addOfficial("https://www.salesforce.com");
+    store.pages.set("https://www.salesforce.com/x", { url: "https://www.salesforce.com/x", title: null, text: "", links: ["https://www.salesforceben.com/a", "https://developer.salesforce.com/docs", "https://acme.readme.io/x"], fetched_at: "", hash: "s", via: "direct" });
+    store.expandOfficialFromLinks();
+    expect(store.official.has("salesforceben.com")).toBe(false);
+    expect(store.kindOf("https://developer.salesforce.com/docs")).toBe("provider_docs");
+    expect(store.official.has("readme.io")).toBe(false);
   });
 });

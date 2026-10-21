@@ -6,7 +6,7 @@
  */
 import { QUESTIONS, type QuestionId } from "../questions";
 
-export const PROMPT_VERSION = "v2.1-2026-10-21";
+export const PROMPT_VERSION = "v2.2-2026-10-21";
 
 export const CONTEXT = `<context>
 A developer is building an AI agent product on Composio. Their end users will connect a third-party app (for example Gmail) so the agent can act for them.
@@ -89,21 +89,28 @@ Evidence rules (enforced by code after you answer):
 - Other fields reference claims by id in claim_ids. At most 40 claims.
 
 Content rules:
-- 2 to 4 scenarios that genuinely change the path (internal vs public; basic vs sensitive scopes; one workspace vs a marketplace). Labels at most 50 characters. default_scenario: the most common production setup for an AI agent, not the prototype.
-- Per scenario: path, trigger, gate_sequence (the mandatory steps in order, each at most 8 words), review_checks, modifiers ({ kind, qualifier, note at most 10 words, claim_ids }), shortcut (a documented way to avoid or shrink the review for the same goal, or null), with claim_ids for each. A path other than "self_serve" needs a G2 claim; if G2 was not found, say the path is unconfirmed in approval.
+- 1 to 4 scenarios, only ones the evidence shows genuinely change the path (internal vs public; basic vs sensitive scopes; one workspace vs a marketplace). One scenario is fine when that is all the evidence supports. Labels at most 50 characters. default_scenario: the most common production setup for an AI agent, not the prototype.
+- Per scenario: path, trigger, gate_sequence (the mandatory steps in order, each at most 8 words), review_checks, modifiers ({ kind, qualifier, note at most 10 words, claim_ids }), shortcut (a documented way to avoid or shrink the review for the same goal, or null). Every path, including "self_serve", needs path_claim_ids pointing at claims built from G2 evidence that state it; if G2 was not found, leave path out and say in approval that it is unconfirmed. A numeric waiting estimate needs a claim from G6 or R1 evidence in claim_ids. A shortcut needs shortcut_claim_ids.
 - hands_on.estimate: always a range estimated from the steps (for example "1-2 hours"). waiting.estimate: "None", a sourced range, or "Unknown". waiting.max_days: longest documented wait in calendar days (business days x1.4, weeks x7) or null.
 - Steps in order with one owner each: "agent" for work an AI agent can genuinely do (draft scope justifications, write a manifest or config, create the Composio auth config through Composio's API, check a redirect URI, prepare a demo script); "you" for logins, accounts, legal or business details, payments, recording, clicking submit; "waiting" for provider review. Split mixed steps.
 - Set scenario_ids on prerequisites, traps and blockers that only apply to some scenarios. Put the traps that hurt most first.
-- Composio: create the auth config with the developer's own client ID and secret; copy the redirect URI from the Composio dashboard; if the provider verifies the redirect domain, Composio's callback domain cannot be verified by the developer, so route the callback through their own domain (Composio documents a redirect proxy); say which managed-app limits matter for this app.
+- Composio: create the auth config with the developer's own client ID and secret; copy the redirect URI from the Composio dashboard. Only if G9 evidence shows this provider verifies redirect-URI domains, add that Composio's callback domain cannot be verified by the developer, so the callback is routed through their own domain (cite the Composio evidence for its redirect proxy). Mention managed-app limits only where Composio evidence states them.
 - open_questions: each critical question that was not found, with how someone could find out.
 - Brevity: verdict one sentence at most 25 words with the easiest and hardest realistic case; summary at most 3 sentences; step titles at most 8 words; details and traps at most 2 sentences; need_own_app.answer at most 40 words. Plain words; explain an acronym once. No marketing language.`;
 
-export const JUDGE_SYSTEM = `You check whether quoted evidence supports a claim. For each item you get a claim and the exact quote it cites.
+export const JUDGE_SYSTEM = `You check whether quoted evidence supports a statement. Each item has an id, a statement, and the exact quotes it relies on. Some statements are claims; others describe a setup's approval path, wait time, shortcut or another factor.
 
-Answer for each item:
-- "supported": the quote states the claim, including its numbers, units, conditions and whether something is required or optional.
-- "partial": the quote supports part of the claim, or the claim generalises or adds a condition.
-- "contradicted": the quote says something different (a flipped negation, must vs may, a different number, unit, tier or scope).
+Verdicts:
+- "supported": the quotes state it, including its numbers, units, conditions, and whether something is required or optional.
+- "partial": the quotes support part of it, or it generalises, drops a condition, or adds one.
+- "unsupported": the quotes are about something else and neither confirm nor contradict it.
+- "contradicted": the quotes say something different (a flipped negation, must vs may, another number, unit, tier or scope).
 
-Judge only against the quote, not your own knowledge. Reply with only a JSON array, one object per item, in order:
+Judge only against the quotes, not your own knowledge. Examples:
+- Statement "Public apps need review." Quote "Public apps must pass an app review before they can be installed." → supported
+- Statement "No review is needed." Quote "Public apps must pass an app review." → contradicted
+- Statement "Path: app review, always." Quote "Reviews take up to 10 business days." → unsupported (a time, not whether a review is required)
+- Statement "Up to 100 users per day." Quote "up to 100 test users in total" → contradicted
+
+Reply with only a JSON array with exactly one object per item id:
 [{"id": "c1", "verdict": "supported", "reason": "short reason"}]`;

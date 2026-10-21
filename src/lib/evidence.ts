@@ -1,3 +1,4 @@
+import { getDomain } from "tldts";
 import type { ClaimT, GeneratedGuide, Guide, ProbeRecordT } from "./schema";
 
 /** Normalise text for quote matching: case, whitespace, quotes/dashes, markdown noise. */
@@ -77,7 +78,19 @@ export interface VerificationStats {
   downgraded: number;
 }
 
-/** "docs.slack.dev" -> "slack.dev", "support.google.com" -> "google.com", "foo.co.uk" -> "foo.co.uk". */
+// Hosts where each subdomain belongs to a different customer: the tenant host, not the platform, is the owner.
+// (Public Suffix List private entries such as github.io and vercel.app are handled by tldts.)
+const TENANT_PLATFORMS = new Set([
+  "readme.io", "gitbook.io", "notion.site", "mintlify.app", "atlassian.net", "zendesk.com", "freshdesk.com",
+  "helpscoutdocs.com", "intercom.help", "webflow.io", "wixsite.com", "medium.com", "substack.com", "hashnode.dev",
+  "document360.io", "stoplight.io", "postman.co", "apiary.io", "squarespace.com", "framer.website", "super.site",
+]);
+
+/**
+ * The owner of a URL's host: the registrable domain ("docs.slack.dev" -> "slack.dev", "foo.co.uk" -> "foo.co.uk"),
+ * Public-Suffix aware ("acme.github.io" stays "acme.github.io"), and tenant-specific on shared docs platforms
+ * ("acme.readme.io" stays "acme.readme.io", not "readme.io").
+ */
 export function baseDomain(urlOrHost: string): string {
   let host = urlOrHost;
   try {
@@ -85,11 +98,9 @@ export function baseDomain(urlOrHost: string): string {
   } catch {
     /* use as-is */
   }
-  const parts = host.toLowerCase().replace(/\.$/, "").split(".");
-  if (parts.length <= 2) return parts.join(".");
-  const sld = parts[parts.length - 2];
-  const take = ["co", "com", "org", "net", "gov", "ac", "edu"].includes(sld) && parts[parts.length - 1].length === 2 ? 3 : 2;
-  return parts.slice(-take).join(".");
+  host = host.toLowerCase().replace(/\.$/, "");
+  const d = getDomain(host, { allowPrivateDomains: true }) ?? host;
+  return TENANT_PLATFORMS.has(d) && host !== d ? host.replace(/^www\./, "") : d;
 }
 
 /**

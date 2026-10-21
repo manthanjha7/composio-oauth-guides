@@ -54,6 +54,8 @@ export async function discover(opts: {
   store: ResearchStore;
   search: ComposioSearch | null;
   max: number;
+  /** Absolute time by which discovery must finish; slow searches or llms.txt fetches are dropped. */
+  deadlineAt: number;
   onSearch?: (query: string, results: SearchHit[]) => void;
 }): Promise<{ candidates: Candidate[]; hits: SearchHit[] }> {
   const { store } = opts;
@@ -74,7 +76,7 @@ export async function discover(opts: {
   // llms.txt indexes on the docs hosts: a curated, machine-readable map of the docs.
   const origins = [...new Set([opts.docsUrl, ...opts.entryPoints].filter((u): u is string => !!u).map((u) => new URL(u).origin))].slice(0, 2);
   const llms = origins.map(async (o) => {
-    const page = await store.fetch(`${o}/llms.txt`);
+    const page = await store.fetch(`${o}/llms.txt`, opts.deadlineAt);
     if (!page) return;
     for (const l of parseLlmsTxt(page.text, o)) {
       const s = scoreText(l.url, l.label);
@@ -87,7 +89,10 @@ export async function discover(opts: {
   const searches = opts.search
     ? searchQueries(opts.app).map(async (q) => {
         try {
-          const results = await opts.search!.search(q);
+          const results = await Promise.race([
+            opts.search!.search(q),
+            new Promise<SearchHit[]>((r) => setTimeout(() => r([]), Math.max(0, opts.deadlineAt - Date.now()))),
+          ]);
           opts.onSearch?.(q, results);
           results.forEach((r) => {
             hits.push(r);
@@ -101,7 +106,7 @@ export async function discover(opts: {
       })
     : [];
 
-  await Promise.all([...llms, ...searches]);
+  await Promise.race([Promise.all([...llms, ...searches]), new Promise((r) => setTimeout(r, Math.max(0, opts.deadlineAt - Date.now())))]);
 
   // Prefer official pages; keep at most 2 from any single non-official host.
   const ranked = [...all.values()].sort((a, b) => b.score - a.score);

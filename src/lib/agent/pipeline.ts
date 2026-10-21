@@ -9,6 +9,7 @@ import type {
 import { z } from "zod";
 import { composioLookup, type ComposioLookup } from "../composio";
 import { baseDomain, canonicalUrl, enforceEvidence, type EvidenceContext } from "../evidence";
+import { PATH_INFO, CHECK_INFO } from "../guide-view";
 import { type GeneratedGuide, type Guide, type GuideRecord, type WriterGuide, WriterGuideSchema } from "../schema";
 import { createComposioSearch, type ComposioSearch } from "../search";
 import { slugify } from "../slug";
@@ -54,19 +55,40 @@ const Identity = z.object({
 });
 type IdentityT = z.infer<typeof Identity>;
 
-const Verdicts = z.array(z.object({ id: z.string(), verdict: z.enum(["supported", "partial", "contradicted"]), reason: z.string().optional() }));
+const Verdict = z.enum(["supported", "partial", "unsupported", "contradicted"]);
+const Verdicts = z.array(z.object({ id: z.string(), verdict: Verdict, reason: z.string().optional() }));
+type VerdictT = z.infer<typeof Verdict> | "unchecked";
 
 const MAX_PAGES = 8;
 const MAX_CLAIMS = 40;
 const MAX_SCENARIOS = 4;
-const VERIFY_RESERVE = 20_000;
+const EXTRACT_CONCURRENCY = 4;
+const EXTRACT_MAX_TOKENS = 3_000;
+const JUDGE_RESERVE = 20_000;
+const SAVE_RESERVE = 5_000;
+const TIMELINE_QUESTIONS = new Set(["G6", "R1"]);
 
 type ToolResult = { content: string; isError?: boolean; stop?: boolean };
 
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, Math.max(0, ms)));
+/** Settle with `fallback` if `p` hasn't settled by `deadlineAt`. */
+function byDeadline<T>(p: Promise<T>, deadlineAt: number, fallback: T): Promise<T> {
+  return Promise.race([p, sleep(deadlineAt - Date.now()).then(() => fallback)]);
+}
+/** Run `fn` over items with at most `limit` in flight. */
+async function mapLimit<T>(items: T[], limit: number, fn: (x: T) => Promise<void>): Promise<void> {
+  let i = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (i < items.length) await fn(items[i++]);
+    }),
+  );
+}
+
 /**
  * One tool-using conversation. Append-only: system, tools and effort are fixed for its whole life (current
- * models tie thinking to the exact history), budgets are enforced by refusing tool calls in code, and a
- * deadline simply ends the loop. Returns why it stopped.
+ * models tie thinking to the exact history). Budgets are enforced by refusing tool calls in code, or by ending
+ * the conversation (`stopWhen`) when a server-side budget is spent. Every tool call is bounded by the deadline.
  */
 async function toolLoop(o: {
   llm: Llm;
@@ -79,8 +101,9 @@ async function toolLoop(o: {
   maxTurns: number;
   runTool: (name: string, input: Record<string, unknown>) => Promise<ToolResult>;
   onMessage?: (m: BetaMessage) => void;
+  stopWhen?: () => string | null;
   signal?: AbortSignal;
-}): Promise<"finished" | "deadline" | "turns" | "no_tool_call" | `error: ${string}`> {
+}): Promise<string> {
   const messages: BetaMessageParam[] = [{ role: "user", content: o.user }];
   const effort = resolveEffort(o.stage);
   for (let turn = 0; turn < o.maxTurns; turn++) {
@@ -88,7 +111,7 @@ async function toolLoop(o: {
     o.signal?.throwIfAborted();
     let msg: BetaMessage;
     try {
-      msg = await o.llm.call({ stage: o.stage, model: o.model, effort, system: o.system, tools: o.tools, messages, cache: true, maxTokens: 16_000 }, o.deadline);
+      msg = await o.llm.call({ stage: o.stage, model: o.model, effort, system: o.system, tools: o.tools, messages, cache: true, maxTokens: 8_000 }, o.deadline);
     } catch (e) {
       if (o.signal?.aborted) throw e;
       return Date.now() >= o.deadline - 6_000 ? "deadline" : `error: ${(e as Error).message}`;
@@ -96,14 +119,17 @@ async function toolLoop(o: {
     o.onMessage?.(msg);
     if (msg.stop_reason === "refusal") return "error: the model declined";
     messages.push({ role: "assistant", content: msg.content });
+    const why = o.stopWhen?.();
+    if (why) return why;
     if (msg.stop_reason === "pause_turn") continue;
     const uses = msg.content.filter((b): b is BetaToolUseBlock => b.type === "tool_use");
     if (!uses.length) return "no_tool_call";
     let stop = false;
+    const timeout: ToolResult = { content: "Tool timed out (out of time). Finish with what you have.", isError: true };
     const results = await Promise.all(
       uses.map(async (t) => {
         try {
-          const r = await o.runTool(t.name, (t.input ?? {}) as Record<string, unknown>);
+          const r = await byDeadline(o.runTool(t.name, (t.input ?? {}) as Record<string, unknown>), o.deadline - 3_000, timeout);
           if (r.stop) stop = true;
           return { type: "tool_result" as const, tool_use_id: t.id, content: r.content, is_error: r.isError };
         } catch (e) {
@@ -136,9 +162,10 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   const models = resolveModels(opts.models);
   const llm = createLlm(client, { signal: opts.signal, onWarning: (m) => emit({ type: "warning", message: m }) });
   const runDeadline = started + (opts.totalBudgetMs ?? 270_000);
-  // Plan backwards from the writer: it needs the most time and runs last.
-  const writeReserve = Math.min(150_000, Math.max(90_000, Math.round((7_000 / capabilities(models.write).outputTps) * 1000) + 15_000));
-  const researchDeadline = runDeadline - writeReserve - VERIFY_RESERVE;
+  // Plan backwards: save, then the judge, then the writer (the slowest step) get their time first.
+  const writeReserve = Math.min(190_000, Math.max(90_000, Math.round((7_000 / capabilities(models.write).outputTps) * 1000) + 20_000));
+  const writeDeadline = runDeadline - JUDGE_RESERVE - SAVE_RESERVE;
+  const researchDeadline = writeDeadline - writeReserve;
   const timings: Record<string, number> = {};
   const mark = (k: string, t0: number) => (timings[k] = Date.now() - t0);
   const workers: { name: string; stop: string; ms: number }[] = [];
@@ -146,37 +173,47 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
 
   emit({ type: "stage", stage: "start", message: `Researching ${opts.query}` });
 
-  // ---- 1. Identify: Composio lookup and the search session start together ----
+  // ---- 1. Identify: Composio lookup and the search session start together, each with its own limit ----
   let t0 = Date.now();
   emit({ type: "stage", stage: "composio", message: "Checking Composio" });
   const searchP: Promise<ComposioSearch | null> =
-    opts.search !== undefined
-      ? Promise.resolve(opts.search)
-      : Promise.race([createComposioSearch(runId), new Promise<null>((r) => setTimeout(() => r(null), 15_000))]).catch(() => null);
-  const lookup: ComposioLookup | null = await composioLookup(opts.query).catch(() => null);
+    opts.search !== undefined ? Promise.resolve(opts.search) : byDeadline(createComposioSearch(runId).catch(() => null), Date.now() + 12_000, null);
+  const lookup: ComposioLookup | null = await byDeadline(
+    composioLookup(opts.query).catch(() => null),
+    Date.now() + 10_000,
+    null,
+  );
   if (lookup) emit({ type: "composio", managed: lookup.managed_oauth, slug: lookup.chosen?.slug ?? lookup.toolkit?.slug ?? null, guide: lookup.credential_guide?.url ?? null });
   const search = await searchP;
   if (!search && opts.search === undefined && process.env.COMPOSIO_API_KEY) emit({ type: "warning", message: "Composio Search unavailable; using Anthropic web search." });
   const searchVia = search ? "composio_search" : "anthropic_web_search";
 
   const store = new ResearchStore(search, (url, ok, chars, via, error) => emit({ type: "fetch", url, ok, chars, via, error }));
-  store.addOfficial(lookup?.app_url ?? null);
+  store.signal = opts.signal;
   for (const p of lookup?.pages ?? []) {
     // Composio's own pages, read during lookup, become citable pages.
     store.pages.set(canonicalUrl(p.url), { url: p.url, title: null, text: p.text, links: [], fetched_at: new Date().toISOString(), hash: "", via: "direct" });
   }
 
-  // Server web search is declared once per conversation, with its budget fixed up front.
-  const searchTools = (maxUses: number): BetaToolUnion[] =>
-    search ? [searchTool] : [{ type: capabilities(models.identify).webSearchTool, name: "web_search", max_uses: maxUses } as BetaToolUnion];
-  const onServerSearch = (m: BetaMessage) => {
-    for (const b of m.content) {
-      if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
-        const results = b.content.flatMap((r) => (r.type === "web_search_result" ? [{ title: r.title, url: r.url }] : []));
-        results.forEach((r) => store.seenUrls.add(r.url));
-        emit({ type: "search", query: "", via: "Anthropic web search", results: results.slice(0, 5) });
-      }
-    }
+  // Server web search is declared once per conversation; its version follows the model that runs it.
+  const searchTools = (model: string, maxUses: number): BetaToolUnion[] =>
+    search ? [searchTool] : [{ type: capabilities(model).webSearchTool, name: "web_search", max_uses: maxUses } as BetaToolUnion];
+  /** Counts server-side searches (max_uses is per request, so the cumulative budget is enforced here). */
+  const serverSearchCounter = () => {
+    let n = 0;
+    return {
+      onMessage: (m: BetaMessage) => {
+        for (const b of m.content) {
+          if (b.type === "server_tool_use" && b.name === "web_search") n++;
+          if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
+            const results = b.content.flatMap((r) => (r.type === "web_search_result" ? [{ title: r.title, url: r.url }] : []));
+            results.forEach((r) => store.seenUrls.add(r.url));
+            emit({ type: "search", query: "", via: "Anthropic web search", results: results.slice(0, 5) });
+          }
+        }
+      },
+      spent: (budget: number) => (search ? null : n >= budget ? "search budget" : null),
+    };
   };
   const runSearch = async (query: string, budget: { left: number }): Promise<ToolResult> => {
     if (!search) return { content: "web_search is the server tool in this run", isError: true };
@@ -191,10 +228,10 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       return { content: `Search failed: ${(e as Error).message}`, isError: true };
     }
   };
-  const runFetch = async (url: string, budget: { left: number }, maxChars: number): Promise<ToolResult> => {
+  const runFetch = async (url: string, budget: { left: number }, maxChars: number, deadlineAt: number): Promise<ToolResult> => {
     if (budget.left <= 0) return { content: "Page budget spent. Use what you have, then finish.", isError: true };
     budget.left--;
-    const page = await store.fetch(url);
+    const page = await store.fetch(url, deadlineAt);
     if (!page) return { content: `Could not fetch ${url}. Try the same URL + ".md", the site's /llms.txt, or another page.`, isError: true };
     return { content: `URL: ${page.url}\nTITLE: ${page.title ?? ""}\n\n<page>\n${trimForModel(page.text, maxChars)}\n</page>` };
   };
@@ -204,6 +241,8 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   {
     const sBudget = { left: 2 };
     const fBudget = { left: 2 };
+    const counter = serverSearchCounter();
+    const deadline = Math.min(Date.now() + 25_000, researchDeadline);
     const composioSummary = lookup
       ? JSON.stringify({
           managed_oauth: lookup.managed_oauth,
@@ -219,7 +258,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       model: models.identify,
       system: IDENTIFY_SYSTEM,
       tools: [
-        ...searchTools(2),
+        ...searchTools(models.identify, 2),
         fetchTool,
         {
           name: "submit_identity",
@@ -240,13 +279,14 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
         },
       ],
       user: `User input: ${opts.query}\n\nComposio knows: ${composioSummary}`,
-      deadline: Math.min(started + 30_000, researchDeadline),
+      deadline,
       maxTurns: 6,
       signal: opts.signal,
-      onMessage: onServerSearch,
+      onMessage: counter.onMessage,
+      stopWhen: () => (identity ? null : counter.spent(3)),
       runTool: async (name, input) => {
         if (name === "web_search") return runSearch(String(input.query ?? ""), sBudget);
-        if (name === "fetch_page") return runFetch(String(input.url ?? ""), fBudget, 6_000);
+        if (name === "fetch_page") return runFetch(String(input.url ?? ""), fBudget, 6_000, deadline);
         if (name === "submit_identity") {
           const parsed = Identity.safeParse(input);
           if (!parsed.success) return { content: `Invalid input: ${parsed.error.message}`, isError: true };
@@ -276,12 +316,11 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   }
   emit({ type: "identified", name: ident.name, website: ident.website ?? null, docs: ident.developer_docs_url ?? null, oauth: ident.oauth });
 
-  // ---- 2–3. Discover and read ----
+  // ---- 2–3. Establish official domains, discover, read ----
   t0 = Date.now();
   emit({ type: "stage", stage: "research", message: `Finding ${ident.name}'s OAuth, review and limits pages` });
-  // The model's URLs are leads. A domain becomes official only once a page on it was actually fetched.
-  const anchors = await Promise.all([ident.website, ident.developer_docs_url].filter((u): u is string => !!u).map((u) => store.fetch(u)));
-  anchors.forEach((p) => p && store.addOfficial(p.url));
+  const readDeadline = Math.min(Date.now() + 25_000, researchDeadline - 40_000);
+  await anchorOfficial(store, ident, lookup, readDeadline);
   const entry = [...new Set([...(ident.entry_points ?? []), ident.developer_docs_url ?? ""].filter((u) => /^https?:\/\//.test(u)))].slice(0, 8);
   const { candidates } = await discover({
     app: ident.name,
@@ -290,22 +329,32 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     store,
     search,
     max: MAX_PAGES,
+    deadlineAt: Math.min(Date.now() + 12_000, readDeadline),
     onSearch: (query, results) => emit({ type: "search", query, via: "Composio Search", results: results.slice(0, 5).map(({ title, url }) => ({ title, url })) }),
   });
   emit({ type: "stage", stage: "research", message: `Reading ${candidates.length} pages` });
-  const read = (await Promise.all(candidates.map((c) => store.fetch(c.url)))).filter((p): p is Page => !!p);
+  const read = (await Promise.all(candidates.map((c) => store.fetch(c.url, readDeadline)))).filter((p): p is Page => !!p);
   store.expandOfficialFromLinks();
   store.relabel();
   mark("discover_read", t0);
 
-  // ---- 4. Extract: one citations call per page, all in parallel ----
+  // ---- 4. Extract: one citations call per page, a few at a time ----
   t0 = Date.now();
   const providerPages = dedupePages(read).filter((p) => !/composio\.dev/.test(p.url) && !/\/llms\.txt$/.test(p.url));
   const composioPages = [...store.pages.values()].filter((p) => /composio\.dev/.test(p.url)).slice(0, 3);
   emit({ type: "stage", stage: "research", message: `Extracting facts from ${providerPages.length + composioPages.length} pages` });
   const extractDeadline = Math.min(Date.now() + 45_000, researchDeadline - 15_000);
-  const extractOne = async (page: Page, ids: QuestionId[]) => {
+  const jobs: { page: Page; ids: QuestionId[] }[] = [
+    ...providerPages.map((page) => ({ page, ids: PROVIDER_QUESTIONS })),
+    ...composioPages.map((page) => ({ page, ids: COMPOSIO_QUESTIONS })),
+  ];
+  await mapLimit(jobs, EXTRACT_CONCURRENCY, async ({ page, ids }) => {
     const tStart = Date.now();
+    if (extractDeadline - Date.now() < 8_000) {
+      workers.push({ name: `extract ${page.url}`, stop: "deadline (not started)", ms: 0 });
+      return;
+    }
+    const text = trimForModel(page.text, 60_000);
     try {
       const msg = await llm.call(
         {
@@ -313,12 +362,12 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
           model: models.research,
           effort: resolveEffort("research"),
           system: EXTRACT_SYSTEM,
-          maxTokens: 8_000,
+          maxTokens: EXTRACT_MAX_TOKENS,
           messages: [
             {
               role: "user",
               content: [
-                { type: "document", source: { type: "text", media_type: "text/plain", data: trimForModel(page.text, 60_000) }, title: page.url, citations: { enabled: true } },
+                { type: "document", source: { type: "text", media_type: "text/plain", data: text }, title: page.url, citations: { enabled: true } },
                 { type: "text", text: extractUser(ident.name, ids) },
               ] as BetaContentBlockParam[],
             },
@@ -333,32 +382,32 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     } finally {
       ids.forEach((q) => store.markTried(q, page.url));
     }
-  };
-  await Promise.all([...providerPages.map((p) => extractOne(p, PROVIDER_QUESTIONS)), ...composioPages.map((p) => extractOne(p, COMPOSIO_QUESTIONS))]);
+  });
   mark("extract", t0);
   emitCoverage(emit, store);
 
-  // ---- 6. Gap fill: open critical questions, and developer reports, in parallel ----
+  // ---- 6. Gap fill: missing gates first (by priority); developer reports only if gates are nearly covered ----
   t0 = Date.now();
-  const open = store.openCritical().slice(0, 3);
-  const gapDeadline = researchDeadline;
+  const open = store.openCritical();
   const gapJobs: { name: string; ids: QuestionId[] }[] = [];
-  if (open.length) gapJobs.push({ name: "gap: official docs", ids: open });
-  if (store.status("R1") === "not_found") gapJobs.push({ name: "gap: developer reports", ids: store.status("G6") === "found" ? ["R1"] : ["R1", "G6"] });
-  if (gapJobs.length && gapDeadline - Date.now() > 15_000) {
+  if (open.length) gapJobs.push({ name: "gap: official docs", ids: open.slice(0, 3) });
+  if (open.length > 3) gapJobs.push({ name: "gap: official docs (2)", ids: open.slice(3, 6) });
+  if (gapJobs.length < 2 && store.status("R1") === "not_found") gapJobs.push({ name: "gap: developer reports", ids: store.status("G6") === "found" ? ["R1"] : ["R1", "G6"] });
+  if (gapJobs.length && researchDeadline - Date.now() > 15_000) {
     emit({ type: "stage", stage: "research", message: open.length ? `Searching for what the docs didn't answer (${open.join(", ")})` : "Looking for developer reports" });
     await Promise.all(
       gapJobs.map(async (job) => {
         const tStart = Date.now();
         const sBudget = { left: 2 };
         const fBudget = { left: 3 };
+        const counter = serverSearchCounter();
         const stop = await toolLoop({
           llm,
           stage: "research",
           model: models.research,
           system: GAPFILL_SYSTEM,
           tools: [
-            ...searchTools(2),
+            ...searchTools(models.research, 2),
             fetchTool,
             {
               name: "record_finding",
@@ -377,14 +426,15 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
             { name: "finish", description: "End your work. Say which questions you could not answer.", input_schema: { type: "object", properties: { notes: { type: "string" } }, required: ["notes"] } },
           ],
           user: gapfillUser(ident.name, ident.developer_docs_url ?? null, job.ids, job.ids.flatMap((q) => [...(store.tried.get(q) ?? [])])),
-          deadline: gapDeadline,
+          deadline: researchDeadline,
           maxTurns: 8,
           signal: opts.signal,
-          onMessage: onServerSearch,
+          onMessage: counter.onMessage,
+          stopWhen: () => counter.spent(3),
           runTool: async (name, input) => {
             if (name === "web_search") return runSearch(String(input.query ?? ""), sBudget);
             if (name === "fetch_page") {
-              const r = await runFetch(String(input.url ?? ""), fBudget, 12_000);
+              const r = await runFetch(String(input.url ?? ""), fBudget, 12_000, researchDeadline);
               job.ids.forEach((q) => store.markTried(q, String(input.url ?? "")));
               return r;
             }
@@ -419,10 +469,14 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   const system = `${WRITE_SYSTEM}\n\nReturn only one JSON object (no prose, no code fences) that validates against this JSON Schema:\n${schemaText}`;
   const writeMessages: BetaMessageParam[] = [{ role: "user", content: dossier }];
   let written: WriterGuide | null = null;
+  let writeFailure: string | null = null;
   for (let attempt = 0; attempt < 2 && !written; attempt++) {
-    if (attempt > 0 && runDeadline - Date.now() < 40_000) break;
+    if (attempt > 0 && writeDeadline - Date.now() < 40_000) {
+      writeFailure = "No time left to repair the guide's format.";
+      break;
+    }
     try {
-      const msg = await llm.call({ stage: "write", model: models.write, effort: resolveEffort("write"), system, messages: writeMessages, maxTokens: 48_000 }, runDeadline - VERIFY_RESERVE + 10_000);
+      const msg = await llm.call({ stage: "write", model: models.write, effort: resolveEffort("write"), system, messages: writeMessages, maxTokens: 32_000 }, writeDeadline);
       if (msg.stop_reason === "refusal") throw new Error("The model declined to write this guide.");
       if (msg.stop_reason === "max_tokens") throw new Error("The guide was cut off (max_tokens).");
       let problem: string;
@@ -436,24 +490,20 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       } catch (err) {
         problem = `Not valid JSON: ${(err as Error).message}`;
       }
+      writeFailure = problem;
       emit({ type: "warning", message: "Fixing the guide's format (one retry)" });
       writeMessages.push({ role: "assistant", content: msg.content }, { role: "user", content: `Fix these problems and return the complete corrected JSON object only:\n${problem}` });
     } catch (e) {
-      const message = e instanceof Anthropic.APIError ? `Model API error while writing (${e.status ?? "network"}): ${e.message}` : `Could not write the guide: ${(e as Error).message}`;
-      emit({ type: "error", message });
-      return { outcome: "error", message };
+      if (opts.signal?.aborted) return { outcome: "error", message: "Cancelled" };
+      writeFailure = e instanceof Anthropic.APIError ? `Model API error while writing (${e.status ?? "network"}): ${e.message}` : (e as Error).message;
+      break;
     }
   }
   mark("write", t0);
-  if (!written) {
-    emit({ type: "error", message: "Could not produce a valid guide." });
-    return { outcome: "error", message: "Could not produce a valid guide." };
-  }
 
   // ---- 8. Verify ----
   t0 = Date.now();
   emit({ type: "stage", stage: "verify", message: "Checking every claim against its source" });
-  const generated = fromWriter(written, store);
   const ctx: EvidenceContext = {
     pages: new Map([...store.pages.values()].map((p) => [canonicalUrl(p.url), p.text])),
     seenUrls: new Set([...store.seenUrls, ...[...store.pages.values()].map((p) => p.url)]),
@@ -461,56 +511,116 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     officialDomains: [...store.official],
     strictOfficial: true,
   };
-  const enforced = enforceEvidence(generated, ctx);
-  const warnings = [...enforced.warnings];
-  const evQuestion = new Map(store.evidence.filter((e) => e.status === "verified").map((e) => [e.id, e.question]));
-  const claimQuestion = new Map(written.claims.map((c) => [c.id, c.evidence_id ? evQuestion.get(c.evidence_id) : undefined]));
-  const guide = applyInvariants(enforced.guide, store, warnings, claimQuestion);
+  const warnings: string[] = [];
+  let guide: Guide;
+  let stats: ReturnType<typeof enforceEvidence>["stats"];
+  let judge: { checked: number; supported: number; partial: number; unsupported: number; contradicted: number; unchecked: number } | null = null;
 
-  // Entailment judge: claims on the critical questions, plus any claim the word checks flagged.
-  let judge: { checked: number; supported: number; partial: number; contradicted: number } | null = null;
-  const toJudge = guide.claims
-    .filter((c) => c.quote && (c.label === "provider_docs" || c.label === "composio_docs" || c.label === "reported"))
-    .filter((c) => ["G2", "G3", "G4", "G5", "G6", "G7", "G8"].includes(claimQuestion.get(c.id) ?? "") || (c.note ?? "").includes("Check the quote"))
-    .slice(0, 30);
-  if (toJudge.length && runDeadline - Date.now() > 25_000) {
-    try {
-      const msg = await llm.call(
-        {
-          stage: "critic",
-          model: models.critic,
-          effort: resolveEffort("critic"),
-          system: JUDGE_SYSTEM,
-          maxTokens: 6_000,
-          messages: [{ role: "user", content: JSON.stringify(toJudge.map((c) => ({ id: c.id, claim: c.text, quote: c.quote }))) }],
-        },
-        runDeadline - 8_000,
-      );
-      const verdicts = Verdicts.safeParse(JSON.parse(extractJson(textOf(msg))));
-      if (verdicts.success) {
-        judge = { checked: toJudge.length, supported: 0, partial: 0, contradicted: 0 };
-        const byIdV = new Map(verdicts.data.map((v) => [v.id, v]));
-        guide.claims = guide.claims.map((c) => {
-          const v = byIdV.get(c.id);
-          if (!v || !toJudge.some((t) => t.id === c.id)) return c;
-          judge![v.verdict]++;
-          if (v.verdict === "contradicted") return { ...c, label: "unknown", note: `The quote does not support this claim${v.reason ? `: ${v.reason}` : "."}` };
-          if (v.verdict === "partial") return { ...c, note: `Partly supported by the quote${v.reason ? `: ${v.reason}` : "."}` };
-          return { ...c, note: (c.note ?? "").includes("Check the quote") ? null : c.note };
-        });
-        if (judge.contradicted) enforced.stats.downgraded += judge.contradicted;
-      } else warnings.push("The evidence judge's answer could not be read; claims were not double-checked.");
-    } catch (e) {
-      warnings.push(`The evidence judge did not run: ${(e as Error).message}`);
+  if (!written) {
+    // The writer failed: save what was verified rather than nothing, clearly marked as incomplete.
+    warnings.push(`The agent could not write the full guide (${writeFailure ?? "unknown error"}). Showing the facts it verified.`);
+    const enforced = enforceEvidence(fallbackGuide(ident, lookup, store), ctx);
+    guide = { ...enforced.guide, open_questions: [...enforced.guide.open_questions, ...openQuestions(store)] };
+    stats = enforced.stats;
+    warnings.push(...enforced.warnings);
+  } else {
+    const writer = dedupeClaims(written);
+    if (writer.claims.length > MAX_CLAIMS) warnings.push(`The writer produced ${writer.claims.length} claims; only the first ${MAX_CLAIMS} were kept.`);
+    const enforced = enforceEvidence(fromWriter(writer, store), ctx);
+    warnings.push(...enforced.warnings);
+    stats = enforced.stats;
+    let g = enforced.guide;
+    const evById = new Map(store.evidence.map((e) => [e.id, e]));
+    const claimEvidence = new Map(writer.claims.map((c) => [c.id, c.evidence_id && evById.get(c.evidence_id)?.status === "verified" ? c.evidence_id : null]));
+    const claimQuestion = new Map([...claimEvidence].map(([id, ev]) => [id, ev ? evById.get(ev)?.question : undefined]));
+    const quotesOf = (claimId: string) => {
+      const ev = claimEvidence.get(claimId);
+      const e = ev ? evById.get(ev) : undefined;
+      return e ? [e.quote, ...(e.extra_quotes ?? [])] : [];
+    };
+
+    // Entailment judge, before any conclusion is drawn: claims on critical questions, claims the word checks
+    // flagged, and each setup's path, wait, shortcut and factors as stated.
+    const items = judgeItems(g, claimQuestion, quotesOf);
+    const verdicts = new Map<string, VerdictT>();
+    if (items.length && runDeadline - SAVE_RESERVE - Date.now() > 12_000) {
+      try {
+        const msg = await llm.call(
+          {
+            stage: "critic",
+            model: models.critic,
+            effort: resolveEffort("critic"),
+            system: JUDGE_SYSTEM,
+            maxTokens: 6_000,
+            messages: [{ role: "user", content: JSON.stringify(items.map(({ id, statement, quotes }) => ({ id, statement, quotes }))) }],
+          },
+          runDeadline - SAVE_RESERVE,
+        );
+        const parsed = Verdicts.safeParse(JSON.parse(extractJson(textOf(msg))));
+        if (!parsed.success) throw new Error("its answer could not be read");
+        const sent = new Set(items.map((i) => i.id));
+        const seen = new Set<string>();
+        for (const v of parsed.data) {
+          // Exactly one verdict per item sent: unknown ids and duplicates are ignored.
+          if (!sent.has(v.id) || seen.has(v.id)) continue;
+          seen.add(v.id);
+          verdicts.set(v.id, v.verdict);
+          const item = items.find((i) => i.id === v.id)!;
+          item.reason = v.reason;
+        }
+        for (const id of sent) if (!verdicts.has(id)) verdicts.set(id, "unchecked");
+        judge = { checked: items.length, supported: 0, partial: 0, unsupported: 0, contradicted: 0, unchecked: 0 };
+        for (const v of verdicts.values()) judge[v]++;
+        if (judge.unchecked) warnings.push(`${judge.unchecked} statements were not double-checked by the evidence judge.`);
+      } catch (e) {
+        warnings.push(`The evidence judge did not run (${(e as Error).message}); setup details were not double-checked.`);
+      }
+    } else if (items.length) {
+      warnings.push("Out of time for the evidence judge; setup details were not double-checked.");
     }
+
+    // Apply claim verdicts: contradicted or unsupported → unconfirmed, and their evidence no longer answers anything.
+    const rejectedEvidence: string[] = [];
+    g = {
+      ...g,
+      claims: g.claims.map((c) => {
+        const v = verdicts.get(c.id);
+        const reason = items.find((i) => i.id === c.id)?.reason;
+        if (v === "contradicted" || v === "unsupported") {
+          const ev = claimEvidence.get(c.id);
+          if (ev) rejectedEvidence.push(ev);
+          stats.downgraded++;
+          return { ...c, label: "unknown" as const, note: `The quote does not support this claim${reason ? `: ${reason}` : "."}` };
+        }
+        if (v === "partial") return { ...c, note: `Only partly supported by the quote${reason ? `: ${reason}` : "."}` };
+        if (v === "unchecked") return { ...c, note: c.note ?? "Not double-checked against its quote." };
+        if (v === "supported" && (c.note ?? "").includes("Check the quote")) return { ...c, note: null };
+        return c;
+      }),
+    };
+    store.reject(rejectedEvidence);
+
+    // A claim can carry a categorical conclusion only if it is sourced and, when judged, fully supported.
+    const accepted = (id: string) => {
+      const c = g.claims.find((x) => x.id === id);
+      if (!c || c.label === "unknown") return false;
+      const v = verdicts.get(id);
+      return v === undefined || v === "supported";
+    };
+    const fieldOk = (key: string) => {
+      if (!judge) return true; // judge didn't run: warned above
+      return verdicts.get(key) === "supported";
+    };
+    guide = applyInvariants(g, store, warnings, { claimQuestion, accepted, fieldOk, judged: !!judge });
   }
   mark("verify", t0);
 
-  emit({ type: "verify", total: enforced.stats.claims_total, checked: enforced.stats.quotes_checked, verified: enforced.stats.quotes_verified, downgraded: enforced.stats.downgraded });
+  emit({ type: "verify", total: stats.claims_total, checked: stats.quotes_checked, verified: stats.quotes_verified, downgraded: stats.downgraded });
+  emitCoverage(emit, store);
   warnings.forEach((w) => emit({ type: "warning", message: w }));
   emit({ type: "cost", usd: llm.spend.usd, input_tokens: llm.spend.input_tokens, output_tokens: llm.spend.output_tokens, web_searches: llm.spend.web_searches });
 
-  const partial = store.openCritical().length > 0 || workers.some((w) => w.stop === "deadline");
+  const partial = !written || store.openCritical().length > 0 || workers.some((w) => w.stop.startsWith("deadline"));
   const record: GuideRecord = {
     slug: slugify(opts.query) || slugify(guide.app.name),
     guide,
@@ -524,7 +634,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       query: opts.query,
       partial,
       warnings,
-      verification: enforced.stats,
+      verification: stats,
       usage: {
         usd: Math.round(llm.spend.usd * 10000) / 10000,
         input_tokens: llm.spend.input_tokens,
@@ -538,6 +648,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
         version: 2,
         prompt_version: PROMPT_VERSION,
         models: { ...models },
+        served: llm.spend.served as Record<string, string[]>,
         questions: store.questionRecords(),
         evidence: store.evidence,
         workers,
@@ -549,9 +660,37 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   return { outcome: "ok", record };
 }
 
+/**
+ * Decide which domains are the provider's own. Composio's catalog URL is an independent anchor. The identify
+ * step's website and docs URLs are only leads: a site counts once fetched AND (it is the catalog's domain, the
+ * catalog's site links to it, or, with no catalog entry, its page names the app). Docs count when an official
+ * page links to them or they share the official domain.
+ */
+async function anchorOfficial(store: ResearchStore, ident: IdentityT, lookup: ComposioLookup | null, deadlineAt: number) {
+  const name = ident.name.toLowerCase();
+  const mentions = (p: Page) => `${p.title ?? ""} ${p.text.slice(0, 3000)}`.toLowerCase().includes(name);
+  const [catalog, site, docs] = await Promise.all([
+    lookup?.app_url ? store.fetch(lookup.app_url, deadlineAt) : Promise.resolve(null),
+    ident.website ? store.fetch(ident.website, deadlineAt) : Promise.resolve(null),
+    ident.developer_docs_url ? store.fetch(ident.developer_docs_url, deadlineAt) : Promise.resolve(null),
+  ]);
+  const linksTo = (from: Page | null, to: Page | null) => !!from && !!to && from.links.some((l) => baseDomain(l) === baseDomain(to.url));
+  if (lookup?.app_url) store.addOfficial(catalog?.url ?? lookup.app_url);
+  if (site && (store.official.has(baseDomain(site.url)) || linksTo(catalog, site) || (!lookup?.app_url && mentions(site)))) store.addOfficial(site.url);
+  if (docs && (store.official.has(baseDomain(docs.url)) || linksTo(catalog, docs) || linksTo(site, docs) || (store.official.size === 0 && mentions(docs)))) {
+    if (store.official.size === 0 || [site, catalog].some((p) => p && store.official.has(baseDomain(p.url)))) store.addOfficial(docs.url);
+  }
+  store.expandOfficialFromLinks();
+}
+
 function dedupePages(pages: Page[]): Page[] {
   const seen = new Set<string>();
   return pages.filter((p) => (seen.has(p.hash) ? false : (seen.add(p.hash), true)));
+}
+
+function dedupeClaims(w: WriterGuide): WriterGuide {
+  const seen = new Set<string>();
+  return { ...w, claims: w.claims.filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true))) };
 }
 
 function emitCoverage(emit: (e: AgentEvent) => void, store: ResearchStore) {
@@ -561,25 +700,42 @@ function emitCoverage(emit: (e: AgentEvent) => void, store: ResearchStore) {
 }
 
 /**
- * Turn a Citations-API reply into evidence. The reply has "## G5" headings; each cited sentence becomes one
- * evidence item per citation, with the cited text as the quote (it points into the page by construction).
+ * Turn a Citations-API reply into evidence. Headings ("## G5") are tracked in reading order across and within
+ * text blocks. A block's citations belong to the question in force where the block's prose is; a block that
+ * spans several headings is split and only an unambiguous last section keeps the citations. Several citations
+ * on one sentence stay together as one evidence item (they support it jointly).
  */
 export function collectCitations(msg: BetaMessage, page: Page, store: ResearchStore, allowed: QuestionId[]): number {
   let current: QuestionId | null = null;
   let n = 0;
   for (const b of msg.content) {
     if (b.type !== "text") continue;
-    const headings = [...b.text.matchAll(/##\s*([A-Z]\d{1,2})\b/g)].map((m) => m[1]);
-    const last = headings.at(-1);
-    if (last && isQuestionId(last) && allowed.includes(last)) current = last;
-    else if (last) current = null;
-    if (!current || !b.citations?.length) continue;
-    const answer = b.text.replace(/##\s*[A-Z]\d{1,2}\b/g, "").trim();
-    for (const c of b.citations) {
-      if (c.type !== "char_location" || !c.cited_text?.trim()) continue;
-      const item = store.addEvidence({ question: current, url: page.url, quote: c.cited_text.trim(), answer: answer || c.cited_text.trim(), via: "extract" });
-      if (item.status === "verified") n++;
+    const segments = b.text.split(/(##\s*[A-Z]\d{1,2}\b)/);
+    let proseQuestion: QuestionId | null = current;
+    let prose = "";
+    for (const seg of segments) {
+      const h = seg.match(/^##\s*([A-Z]\d{1,2})$/);
+      if (h) {
+        current = isQuestionId(h[1]) && allowed.includes(h[1]) ? h[1] : null;
+        proseQuestion = current;
+        prose = "";
+      } else if (seg.trim()) {
+        prose += seg;
+      }
     }
+    const cites = (b.citations ?? []).filter((c) => c.type === "char_location" && c.cited_text?.trim());
+    if (!proseQuestion || !cites.length || !prose.trim()) continue;
+    const [first, ...rest] = cites as { cited_text: string; start_char_index: number; end_char_index: number }[];
+    const item = store.addEvidence({
+      question: proseQuestion,
+      url: page.url,
+      quote: first.cited_text.trim(),
+      extra_quotes: rest.map((c) => c.cited_text.trim()),
+      offsets: [first.start_char_index, first.end_char_index],
+      answer: prose.trim(),
+      via: "extract",
+    });
+    if (item.status === "verified") n++;
   }
   return n;
 }
@@ -608,7 +764,10 @@ function buildDossier(query: string, ident: IdentityT, lookup: ComposioLookup | 
   const verified = store.evidence.filter((e) => e.status === "verified");
   parts.push(
     `## Verified evidence (cite these ids)\n${verified
-      .map((e) => `${e.id} [${e.kind}] (${e.question}) ${e.url}\n  quote: "${e.quote.slice(0, 400)}"\n  answer: ${e.answer.slice(0, 300)}`)
+      .map((e) => {
+        const extra = e.extra_quotes?.length ? `\n  also: ${e.extra_quotes.map((q) => `"${q.slice(0, 200)}"`).join(" ")}` : "";
+        return `${e.id} [${e.kind}] (${e.question}) ${e.url}\n  quote: "${e.quote.slice(0, 400)}"${extra}\n  answer: ${e.answer.slice(0, 300)}`;
+      })
       .join("\n")}`,
   );
   const failed = store.evidence.length - verified.length;
@@ -628,51 +787,130 @@ export function fromWriter(w: WriterGuide, store: ResearchStore): GeneratedGuide
   return { ...w, scenarios: w.scenarios.slice(0, MAX_SCENARIOS), claims };
 }
 
-/** Code checks that replace an LLM critique (SPEC §5, rules 6–9). Mutates nothing; returns a new guide. */
-export function applyInvariants(g: Guide, store: ResearchStore, warnings: string[], claimQuestion: Map<string, string | undefined>): Guide {
-  const claims = new Map(g.claims.map((c) => [c.id, c]));
-  const verifiedClaim = (id: string) => {
-    const c = claims.get(id);
-    return !!c && c.label !== "unknown";
+/** A minimal guide from verified evidence, for when the writer could not finish. */
+function fallbackGuide(ident: IdentityT, lookup: ComposioLookup | null, store: ResearchStore): GeneratedGuide {
+  const managed = lookup?.managed_oauth ?? "unknown";
+  const ev = store.verified().slice(0, MAX_CLAIMS);
+  return {
+    app: { name: ident.name, website: ident.website ?? null, developer_docs_url: ident.developer_docs_url ?? null },
+    oauth_supported: ident.oauth === "yes" ? "yes" : "unclear",
+    summary: "The agent ran out of time before writing the full guide. These are the facts it verified, with their sources.",
+    composio: { toolkit_slug: lookup?.chosen?.slug ?? lookup?.toolkit?.slug ?? null, managed_oauth: managed, credential_guide_url: lookup?.credential_guide?.url ?? null, note: "" },
+    need_own_app: {
+      answer: managed === "yes" ? "Not to prototype: Composio has a managed app. For launch, usually yes." : "Likely yes: Composio has no managed app for this.",
+      reasons: [],
+    },
+    scenarios: [],
+    prerequisites: [],
+    steps: [],
+    traps: [],
+    blockers: [],
+    open_questions: [],
+    claims: ev.map((e, i) => ({ id: `c${i + 1}`, text: e.answer.slice(0, 300), label: e.kind, source_url: e.url, quote: e.quote, probe_id: null })),
   };
-  // A path is backed only by a verified claim whose own evidence answers G2 (not any claim from the same page).
-  const backsPath = (id: string) => verifiedClaim(id) && claimQuestion.get(id) === "G2";
+}
+
+type JudgeItem = { id: string; statement: string; quotes: string[]; reason?: string };
+
+/** What the judge checks: risky claims, and every categorical field as the guide states it, with its quotes. */
+function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, quotesOf: (id: string) => string[]): JudgeItem[] {
+  const items: JudgeItem[] = [];
+  for (const c of g.claims) {
+    if (!c.quote || c.label === "unknown") continue;
+    const q = claimQuestion.get(c.id) ?? "";
+    if (["G2", "G3", "G4", "G5", "G6", "G7", "G8", "G11"].includes(q) || (c.note ?? "").includes("Check the quote")) {
+      items.push({ id: c.id, statement: c.text, quotes: quotesOf(c.id) });
+    }
+  }
+  const gather = (ids: string[] | undefined) => [...new Set((ids ?? []).flatMap(quotesOf))];
+  for (const s of g.scenarios) {
+    const who = `For "${s.label}"`;
+    if (s.path) {
+      const parts = [
+        `${who}: ${PATH_INFO[s.path].name.toLowerCase()} (${PATH_INFO[s.path].meaning.toLowerCase()})`,
+        s.trigger && s.trigger !== "none" ? `triggered ${s.trigger.replace("_", " ")}` : "",
+        s.gate_sequence?.length ? `steps: ${s.gate_sequence.join(" → ")}` : "",
+        s.review_checks?.length ? `the review checks: ${s.review_checks.map((c) => CHECK_INFO[c].toLowerCase()).join(", ")}` : "",
+      ].filter(Boolean);
+      items.push({ id: `${s.id}.path`, statement: `${parts.join("; ")}.`, quotes: gather(s.path_claim_ids) });
+    }
+    if (/\d/.test(s.waiting.estimate)) {
+      const ids = s.claim_ids.filter((id) => TIMELINE_QUESTIONS.has(claimQuestion.get(id) ?? ""));
+      items.push({ id: `${s.id}.wait`, statement: `${who}: the wait on the provider is ${s.waiting.estimate}.`, quotes: gather(ids) });
+    }
+    if (s.shortcut) items.push({ id: `${s.id}.shortcut`, statement: `${who}: ${s.shortcut}`, quotes: gather(s.shortcut_claim_ids) });
+    (s.modifiers ?? []).forEach((m, i) => items.push({ id: `${s.id}.mod${i}`, statement: `${who}: ${m.kind.replace(/_/g, " ")}: ${m.note}`, quotes: gather(m.claim_ids) }));
+  }
+  // Items without quotes can't be supported; they are decided in code (removed), not sent.
+  return items.filter((i) => i.quotes.length).slice(0, 45);
+}
+
+function openQuestions(store: ResearchStore): string[] {
+  return store.openCritical().map((q) => {
+    const tried = [...(store.tried.get(q) ?? [])].filter((u) => /^https?:/.test(u)).slice(0, 2);
+    const text = QUESTIONS.find((x) => x.id === q)!.text.split(":")[0].split("(")[0].trim();
+    return `Not found: ${text.charAt(0).toLowerCase()}${text.slice(1)}.${tried.length ? ` Checked ${tried.map((u) => baseDomain(u)).join(", ")}.` : ""}`;
+  });
+}
+
+/**
+ * Code checks that replace an LLM critique (SPEC §5). A categorical field survives only if it is backed by the
+ * right kind of accepted claim AND, when the judge ran, the field as stated was judged supported.
+ */
+export function applyInvariants(
+  g: Guide,
+  store: ResearchStore,
+  warnings: string[],
+  c: { claimQuestion: Map<string, string | undefined>; accepted: (id: string) => boolean; fieldOk: (key: string) => boolean; judged: boolean },
+): Guide {
+  const fromQuestion = (id: string, qs: string[]) => c.accepted(id) && qs.includes(c.claimQuestion.get(id) ?? "");
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };
-    if (out.path && !(out.path_claim_ids ?? []).some(backsPath)) {
+    const pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
+    if (out.path && !pathOk) {
       warnings.push(`"${s.label}": the path ("${out.path}") is not backed by a verified source, so it is shown as unconfirmed.`);
       delete out.path;
       delete out.trigger;
       delete out.gate_sequence;
+      delete out.review_checks;
     }
-    if (out.shortcut && !(out.shortcut_claim_ids ?? []).some(verifiedClaim)) out.shortcut = null;
-    if (out.modifiers) out.modifiers = out.modifiers.filter((m) => m.claim_ids.some(verifiedClaim)).slice(0, 6);
-    if (!out.extras?.length && out.modifiers?.length) out.extras = out.modifiers.map((m) => m.note).slice(0, 3);
-    if (out.extras) out.extras = out.extras.slice(0, 3).map((x) => x.split(/\s+/).slice(0, 8).join(" "));
+    // Waits: a number needs an accepted timeline claim (G6/R1) and a supported field; "None" needs an accepted
+    // no-review path. Otherwise the wait is Unknown.
+    const est = out.waiting.estimate.trim();
+    if (/\d/.test(est)) {
+      const ok = out.claim_ids.some((id) => fromQuestion(id, ["G6", "R1"])) && c.fieldOk(`${s.id}.wait`);
+      if (!ok) out.waiting = { estimate: "Unknown", basis: `No verified source backs this timeline (the agent's estimate was "${est}").`, max_days: null };
+    } else if (!/^unknown$/i.test(est)) {
+      const noReview = pathOk && (out.path === "self_serve" || out.path === "automatic");
+      if (!noReview) out.waiting = { estimate: "Unknown", basis: `No verified source confirms "${est}".`, max_days: null };
+    }
+    if (out.shortcut && !((out.shortcut_claim_ids ?? []).some(c.accepted) && c.fieldOk(`${s.id}.shortcut`))) out.shortcut = null;
+    if (out.modifiers) out.modifiers = out.modifiers.filter((m, i) => m.claim_ids.some(c.accepted) && c.fieldOk(`${s.id}.mod${i}`)).slice(0, 6);
+    out.extras = (out.modifiers?.length ? out.modifiers.map((m) => m.note) : (out.extras ?? [])).slice(0, 3).map((x) => x.split(/\s+/).slice(0, 8).join(" "));
     if (out.gate_sequence) out.gate_sequence = out.gate_sequence.slice(0, 5);
     return out;
   });
   const ids = new Set(scenarios.map((s) => s.id));
   const default_scenario = g.default_scenario && ids.has(g.default_scenario) ? g.default_scenario : undefined;
 
-  // Numbers in the verdict must come from verified claims; otherwise rebuild it from the scenarios.
-  const verifiedText = g.claims.filter((c) => c.label !== "unknown").map((c) => `${c.text} ${c.quote ?? ""}`).join(" ");
+  // Numbers in the verdict and summary must come from accepted claims; otherwise rebuild or replace them.
+  const acceptedText = g.claims.filter((x) => c.accepted(x.id)).map((x) => `${x.text} ${x.quote ?? ""}`).join(" ");
+  const unsupportedNumber = (text: string | undefined) => (text?.match(/\d+/g) ?? []).some((n) => !new RegExp(`\\b${n}\\b`).test(acceptedText));
   let verdict = g.verdict;
-  const nums = (verdict ?? "").match(/\d+/g) ?? [];
-  if (verdict && nums.some((n) => !new RegExp(`\\b${n}\\b`).test(verifiedText))) {
+  if (verdict && unsupportedNumber(verdict)) {
     warnings.push("The one-line verdict used numbers no verified claim supports; it was rebuilt from the setups.");
     const rank = { easy: 0, medium: 1, hard: 2, unknown: 3 } as const;
-    const sorted = [...scenarios].sort((a, b) => rank[a.difficulty] - rank[b.difficulty]);
-    const e = sorted[0];
+    const e = [...scenarios].sort((a, b) => rank[a.difficulty] - rank[b.difficulty])[0];
     const h = [...scenarios].filter((s) => s.difficulty !== "unknown").sort((a, b) => rank[b.difficulty] - rank[a.difficulty])[0];
     verdict = e && h && e.id !== h.id ? `Easiest: ${e.label} (${e.difficulty}). Hardest: ${h.label} (${h.difficulty}).` : undefined;
   }
-  // Each critical question not found is listed as unconfirmed, with where the agent looked.
-  const open = store.openCritical().map((q) => {
-    const tried = [...(store.tried.get(q) ?? [])].slice(0, 2);
-    const text = QUESTIONS.find((x) => x.id === q)!.text.split(":")[0].split("(")[0].trim();
-    return `Not found: ${text.charAt(0).toLowerCase()}${text.slice(1)}.${tried.length ? ` Checked ${tried.map((u) => baseDomain(u)).join(", ")}.` : ""}`;
-  });
+  let summary = g.summary;
+  if (unsupportedNumber(summary)) {
+    warnings.push("The summary used numbers no verified claim supports; it was replaced.");
+    summary = verdict ?? "See the setups below; times are shown only where a source gives them.";
+  }
+  const open = openQuestions(store);
   const open_questions = [...g.open_questions, ...open.filter((o) => !g.open_questions.some((x) => x.includes(o.slice(11, 40))))];
-  return { ...g, scenarios, default_scenario, verdict, open_questions };
+  if (!c.judged && g.scenarios.length) warnings.push("Setup details (path, waits, shortcuts) were not double-checked by the evidence judge.");
+  return { ...g, scenarios, default_scenario, verdict, summary, open_questions };
 }

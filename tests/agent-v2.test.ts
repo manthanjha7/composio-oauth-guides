@@ -103,11 +103,21 @@ function writerGuide(over: Record<string, unknown> = {}, dossier = "") {
 }
 
 /** Fake model: answers by stage (parallel calls arrive in any order) and by conversation length. */
-function fakeClient(opts: { writer?: (dossier: string) => Record<string, unknown>; judge?: (items: { id: string }[]) => unknown[]; gap?: boolean } = {}) {
-  const calls: { system: string; messages: unknown[] }[] = [];
+function fakeClient(
+  opts: {
+    writer?: (dossier: string) => Record<string, unknown>;
+    judge?: (items: { id: string }[]) => unknown[];
+    gap?: boolean;
+    identify?: (turn: number) => ReturnType<typeof msg> | null;
+    writerFails?: boolean;
+  } = {},
+) {
+  const calls: { system: string; messages: unknown[]; tools?: unknown[]; raw: Record<string, unknown> }[] = [];
   const respond = (p: { system: string; messages: { role: string; content: unknown }[] }) => {
     const turn = p.messages.length;
     if (p.system === IDENTIFY_SYSTEM) {
+      const custom = opts.identify?.(turn);
+      if (custom) return custom;
       return turn === 1
         ? msg([tool("i1", "submit_identity", { name: "Acme", website: "https://acme.example", developer_docs_url: "https://developers.acme.example/docs", oauth: "yes", entry_points: ["https://developers.acme.example/docs/scopes"] })], "tool_use")
         : msg([{ type: "text", text: "done" }]);
@@ -151,6 +161,7 @@ function fakeClient(opts: { writer?: (dossier: string) => Record<string, unknown
       return msg([{ type: "text", text: JSON.stringify(opts.judge ? opts.judge(items) : items.map((i) => ({ id: i.id, verdict: "supported" }))) }]);
     }
     // writer
+    if (opts.writerFails) throw new Error("simulated writer outage");
     const dossier = String(p.messages[0].content);
     const g = opts.writer ? opts.writer(dossier) : writerGuide({}, dossier);
     return msg([{ type: "text", text: JSON.stringify(g) }]);
@@ -158,8 +169,8 @@ function fakeClient(opts: { writer?: (dossier: string) => Record<string, unknown
   const client = {
     beta: {
       messages: {
-        stream: (params: { system: string; messages: { role: string; content: unknown }[] }) => {
-          calls.push({ system: params.system, messages: [...params.messages] });
+        stream: (params: { system: string; messages: { role: string; content: unknown }[]; tools?: unknown[] }) => {
+          calls.push({ system: params.system, messages: [...params.messages], tools: params.tools, raw: params as unknown as Record<string, unknown> });
           const out = respond(params);
           return { finalMessage: async () => out };
         },
@@ -286,3 +297,116 @@ describe("collectCitations", () => {
     expect(store.evidence.map((e) => e.question)).toEqual(["G2", "G5"]);
   });
 });
+
+describe("agent v2: review follow-ups (offline)", () => {
+  const run = (c: ReturnType<typeof fakeClient>) => runAgentV2({ query: "Acme", client: c.client, search: null, emit: () => {} });
+
+  it("sends documents with citations on, explicit effort, and the web-search version for the model that runs it", async () => {
+    const c = fakeClient();
+    await run(c);
+    const ex = c.calls.find((x) => x.system === EXTRACT_SYSTEM)!;
+    const doc = (ex.messages[0] as { content: Record<string, unknown>[] }).content[0];
+    expect(doc).toMatchObject({ type: "document", source: { type: "text", media_type: "text/plain" }, citations: { enabled: true } });
+    expect(ex.raw.output_config).toMatchObject({ effort: expect.any(String) });
+    const idTools = c.calls.find((x) => x.system === IDENTIFY_SYSTEM)!.tools as { type?: string; name: string }[];
+    expect(idTools.find((t) => t.name === "web_search")?.type).toBe("web_search_20250305"); // identify runs on Haiku by default
+  });
+
+  it("keeps tools identical across turns of one conversation", async () => {
+    const c = fakeClient();
+    await run(c);
+    const gap = c.calls.filter((x) => x.system === GAPFILL_SYSTEM && String((x.messages[0] as { content: string }).content).includes("R1"));
+    for (let i = 1; i < gap.length; i++) expect(JSON.stringify(gap[i].tools)).toBe(JSON.stringify(gap[0].tools));
+  });
+
+  it("continues after pause_turn and ends a conversation once its server searches are spent", async () => {
+    const serverSearch = (id: string) => ({ type: "server_tool_use", id, name: "web_search", input: { query: "acme oauth" } });
+    const c = fakeClient({
+      identify: (turn) => (turn === 1 ? msg([serverSearch("s1")], "pause_turn") : turn === 3 ? msg([serverSearch("s2"), serverSearch("s3")], "pause_turn") : msg([serverSearch(`s${turn}`)], "pause_turn")),
+    });
+    const r = await run(c);
+    const identifyCalls = c.calls.filter((x) => x.system === IDENTIFY_SYSTEM).length;
+    expect(identifyCalls).toBe(3); // 1 + 1 + 2 searches: stops at the third call instead of running all 6 turns
+    expect(r.outcome).toBe("error"); // never identified
+  });
+
+  it("removes a path, its wait and coverage when the judge contradicts the G2 claim behind them", async () => {
+    const c = fakeClient({ judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "c1" ? "contradicted" : "supported" })) });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    const s2 = r.record.guide.scenarios.find((s) => s.id === "s2")!;
+    expect(s2.path).toBeUndefined();
+    expect(r.record.guide.claims.find((x) => x.id === "c1")!.label).toBe("unknown");
+    expect(r.record.meta.research!.questions.find((q) => q.id === "G2")!.status).toBe("not_found");
+  });
+
+  it("drops a field the judge finds unsupported by its quotes, even when the claim itself is fine", async () => {
+    const c = fakeClient({ judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "s2.path" ? "unsupported" : "supported" })) });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s2")!.path).toBeUndefined();
+    expect(r.record.guide.claims.find((x) => x.id === "c1")!.label).toBe("provider_docs");
+  });
+
+  it("treats missing judge verdicts as unchecked, not as passed", async () => {
+    const c = fakeClient({ judge: (items) => items.filter((i) => i.id !== "s2.path" && i.id !== "c3").map((i) => ({ id: i.id, verdict: "supported" })) });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s2")!.path).toBeUndefined();
+    expect(r.record.guide.claims.find((x) => x.id === "c3")!.note).toMatch(/Not double-checked/);
+    expect(r.record.meta.research!.judge!.unchecked).toBe(2);
+  });
+
+  it("saves a partial guide of verified facts when the writer fails", async () => {
+    const c = fakeClient({ writerFails: true });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.meta.partial).toBe(true);
+    expect(r.record.guide.claims.length).toBeGreaterThan(0);
+    expect(r.record.guide.claims.every((x) => x.quote)).toBe(true);
+    expect(r.record.meta.warnings!.some((w) => w.includes("could not write"))).toBe(true);
+  });
+});
+
+describe("collectCitations, harder cases", () => {
+  const mk = () => {
+    const store = new ResearchStore(null);
+    const page = { url: "https://x.example/d", title: null, text: "Apps must be reviewed by our team. Up to 5 test users are allowed. Admins approve installs for the org.", links: [], fetched_at: "", hash: "h", via: "direct" as const };
+    store.pages.set("https://x.example/d", page);
+    return { store, page };
+  };
+  it("follows headings inside a block and keeps joint citations together", () => {
+    const { store, page } = mk();
+    const m = {
+      content: [
+        { type: "text", text: "## G2\nSome intro.\n## G5\n" },
+        {
+          type: "text",
+          text: "Up to 5 test users, reviewed by the team.",
+          citations: [
+            { type: "char_location", cited_text: "Up to 5 test users are allowed.", document_index: 0, start_char_index: 35, end_char_index: 66 },
+            { type: "char_location", cited_text: "Apps must be reviewed by our team.", document_index: 0, start_char_index: 0, end_char_index: 34 },
+          ],
+        },
+      ],
+    };
+    expect(collectCitations(m as never, page, store, ["G2", "G5"])).toBe(1);
+    expect(store.evidence[0]).toMatchObject({ question: "G5", extra_quotes: ["Apps must be reviewed by our team."], offsets: [35, 66] });
+  });
+  it("drops citations whose heading is not an allowed question", () => {
+    const { store, page } = mk();
+    const m = { content: [{ type: "text", text: "## G8\n" }, cite("Admins approve.", "Admins approve installs for the org.", page.url)] };
+    expect(collectCitations(m as never, page, store, ["G2"])).toBe(0);
+  });
+});
+
+describe("deadlines", () => {
+  it("a fetch that hangs gives up at its deadline", async () => {
+    const store = new ResearchStore({ search: async () => [], fetch: () => new Promise(() => {}) });
+    const t = Date.now();
+    const p = await store.fetch("https://hangs.example/never", Date.now() + 2_000);
+    expect(p).toBeNull();
+    expect(Date.now() - t).toBeLessThan(4_000);
+  });
+});
+

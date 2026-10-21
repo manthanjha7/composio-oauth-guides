@@ -40,7 +40,12 @@ function isPrivateIp(ip: string): boolean {
   return v6.startsWith("fc") || v6.startsWith("fd") || v6.startsWith("fe8") || v6.startsWith("fe9") || v6.startsWith("fea") || v6.startsWith("feb") || v6.startsWith("ff");
 }
 
-export async function assertPublicUrl(raw: string): Promise<URL> {
+/** Resolve a promise or reject when `ms` runs out (DNS lookups have no timeout of their own). */
+function within<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
+  return Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`${what} timed out`)), Math.max(1, ms)))]);
+}
+
+export async function assertPublicUrl(raw: string, timeoutMs = 5_000): Promise<URL> {
   let url: URL;
   try {
     url = new URL(raw);
@@ -52,7 +57,7 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   if (url.username || url.password) throw new Error("Credentials in URLs are not allowed");
   const host = url.hostname.replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".local") || host.endsWith(".internal")) throw new Error("Private host");
-  const addrs = net.isIP(host) ? [{ address: host }] : await lookup(host, { all: true });
+  const addrs = net.isIP(host) ? [{ address: host }] : await within(lookup(host, { all: true }), timeoutMs, "DNS lookup");
   if (addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address))) throw new Error("Private or unresolvable address");
   return url;
 }
@@ -66,22 +71,32 @@ export interface RawResponse {
   redirects: string[];
 }
 
-/** GET with manual, re-validated redirects and a hard timeout. */
+/**
+ * GET with manual, re-validated redirects. One deadline covers the whole request: DNS, every redirect hop and
+ * the body. An optional signal cancels it (e.g. the client disconnected).
+ */
 export async function safeGet(
   raw: string,
-  opts: { follow?: boolean; timeoutMs?: number; maxBytes?: number } = {},
+  opts: { follow?: boolean; timeoutMs?: number; maxBytes?: number; signal?: AbortSignal } = {},
 ): Promise<RawResponse> {
   const follow = opts.follow ?? true;
-  const timeoutMs = opts.timeoutMs ?? 12_000;
+  const deadline = Date.now() + (opts.timeoutMs ?? 12_000);
   const maxBytes = opts.maxBytes ?? 3_000_000;
   const redirects: string[] = [];
   let current = raw;
+  const left = () => {
+    const ms = deadline - Date.now();
+    if (ms <= 0) throw new Error("Request timed out");
+    return ms;
+  };
   for (let hop = 0; hop < 5; hop++) {
-    const url = await assertPublicUrl(current);
+    opts.signal?.throwIfAborted();
+    const url = await assertPublicUrl(current, left());
+    const timeout = AbortSignal.timeout(left());
     const res = await fetch(url, {
       redirect: "manual",
       headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", accept: "text/html,text/markdown,text/plain,application/json;q=0.9,*/*;q=0.5" },
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: opts.signal ? AbortSignal.any([timeout, opts.signal]) : timeout,
     });
     const location = res.headers.get("location");
     if (follow && res.status >= 300 && res.status < 400 && location) {
@@ -208,8 +223,9 @@ export function extractLinks(body: string, base: string, max = 400): string[] {
   return [...out];
 }
 
-export async function fetchPageText(raw: string): Promise<FetchedPage> {
-  const res = await safeGet(raw);
+export async function fetchPageText(raw: string, opts: { timeoutMs?: number; signal?: AbortSignal } = {}): Promise<FetchedPage> {
+  const deadline = Date.now() + (opts.timeoutMs ?? 12_000);
+  const res = await safeGet(raw, { timeoutMs: opts.timeoutMs ?? 12_000, signal: opts.signal });
   if (res.status >= 400) throw new Error(`HTTP ${res.status}`);
   const ct = res.contentType.toLowerCase();
   if (ct.includes("html")) {
@@ -217,7 +233,7 @@ export async function fetchPageText(raw: string): Promise<FetchedPage> {
     if (looksClientRendered(res.body)) {
       const mdUrl = `${res.url.split(/[?#]/)[0].replace(/\/$/, "")}.md`;
       try {
-        const md = await safeGet(mdUrl, { timeoutMs: 8_000 });
+        const md = await safeGet(mdUrl, { timeoutMs: Math.min(8_000, deadline - Date.now()), signal: opts.signal });
         const mct = md.contentType.toLowerCase();
         if (md.status === 200 && (mct.includes("markdown") || mct.includes("text/plain")) && md.body.length > 200) {
           return { url: res.url, title, text: cleanMarkdown(md.body), status: res.status, links: extractLinks(res.body, res.url) };

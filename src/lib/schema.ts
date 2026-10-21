@@ -189,14 +189,21 @@ export const ResearchRecord = z.object({
       quote: z.string(),
       answer: z.string(),
       kind: z.enum(["provider_docs", "composio_docs", "reported"]),
-      status: z.enum(["verified", "not_on_page", "not_fetched"]),
+      status: z.enum(["verified", "not_on_page", "not_fetched", "rejected"]),
       via: z.enum(["extract", "gapfill"]),
+      /** Further citations that support the same sentence together with `quote`. */
+      extra_quotes: z.array(z.string()).optional(),
+      /** Character offsets of the quote in the text sent to the model (Citations API). */
+      offsets: z.tuple([z.number(), z.number()]).optional(),
       fetched_at: z.string().nullable(),
       page_hash: z.string().nullable(),
     }),
   ),
   workers: z.array(z.object({ name: z.string(), stop: z.string(), ms: z.number() })),
-  judge: z.object({ checked: z.number(), supported: z.number(), partial: z.number(), contradicted: z.number() }).nullable(),
+  judge: z
+    .object({ checked: z.number(), supported: z.number(), partial: z.number(), unsupported: z.number().optional(), contradicted: z.number(), unchecked: z.number().optional() })
+    .nullable(),
+  served: z.record(z.string(), z.array(z.string())).optional(),
   timings_ms: z.record(z.string(), z.number()),
 });
 export type ResearchRecordT = z.infer<typeof ResearchRecord>;

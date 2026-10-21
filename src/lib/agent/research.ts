@@ -17,6 +17,10 @@ export interface Page {
 
 export type EvidenceItem = ResearchRecordT["evidence"][number];
 
+/** Suffixes that turn a brand into its developer domain (empty = same name on another TLD, e.g. slack.dev). */
+const SIBLING = /^(?:|api|apis|dev|developer|developers|docs|platform|cloud|app|apps|usercontent|static|cdn|content|hq|status)$/;
+const TIME_SPAN = /\b\d+(?:\s*[-–]\s*\d+)?\s*(?:business\s+|working\s+)?(?:minutes?|hours?|days?|weeks?|months?)\b|\b(?:a|one|two|three|four|five|six|several|few)\s+(?:days?|weeks?|months?)\b/i;
+
 const isComposio = (url: string) => {
   try {
     return /(^|\.)composio\.dev$/.test(new URL(url).hostname);
@@ -46,19 +50,26 @@ export class ResearchStore {
     private onFetch?: (url: string, ok: boolean, chars: number, via: string, error?: string) => void,
   ) {}
 
-  /** Fetch a page once per run. Concurrent requests for the same URL share one fetch. */
-  fetch(url: string): Promise<Page | null> {
+  /**
+   * Fetch a page once per run. Concurrent requests for the same URL share one fetch. The fetch stops at
+   * `deadlineAt` (and on the run's abort signal) so reading can never eat into the writer's time.
+   */
+  fetch(url: string, deadlineAt = Date.now() + 12_000): Promise<Page | null> {
     const key = canonicalUrl(url);
     const have = this.pages.get(key);
     if (have) return Promise.resolve(have);
     const pending = this.inflight.get(key);
     if (pending) return pending;
-    const p = this.doFetch(url).finally(() => this.inflight.delete(key));
+    const ms = Math.min(12_000, deadlineAt - Date.now());
+    if (ms < 1_500) return Promise.resolve(null);
+    const p = Promise.race([this.doFetch(url, ms), new Promise<null>((r) => setTimeout(() => r(null), ms + 500))]).finally(() => this.inflight.delete(key));
     this.inflight.set(key, p);
     return p;
   }
 
-  private async doFetch(url: string): Promise<Page | null> {
+  signal?: AbortSignal;
+
+  private async doFetch(url: string, timeoutMs: number): Promise<Page | null> {
     const store = (u: string, title: string | null, text: string, links: string[], via: Page["via"]): Page => {
       const page: Page = { url: u, title, text, links, fetched_at: new Date().toISOString(), hash: createHash("sha256").update(text).digest("hex").slice(0, 16), via };
       this.pages.set(canonicalUrl(u), page);
@@ -67,13 +78,13 @@ export class ResearchStore {
       return page;
     };
     try {
-      const p = await fetchPageText(url);
+      const p = await fetchPageText(url, { timeoutMs, signal: this.signal });
       if (p.text.length < 400 && this.search) throw new Error("page looks empty (likely rendered by JavaScript)");
       return store(p.url, p.title, p.text, p.links ?? [], "direct");
     } catch (e) {
       if (this.search) {
         try {
-          const p = await this.search.fetch(url);
+          const p = await Promise.race([this.search.fetch(url), new Promise<null>((r) => setTimeout(() => r(null), Math.max(1_000, timeoutMs / 2)))]);
           if (p && p.text.length >= 200) return store(p.url, p.title, p.text, [], "composio_fetch");
         } catch {
           /* fall through */
@@ -96,8 +107,9 @@ export class ResearchStore {
   }
 
   /**
-   * Sibling domains (docs.dropboxapi.com for dropbox.com) count as official only when an official page links
-   * to them and they share the brand. A look-alike blog (salesforceben.com) is never linked from the provider.
+   * Sibling domains count as official only when an official page links to them AND the name is the brand plus a
+   * known developer suffix: dropbox → dropboxapi.com, google → googleapis.com, slack.com → slack.dev. A linked
+   * look-alike (salesforce → salesforceben.com) is not a sibling.
    */
   expandOfficialFromLinks() {
     for (const page of this.pages.values()) {
@@ -105,7 +117,8 @@ export class ResearchStore {
       for (const link of page.links) {
         const d = baseDomain(link);
         if (!d || this.official.has(d)) continue;
-        if ([...this.brands].some((b) => d.split(".")[0].startsWith(b))) this.official.add(d);
+        const label = d.split(".")[0];
+        if ([...this.brands].some((b) => SIBLING.test(label.slice(b.length)) && label.startsWith(b))) this.official.add(d);
       }
     }
   }
@@ -121,9 +134,18 @@ export class ResearchStore {
   }
 
   /** Add one piece of evidence; it is verified against the fetched page immediately. Returns the stored item. */
-  addEvidence(e: { question: QuestionId; url: string; quote: string; answer: string; via: EvidenceItem["via"] }): EvidenceItem {
+  addEvidence(e: {
+    question: QuestionId;
+    url: string;
+    quote: string;
+    answer: string;
+    via: EvidenceItem["via"];
+    extra_quotes?: string[];
+    offsets?: [number, number];
+  }): EvidenceItem {
     const page = this.pages.get(canonicalUrl(e.url));
-    const status: EvidenceItem["status"] = !page ? "not_fetched" : quoteInText(e.quote, page.text) ? "verified" : "not_on_page";
+    const allOnPage = !!page && [e.quote, ...(e.extra_quotes ?? [])].every((q) => quoteInText(q, page.text));
+    const status: EvidenceItem["status"] = !page ? "not_fetched" : allOnPage ? "verified" : "not_on_page";
     const dup = this.evidence.find((x) => x.question === e.question && canonicalUrl(x.url) === canonicalUrl(e.url) && x.quote === e.quote);
     if (dup) return dup;
     const item: EvidenceItem = {
@@ -137,6 +159,8 @@ export class ResearchStore {
       via: e.via,
       fetched_at: page?.fetched_at ?? null,
       page_hash: page?.hash ?? null,
+      ...(e.extra_quotes?.length ? { extra_quotes: e.extra_quotes.map((q) => q.trim()) } : {}),
+      ...(e.offsets ? { offsets: e.offsets } : {}),
     };
     this.evidence.push(item);
     return item;
@@ -151,10 +175,25 @@ export class ResearchStore {
     return this.evidence.filter((e) => e.status === "verified" && (!q || e.question === q));
   }
 
-  /** Found = at least one verified evidence item. A model saying "found" is not enough. */
+  /** Mark evidence as rejected (its claim was contradicted or unsupported); it no longer answers its question. */
+  reject(ids: string[]) {
+    for (const e of this.evidence) if (ids.includes(e.id)) e.status = "rejected";
+  }
+
+  /**
+   * Found = at least one verified, non-rejected evidence item from an official source. A model saying "found"
+   * is not enough, and a blog post does not answer a docs question. Developer reports answer R1, and answer G6
+   * (timelines) only when they actually state a time span.
+   */
   status(q: QuestionId): "found" | "not_found" {
-    if (q === "G6" && this.verified("R1").length) return "found"; // developer reports can answer timelines, labelled as reports
-    return this.verified(q).length ? "found" : "not_found";
+    const ev = this.verified(q);
+    if (q === "R1") return ev.length ? "found" : "not_found";
+    if (ev.some((e) => e.kind !== "reported")) return "found";
+    if (q === "G6") {
+      const timed = [...ev, ...this.verified("R1")].some((e) => TIME_SPAN.test(`${e.quote} ${(e.extra_quotes ?? []).join(" ")}`));
+      return timed ? "found" : "not_found";
+    }
+    return "not_found";
   }
 
   openCritical(): QuestionId[] {

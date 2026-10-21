@@ -1,7 +1,7 @@
-# Guide agent v2: design spec (v2.1)
+# Guide agent v2: design spec (v2.2)
 
 Status: built behind `AGENT_VERSION=v2`; production stays on v1 until a live evaluation is approved and passes (section 11).
-History: v2.0 draft → independent design review (21 Oct 2026, `docs/reviews.md`) → this version. Codex review pending (CLI was logged out).
+History: v2.0 draft → independent design review → v2.1 → Codex end-to-end review (21 Oct 2026, `docs/reviews.md`) → this version.
 
 Control flow is ours. Models fill well-defined slots; code decides the steps, the budgets, and what counts as evidence.
 
@@ -86,14 +86,18 @@ R1 can satisfy G6 as *reported*.
 
 ## 5. Verification (code, after writing)
 
+Order matters (Codex review): the judge runs **before** any conclusion is drawn, and every categorical field (path, trigger, gates, checks, wait, shortcut, modifiers) is judged as the guide states it, against the quotes of the claims behind it. A field survives only if its claims are accepted (sourced and, when judged, fully supported) and the field itself was judged supported. Missing verdicts count as unchecked, not passed. Contradicted or unsupported claims become unknown and their evidence is rejected, so coverage is recomputed. If the judge cannot run, fields stay with a visible "not double-checked" warning.
+
+
 1. url, quote and label come from the ledger, never from the writer. No evidence → unknown.
-2. Official = hosts of Composio's `app_url`, identify's website/docs **that were fetched successfully**, and hosts linked from those pages. No prefix matching. composio.dev is Composio's authority. Everything else is *reported*, and a reported quote must still be on its fetched page.
+2. Official: Composio's `app_url` is the anchor. The identify step's website and docs are leads; they count once fetched **and** (same owner as the anchor, linked from the anchor's page, or, with no catalog entry, the page names the app). Sibling domains need a link from an official page **and** the brand plus a developer suffix (dropbox→dropboxapi, google→googleapis); look-alikes (salesforceben) never count. Ownership is Public-Suffix aware and tenant-specific on shared platforms (acme.readme.io, acme.github.io). composio.dev is Composio's authority. Everything else is *reported*, and a reported quote must still be on its fetched page.
 3. Quote rules: ellipsis parts ≥ 20 characters each and within 400 characters of each other.
 4. Support rules: every number in the claim appears in the quote **with the same unit** (minutes/hours/days/weeks/months/users/requests…); negation and must/may/can't differences between claim and quote downgrade the claim.
 5. Entailment (one batch model call, if ≥ 25 s remain): claims on G2–G8 are judged supported / partial / contradicted against their quote. Contradicted → unknown; partial → note.
-6. Question status = found only with ≥ 1 verified evidence item.
-7. Every scenario `path` needs a verified claim from G2 evidence; else path is cleared and the guide says "path unconfirmed" with the URLs tried. `shortcut` and each `modifier` need a verified claim; else removed.
-8. Numbers in `verdict` and `summary` must appear in a verified claim; else verdict is rebuilt from the scenarios ("Easiest: … Hardest: …").
+6. Question status = found only with ≥ 1 verified, non-rejected evidence item from an official source. Developer reports answer R1, and G6 only when they state a time span.
+7. Every scenario `path` (including self-serve) needs an accepted claim whose own evidence answers G2, and a supported field verdict; else path, trigger, gates and checks are cleared. A numeric wait needs an accepted G6/R1 claim and a supported field; "None" needs an accepted no-review path; else Unknown. `shortcut` and each `modifier` need an accepted claim and a supported field.
+8. Numbers in `verdict` and `summary` must appear in an accepted claim; else the verdict is rebuilt from the scenarios and the summary replaced.
+9a. If the writer fails, a partial guide of the verified facts is saved, clearly marked, instead of nothing.
 9. Scenario ids, default scenario, ≤ 40 claims, ≤ 4 scenarios, brevity limits, step owners: checked in code (this replaces an LLM critique).
 10. Existing rules stay: unbacked waits → Unknown; "tested" impossible.
 
@@ -111,7 +115,7 @@ Per-run override: `runAgent({ models })`, `scripts/generate.mts --model`. A capa
 
 ## 7. Budgets (300 s function)
 
-Planned backwards from the writer: `write reserve = max(120 s, expected output ÷ model speed)`, plus 25 s verification, 10 s save. Research gets what is left.
+Planned backwards: 5 s save, 20 s judge, then the writer (`reserve = clamp(7,000 tokens ÷ model speed + 20 s, 90–190 s)`); research gets what is left. Lookup, discovery, every fetch (DNS, redirects, Markdown fallback) and every tool call are bounded by these deadlines and the run's abort signal. Extraction runs at most 4 pages at a time with 3,000 output tokens each. Server web-search budgets are cumulative per conversation (`max_uses` is per request), enforced by ending the conversation.
 
 | Stage | Time | Pages | Searches |
 |---|---|---|---|

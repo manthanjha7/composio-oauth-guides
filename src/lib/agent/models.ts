@@ -51,13 +51,14 @@ export interface Capabilities {
   outputTps: number;
 }
 
-// Source: claude-api skill model table (cached 2026-10-06). Unknown ids get conservative values.
+// Versioned: these values are checked for the 5.x models only (pricing: platform.claude.com prompt-caching table,
+// 21 Oct 2026; capabilities: claude-api skill). Any other id, including older families, gets UNKNOWN below.
 const FAMILIES: { re: RegExp; caps: Capabilities }[] = [
-  { re: /^claude-opus-/, caps: { fallback: true, webSearchTool: "web_search_20260209", price: [4, 20], cacheRead: 0.05, outputTps: 45 } },
-  { re: /^claude-fable-/, caps: { fallback: true, webSearchTool: "web_search_20260209", price: [10, 50], cacheRead: 0.025, outputTps: 35 } },
-  { re: /^claude-sonnet-/, caps: { fallback: true, webSearchTool: "web_search_20260209", price: [2, 10], cacheRead: 0.1, outputTps: 60 } },
+  { re: /^claude-opus-5-5$/, caps: { fallback: true, webSearchTool: "web_search_20260209", price: [4, 20], cacheRead: 0.05, outputTps: 45 } },
+  { re: /^claude-fable-5(-1)?$/, caps: { fallback: true, webSearchTool: "web_search_20260209", price: [10, 50], cacheRead: 0.025, outputTps: 35 } },
+  { re: /^claude-sonnet-5-5$/, caps: { fallback: true, webSearchTool: "web_search_20260209", price: [2, 10], cacheRead: 0.05, outputTps: 60 } },
   {
-    re: /^claude-haiku-/,
+    re: /^claude-haiku-5-5$/,
     caps: { fallback: false, webSearchTool: "web_search_20250305", price: [0.1, 0.5], cacheRead: 0.1, longPrompt: { tokens: 100_000, multiplier: 5 }, outputTps: 120 },
   },
 ];

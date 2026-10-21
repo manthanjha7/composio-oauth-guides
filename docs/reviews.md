@@ -54,3 +54,22 @@ Verifier mutation suite (`scripts/verifier-mutations.mts`), 349 correct claims f
 | Correct claims sent to the judge | n/a | 25 (7%) |
 
 The remaining slips go to the entailment judge in v2 when they sit on critical questions; that part can only be measured with live runs.
+
+## Agent v2 end-to-end review by Codex (21 October 2026)
+
+Codex (CLI, with web search) reviewed SPEC v2.1 and commit e95e315: read the code, ran the tests and the mutation suite, checked Anthropic's docs. Verdict: sound architecture, not yet ready for a paid evaluation. All findings below were applied (v2.2).
+
+| # | Finding | Change |
+|---|---|---|
+| M1 | The judge ran after conclusions were drawn; a contradicted G2 claim left its path in place; missing verdicts passed silently | Judge first; claims and each categorical field judged; only "supported" counts; missing = unchecked; rejected evidence lowers coverage |
+| M2 | Any sourced G2 claim backed any path value; any scenario claim backed a numeric wait; "None" was never checked | Fields judged as stated; waits need G6/R1 claims; "None" needs an accepted no-review path; summary numbers checked |
+| M3 | Lookup, discovery, reads, DNS and tool calls had no deadline; redirects reset the timeout | One deadline and abort signal through every fetch, DNS lookup, redirect, discovery step and tool call; a partial guide is saved if writing fails |
+| M4 | Server web search `max_uses` resets per request; version chosen from the wrong stage's model | Cumulative count per conversation, which ends when spent; version from the running model |
+| M5 | Fetchable model-chosen sites became official; linked look-alikes passed the brand prefix; no Public Suffix handling | Composio anchor + link/ownership rules; brand + developer-suffix siblings only; tldts with tenant platforms |
+| M6 | One quote marked a whole question found; blogs counted; any R1 satisfied G6; only 3 gaps searched | Official evidence only; G6 via reports needs a time span; up to 2 gap workers for open gates before anecdotes |
+| S7 | Citation parsing assumed block = fact; joint citations split | Headings tracked in order; joint citations kept as one item with offsets |
+| S8 | Budgets optimistic | Judge and save reserved first; extraction concurrency 4 and 3k tokens; slower writers get up to 190 s |
+| S9 | Prompts exempted self-serve; redirect proxy always prescribed; forced 2–4 scenarios; no "unsupported" verdict | All fixed in prompt v2.2 |
+| S10 | Capabilities applied to old ids; Sonnet 5.5 cache reads are 0.05x, not 0.1x; any 400 disabled fallbacks | 5.x-only table; price fixed (verified on the docs); fallback off only for fallback errors; serving model recorded |
+
+12 new offline tests cover the request shapes, fixed tools, pause_turn and search budgets, downstream invalidation, unsupported fields, missing verdicts, writer failure, citation parsing, tenant domains and deadlines. 79 tests pass.
