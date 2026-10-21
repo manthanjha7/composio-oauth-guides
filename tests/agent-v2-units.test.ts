@@ -89,6 +89,12 @@ describe("official domains", () => {
     store.addEvidence({ question: "R1", url: "https://blog.example/p", quote: "Approval took about three weeks in total.", answer: "x", via: "gapfill" });
     expect(store.status("G6")).toBe("found");
   });
+  it("does not let Composio's pages answer the timeline question", () => {
+    const store = new ResearchStore(null);
+    store.pages.set("https://docs.composio.dev/x", { url: "https://docs.composio.dev/x", title: null, text: "Approval usually takes two weeks.", links: [], fetched_at: "", hash: "c", via: "direct" });
+    store.addEvidence({ question: "G6", url: "https://docs.composio.dev/x", quote: "Approval usually takes two weeks.", answer: "x", via: "extract" });
+    expect(store.status("G6")).toBe("not_found");
+  });
   it("rejects a linked look-alike domain and tenant hosts on shared platforms", () => {
     const store = new ResearchStore(null);
     store.addOfficial("https://www.salesforce.com");
@@ -108,3 +114,12 @@ describe("official domains", () => {
     expect(store.official.has("acmeapi.com")).toBe(true);
   });
 });
+
+describe("number words", () => {
+  it("are checked like digits, with their units", async () => {
+    const { supportIssue, numberUnitPairs } = await import("@/lib/evidence");
+    expect([...numberUnitPairs("Review takes ten weeks.")]).toContain("10 week");
+    expect(supportIssue("Review takes ten weeks.", "Review takes 10 days.")).toMatch(/week/);
+  });
+});
+

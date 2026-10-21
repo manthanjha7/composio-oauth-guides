@@ -255,7 +255,8 @@ describe("agent v2 pipeline (offline)", () => {
     const { client } = fakeClient({ writer: (d) => writerGuide({ verdict: "Takes 99 days." }, d) });
     const r = await runAgentV2({ query: "Acme", client, search: null, emit: (e) => events.push(e) });
     if (r.outcome !== "ok") throw new Error(r.outcome);
-    expect(r.record.guide.verdict).toMatch(/^Easiest: /);
+    expect(r.record.guide.verdict).not.toMatch(/99/);
+    expect(r.record.guide.verdict).toMatch(/Public app \(app review/); // rebuilt from the setup that survived
   });
 
   it("returns an error, not a crash, when there is no time to identify the app", async () => {
@@ -387,6 +388,27 @@ describe("agent v2: review follow-ups (offline)", () => {
     const r = await run(c);
     if (r.outcome !== "ok") throw new Error(r.outcome);
     expect(r.record.guide.summary).not.toMatch(/25 days/); // sources say 25 test users, not 25 days
+  });
+
+  it("never keeps a free-text conclusion: the summary is built from the setups that survived", async () => {
+    const c = fakeClient({
+      writer: (d) => writerGuide({ summary: "Public apps require no review at all.", verdict: "No review needed for anyone." }, d),
+      judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "verdict" ? "contradicted" : "supported" })),
+    });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.summary).not.toMatch(/no review/i);
+    expect(r.record.guide.verdict).not.toMatch(/no review/i);
+    expect(r.record.guide.summary).toMatch(/approval path unconfirmed/); // s1 had no G2 claim
+  });
+
+  it("marks difficulty unknown when a setup's path can't be confirmed", async () => {
+    const c = fakeClient();
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    const s1 = r.record.guide.scenarios.find((s) => s.id === "s1")!;
+    expect(s1.path).toBeUndefined();
+    expect(s1.difficulty).toBe("unknown");
   });
 
   it("saves a partial guide of verified facts when the writer fails", async () => {

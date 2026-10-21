@@ -181,12 +181,19 @@ const TIME_UNITS = new Set(["second", "minute", "hour", "day", "week", "month", 
 const unitOf = (w: string) => UNIT.find(([re]) => re.test(w))?.[1] ?? null;
 
 /** Normalised words, with "non-sensitive" kept apart from "sensitive" and contractions expanded. */
+/** Normalised words; number words become digits ("ten weeks" -> "10 weeks") so unit checks see them. */
 function words(text: string): string[] {
   return normalizeForMatch(text)
     .replace(/\bnon-(\w)/g, "non$1")
     .replace(/n't\b/g, " not")
     .split(/[^a-z0-9$,]+/)
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((w) => NUM_WORDS[w] ?? w);
+}
+
+/** Every quantity in a text, digits or number words ("ten" -> "10"); versions and HTTP codes excluded. */
+export function numbersInText(text: string): Set<string> {
+  return numbersIn(text);
 }
 
 /** (number, unit) pairs: a number followed by a unit within three words ("100 test users", "10 business days"). */

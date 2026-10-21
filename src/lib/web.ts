@@ -45,6 +45,7 @@ function within<T>(p: Promise<T>, ms: number, what: string, signal?: AbortSignal
   let timer: ReturnType<typeof setTimeout> | undefined;
   let onAbort: (() => void) | undefined;
   const stop = new Promise<never>((_, rej) => {
+    if (signal?.aborted) return rej(new Error(`${what} cancelled`));
     timer = setTimeout(() => rej(new Error(`${what} timed out`)), Math.max(1, ms));
     if (signal) {
       onAbort = () => rej(new Error(`${what} cancelled`));

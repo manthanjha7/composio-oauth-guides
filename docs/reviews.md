@@ -92,3 +92,7 @@ S8, S9, S10 resolved; M1–M6 and S7 partly. Codex also reproduced four regressi
 | Composio pages answered provider questions | Only the provider's docs answer provider questions |
 
 Known limits, not fixed: a question with several parts counts as answered when one part is (the judge and the writer's "unconfirmed" marking cover part of this); a timed-out model call or Composio request is abandoned rather than cancelled at the network level. 86 tests pass.
+
+### Codex second verification pass (commit 301f471)
+
+Verdict "not ready" because free-text conclusions escaped verification. Fixed in the next commit: the one-line verdict is now a judged item and is rebuilt from the surviving setups unless supported; the summary is always built from the surviving setups (no free text); a setup whose path can't be confirmed gets difficulty "unknown"; number words ("ten weeks") are checked with their units; Composio pages no longer answer the timeline question; cancelled or late fetches start no fallback work and record nothing; an already-aborted signal stops DNS at once. 90 tests pass.

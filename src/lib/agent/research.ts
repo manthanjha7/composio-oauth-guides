@@ -66,7 +66,7 @@ export class ResearchStore {
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const p = Promise.race([
-      this.doFetch(url, ms, () => live),
+      this.doFetch(url, ms, () => live && !this.signal?.aborted),
       new Promise<null>((r) => {
         timer = setTimeout(() => r(null), ms + 500);
       }),
@@ -95,6 +95,7 @@ export class ResearchStore {
       if (p.text.length < 400 && this.search) throw new Error("page looks empty (likely rendered by JavaScript)");
       return store(p.url, p.title, p.text, p.links ?? [], "direct");
     } catch (e) {
+      if (!live()) return null; // cancelled or past the deadline: start no fallback work, record nothing
       if (this.search) {
         try {
           let t: ReturnType<typeof setTimeout> | undefined;
@@ -109,6 +110,7 @@ export class ResearchStore {
           /* fall through */
         }
       }
+      if (!live()) return null;
       this.failed.set(canonicalUrl(url), (e as Error).message);
       this.onFetch?.(url, false, 0, "direct", (e as Error).message);
       return null;
@@ -212,7 +214,8 @@ export class ResearchStore {
     // Provider questions are answered by the provider's own docs, not by Composio's pages or blogs.
     if (ev.some((e) => e.kind === "provider_docs")) return "found";
     if (q === "G6") {
-      const timed = [...ev, ...this.verified("R1")].some((e) => TIME_SPAN.test(`${e.quote} ${(e.extra_quotes ?? []).join(" ")}`));
+      // A provider timeline is answered above; otherwise only developer reports that state a time (not Composio's pages).
+      const timed = [...ev, ...this.verified("R1")].some((e) => e.kind === "reported" && TIME_SPAN.test(`${e.quote} ${(e.extra_quotes ?? []).join(" ")}`));
       return timed ? "found" : "not_found";
     }
     return "not_found";

@@ -8,7 +8,7 @@ import type {
 } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
 import { composioLookup, type ComposioLookup } from "../composio";
-import { baseDomain, canonicalUrl, enforceEvidence, numberUnitPairs, type EvidenceContext } from "../evidence";
+import { baseDomain, canonicalUrl, enforceEvidence, numbersInText, numberUnitPairs, type EvidenceContext } from "../evidence";
 import { PATH_INFO, CHECK_INFO } from "../guide-view";
 import { type GeneratedGuide, type Guide, type GuideRecord, type WriterGuide, WriterGuideSchema } from "../schema";
 import { createComposioSearch, type ComposioSearch } from "../search";
@@ -869,6 +869,11 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
     if (s.shortcut) items.push({ id: `${s.id}.shortcut`, statement: `${who}: ${s.shortcut}`, quotes: gather(s.shortcut_claim_ids) });
     (s.modifiers ?? []).forEach((m, i) => items.push({ id: `${s.id}.mod${i}`, statement: `${who}: ${m.kind.replace(/_/g, " ")}: ${m.note}`, quotes: gather(m.claim_ids) }));
   }
+  // The one-line verdict is judged too, against the quotes behind every setup's path and wait.
+  if (g.verdict) {
+    const ids = g.scenarios.flatMap((s) => [...(s.path_claim_ids ?? []), ...s.claim_ids.filter((id) => TIMELINE_QUESTIONS.has(claimQuestion.get(id) ?? ""))]);
+    items.push({ id: "verdict", statement: g.verdict, quotes: gather(ids).slice(0, 10) });
+  }
   // Items without quotes can't be supported; they are decided in code (removed), not sent.
   return items.filter((i) => i.quotes.length).slice(0, 45);
 }
@@ -895,12 +900,14 @@ export function applyInvariants(
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };
     const pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
-    if (out.path && !pathOk) {
-      warnings.push(`"${s.label}": the path ("${out.path}") is not backed by a verified source, so it is shown as unconfirmed.`);
+    if (!pathOk) {
+      if (out.path) warnings.push(`"${s.label}": the path ("${out.path}") is not backed by a verified source, so it is shown as unconfirmed.`);
       delete out.path;
       delete out.trigger;
       delete out.gate_sequence;
       delete out.review_checks;
+      // Difficulty rests on the path; without a confirmed path it is not known.
+      out.difficulty = "unknown";
     }
     // Waits: a number needs an accepted timeline claim (G6/R1) and a supported field; "None" needs an accepted
     // no-review path. Otherwise the wait is Unknown.
@@ -922,25 +929,32 @@ export function applyInvariants(
   const ids = new Set(scenarios.map((s) => s.id));
   const default_scenario = g.default_scenario && ids.has(g.default_scenario) ? g.default_scenario : undefined;
 
-  // Numbers in the verdict and summary must come from accepted claims; otherwise rebuild or replace them.
+  // The verdict survives only if the judge supported it and its numbers (with units) come from accepted claims.
+  // Otherwise it is rebuilt from the setups that survived. The summary is always built from them: free text is
+  // where an unchecked conclusion ("no review needed") would otherwise slip through.
   const acceptedText = g.claims.filter((x) => c.accepted(x.id)).map((x) => `${x.text} ${x.quote ?? ""}`).join(" ");
+  const acceptedNums = numbersInText(acceptedText);
   const acceptedPairs = numberUnitPairs(acceptedText);
-  // A number must appear in an accepted claim, and with a unit it must appear with the same unit ("10 days", not "10 users").
   const unsupportedNumber = (text: string | undefined) =>
-    (text?.match(/\d+/g) ?? []).some((n) => !new RegExp(`\\b${n}\\b`).test(acceptedText)) || [...numberUnitPairs(text ?? "")].some((p) => !acceptedPairs.has(p));
+    [...numbersInText(text ?? "")].some((n) => !acceptedNums.has(n)) || [...numberUnitPairs(text ?? "")].some((p) => !acceptedPairs.has(p));
   let verdict = g.verdict;
-  if (verdict && unsupportedNumber(verdict)) {
-    warnings.push("The one-line verdict used numbers no verified claim supports; it was rebuilt from the setups.");
-    const rank = { easy: 0, medium: 1, hard: 2, unknown: 3 } as const;
-    const e = [...scenarios].sort((a, b) => rank[a.difficulty] - rank[b.difficulty])[0];
-    const h = [...scenarios].filter((s) => s.difficulty !== "unknown").sort((a, b) => rank[b.difficulty] - rank[a.difficulty])[0];
-    verdict = e && h && e.id !== h.id ? `Easiest: ${e.label} (${e.difficulty}). Hardest: ${h.label} (${h.difficulty}).` : undefined;
+  if (verdict && (!c.fieldOk("verdict") || unsupportedNumber(verdict))) {
+    warnings.push("The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups.");
+    verdict = undefined;
   }
-  let summary = g.summary;
-  if (unsupportedNumber(summary)) {
-    warnings.push("The summary used numbers no verified claim supports; it was replaced.");
-    summary = verdict ?? "See the setups below; times are shown only where a source gives them.";
-  }
+  const describe = (s: (typeof scenarios)[number]) => {
+    const how = s.path ? PATH_INFO[s.path].name.toLowerCase() : "approval path unconfirmed";
+    const wait = /^unknown$/i.test(s.waiting.estimate) ? "" : `, wait ${s.waiting.estimate.toLowerCase()}`;
+    return `${s.label} (${how}${wait})`;
+  };
+  const rank = { easy: 0, medium: 1, hard: 2, unknown: 3 } as const;
+  const known = scenarios.filter((s) => s.path);
+  const easiest = [...known].sort((a, b) => rank[a.difficulty] - rank[b.difficulty])[0];
+  const hardest = [...known].sort((a, b) => rank[b.difficulty] - rank[a.difficulty])[0];
+  if (!verdict) verdict = easiest && hardest && easiest.id !== hardest.id ? `Easiest: ${describe(easiest)}. Hardest: ${describe(hardest)}.` : easiest ? `${describe(easiest)}.` : undefined;
+  const summary = scenarios.length
+    ? `${scenarios.map(describe).join("; ")}.${known.length < scenarios.length ? " Where the path is unconfirmed, the agent did not find it in the provider's docs." : ""}`
+    : g.summary;
   const open = openQuestions(store);
   const open_questions = [...g.open_questions, ...open.filter((o) => !g.open_questions.some((x) => x.includes(o.slice(11, 40))))];
   if (!c.judged && g.scenarios.length) warnings.push("Setup details (path, waits, shortcuts) could not be double-checked, so they are not shown.");
