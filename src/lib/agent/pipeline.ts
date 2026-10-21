@@ -1072,7 +1072,8 @@ export function applyInvariants(
       // Only evidence about gates and their timing counts against the inference; a program needed to build (G1)
       // or a fact about another setup the writer also listed does not.
       const gateEvidence = own.filter((x) => GATE_QUESTIONS.includes(c.claimQuestion.get(x!.id) ?? ""));
-      if (own.length > 0 && !gateEvidence.some((x) => REVIEW_WORDS.test(`${x!.text} ${x!.quote ?? ""}`))) {
+      // The provider's own words only: a writer's "no app review is mentioned" must not block the inference.
+      if (own.length > 0 && !gateEvidence.some((x) => REVIEW_WORDS.test(x!.quote ?? ""))) {
         if (!out.path) warnings.push(`"${s.label}": no path was given; self-serve inferred because none of this setup's evidence mentions a review or an access request.`);
         out.path = "self_serve";
         pathOk = true;
