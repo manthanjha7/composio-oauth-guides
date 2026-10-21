@@ -203,6 +203,11 @@ function numbersIn(text: string): Set<string> {
   // Not quantities: protocol/API versions ("OAuth 2.0", "v3") and HTTP status codes ("401 error", "HTTP 403").
   const t = wordsToDigits(text)
     .toLowerCase()
+    // Dates are not quantities: "1 May 2026", "May 1, 2026", "May 2025", "2025-05-14", "(2025)".
+    .replace(/\b\d{1,2}\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?,?\s+(?:19|20)\d{2}\b/g, " ")
+    .replace(/\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(?:\d{1,2},?\s+)?(?:19|20)\d{2}\b/g, " ")
+    .replace(/\b(?:19|20)\d{2}-\d{2}(?:-\d{2})?\b/g, " ")
+    .replace(/\((?:19|20)\d{2}\)/g, " ")
     .replace(/\b(?:oauth|http|https|tls|api|v)\s*\d+(?:\.\d+)*\b/g, " ")
     .replace(/\b(?:status|error|code|http)\s*[1-5]\d\d\b/g, " ")
     .replace(/\b[1-5]\d\d\s*(?:errors?|status|responses?|codes?|redirects?|found|forbidden|unauthorized|not found|too many requests)\b/g, " ")

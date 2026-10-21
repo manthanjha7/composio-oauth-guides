@@ -28,7 +28,7 @@ export const QUESTIONS: Question[] = [
   },
   {
     id: "G2",
-    text: "Every step that must happen before a customer outside the developer's own company can connect, in order: nothing, an app review or verification, a required marketplace listing, or acceptance as a partner. What triggers each step (always, only for sensitive scopes, only above some number of users or installs)? Is client registration automatic (dynamic client registration)?",
+    text: "Every step that must happen before a customer outside the developer's own company can connect, in order: nothing, an app review or verification, a required marketplace listing, or acceptance as a partner. What triggers each step (always, only for sensitive scopes, only above some number of users or installs)? Can other organizations use the app without a provider review (for example by sharing its link)? Is client registration automatic (dynamic client registration)?",
     critical: true,
     priority: 1,
     keywords: ["review", "verification", "verify", "approval", "approve", "publish", "distribution", "marketplace", "app directory", "partner", "listing", "go live", "production"],
