@@ -1,3 +1,4 @@
+import { runAgentV2 } from "@/lib/agent/pipeline";
 import { runAgent, type AgentEvent } from "@/lib/agent/run";
 import { slugify } from "@/lib/slug";
 import { liveStatus } from "@/lib/live-status";
@@ -75,7 +76,9 @@ export async function POST(req: Request) {
         }
       }, 15_000);
       try {
-        const result = await runAgent({ query, emit: send, signal: req.signal });
+        // v2 runs only when switched on; v1 stays the default until v2 passes a live evaluation.
+        const run = process.env.AGENT_VERSION === "v2" ? runAgentV2 : runAgent;
+        const result = await run({ query, emit: send, signal: req.signal });
         if (result.outcome === "ok") {
           // Never overwrite a reviewed seed guide: a fresh agent run on a seed app is saved alongside it, for comparison.
           if (seedSlugs.has(result.record.slug)) result.record.slug = `${result.record.slug}-agent`;

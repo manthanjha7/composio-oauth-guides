@@ -30,22 +30,27 @@ export function canonicalUrl(u: string): string {
 }
 
 /**
- * True when the quote appears in the page text. Allows an ellipsis-split quote
- * ("first part ... second part") as long as each part appears in order.
+ * True when the quote appears in the page text. An ellipsis-split quote ("first part ... second part") is
+ * allowed only as a real elision: each part at least 12 characters, in order, and each within 400 characters
+ * of the previous one, so fragments can't be stitched together from different parts of a page.
  */
 export function quoteInText(quote: string, pageText: string): boolean {
   const page = normalizeForMatch(pageText);
   const parts = quote
     .split(/\.\.\.|…/)
     .map(normalizeForMatch)
-    .filter((p) => p.length > 0);
+    .filter((p) => /[a-z0-9]/.test(p));
   if (parts.length === 0) return false;
   if (parts.join(" ").length < 12) return false; // too short to be meaningful evidence
+  if (parts.length > 1 && parts.some((p) => p.length < 12)) return false;
   let from = 0;
+  let prevEnd = -1;
   for (const part of parts) {
     const idx = page.indexOf(part, from);
     if (idx === -1) return false;
-    from = idx + part.length;
+    if (prevEnd >= 0 && idx - prevEnd > 400) return false;
+    prevEnd = idx + part.length;
+    from = prevEnd;
   }
   return true;
 }
@@ -56,8 +61,13 @@ export interface EvidenceContext {
   /** urls seen in search results (for "reported" claims) */
   seenUrls: Set<string>;
   probes: ProbeRecordT[];
-  /** Registrable domains of the provider (from its website / docs URL). Empty = don't enforce. */
+  /** Registrable domains of the provider (from its website / docs URL). Empty = don't enforce (v1). */
   officialDomains?: string[];
+  /**
+   * v2: exact registrable domains built in code from pages actually fetched (no brand-prefix matching), and an
+   * empty list means nothing is official. composio.dev stays Composio's authority either way.
+   */
+  strictOfficial?: boolean;
 }
 
 export interface VerificationStats {
@@ -122,15 +132,142 @@ function numbersIn(text: string): Set<string> {
   for (const [w, d] of Object.entries(NUM_WORDS)) if (new RegExp(`\\b${w}\\b`).test(t)) out.add(d);
   return out;
 }
+// Units that change a claim's meaning when swapped ("100 per minute" vs "100 per day").
+const UNIT: [RegExp, string][] = [
+  [/^(?:minutes?|mins?)$/, "minute"],
+  [/^(?:hours?|hrs?)$/, "hour"],
+  [/^(?:days?)$/, "day"],
+  [/^(?:weeks?)$/, "week"],
+  [/^(?:months?)$/, "month"],
+  [/^(?:years?|yr)$/, "year"],
+  [/^(?:seconds?|secs?)$/, "second"],
+  [/^(?:users?|people|members?|testers?)$/, "user"],
+  [/^(?:workspaces?|teams?|orgs?|organi[sz]ations?)$/, "workspace"],
+  [/^(?:stores?|shops?|merchants?)$/, "store"],
+  [/^(?:requests?|calls?)$/, "request"],
+  [/^(?:installs?|installations?)$/, "install"],
+  [/^(?:connections?)$/, "connection"],
+  [/^(?:messages?)$/, "message"],
+];
+const TIME_UNITS = new Set(["second", "minute", "hour", "day", "week", "month", "year"]);
+const unitOf = (w: string) => UNIT.find(([re]) => re.test(w))?.[1] ?? null;
+
+/** Normalised words, with "non-sensitive" kept apart from "sensitive" and contractions expanded. */
+function words(text: string): string[] {
+  return normalizeForMatch(text)
+    .replace(/\bnon-(\w)/g, "non$1")
+    .replace(/n't\b/g, " not")
+    .split(/[^a-z0-9$,]+/)
+    .filter(Boolean);
+}
+
+/** (number, unit) pairs: a number followed by a unit within three words ("100 test users", "10 business days"). */
+function numberUnits(text: string): Set<string> {
+  const w = words(text);
+  const out = new Set<string>();
+  w.forEach((tok, i) => {
+    const n = tok.replace(/,/g, "");
+    if (!/^\d+$/.test(n)) return;
+    for (let j = i + 1; j <= i + 3 && j < w.length; j++) {
+      const u = unitOf(w[j]);
+      if (u) {
+        out.add(`${n} ${u}`);
+        break;
+      }
+    }
+  });
+  return out;
+}
+function timeUnits(text: string, withEquivalents = false): Set<string> {
+  const out = new Set(words(text).map(unitOf).filter((u): u is string => !!u && TIME_UNITS.has(u)));
+  if (!withEquivalents) return out;
+  // The quote may give the same span in another unit: "60 minutes" is an hour, "24 hours" a day, "7 days" a week.
+  const pairs = numberUnits(text);
+  if (pairs.has("60 minute")) out.add("hour");
+  if (pairs.has("24 hour")) out.add("day");
+  if (pairs.has("7 day")) out.add("week");
+  if (pairs.has("12 month")) out.add("year");
+  return out;
+}
+
+const NEG_WORDS = new Set(["not", "no", "never", "none", "cannot", "without", "neither", "nor", "nothing"]);
 /**
- * Cheap check that the quote supports the claim (a verbatim quote can still be misused):
- * every quantity in the claim must appear in the quote. Returns a reason when it doesn't, else null.
+ * A negation in the claim that the quote doesn't carry, next to a word the quote does use
+ * ("must not return" vs "must return"; "no review" vs "a review"). A "no" attached to a word the quote
+ * never mentions ("with no stated duration") is the writer's own aside, not a flipped fact.
+ */
+function addedNegation(claimText: string, quote: string): boolean {
+  const qw = words(quote);
+  const negatedInQuote = (x: string) => qw.some((w, i) => w === x && qw.slice(Math.max(0, i - 3), i + 3).some((y) => NEG_WORDS.has(y)));
+  const qset = new Set(qw.filter((w) => w.length >= 3 && !STOP.has(w)));
+  const cw = words(claimText);
+  return cw.some((w, i) => {
+    if (!NEG_WORDS.has(w)) return false;
+    const near = [cw[i - 1], cw[i + 1], cw[i + 2]].filter((x): x is string => !!x && qset.has(x));
+    return near.length > 0 && !near.some(negatedInQuote);
+  });
+}
+
+const STRONG = /\b(?:must|required|requires|require|mandatory|always|need to|needs to|have to|has to|only)\b/;
+const WEAK = /\b(?:may|optional|optionally|might|could|recommended|recommend|sometimes|can choose)\b/;
+// Words whose opposite flips a claim's meaning. If the claim uses one and the quote only the other, it's wrong.
+const CONTRASTS: [string, string][] = [
+  ["restricted", "sensitive"],
+  ["internal", "external"],
+  ["public", "private"],
+  ["listed", "unlisted"],
+  ["production", "development"],
+];
+
+/**
+ * Hard checks (precise enough to downgrade a claim automatically): every number in the claim is in the
+ * quote, with the same unit where both give one ("100 per minute" vs "100 per day").
+ * Returns a reason when a check fails, else null.
  */
 export function supportIssue(claimText: string, quote: string): string | null {
   const q = numbersIn(quote);
   const missing = [...numbersIn(claimText)].filter((n) => !q.has(n));
   if (missing.length) return `The claim states ${missing.join(", ")}, which the quote does not contain.`;
+  const qNums = new Map<string, Set<string>>();
+  numberUnits(quote).forEach((p) => {
+    const [n, u] = p.split(" ");
+    qNums.set(n, (qNums.get(n) ?? new Set()).add(u));
+  });
+  for (const p of numberUnits(claimText)) {
+    const [n, u] = p.split(" ");
+    const units = qNums.get(n);
+    if (units && !units.has(u)) return `The claim says ${n} ${u}s; the quote gives ${n} ${[...units].join("/")}s.`;
+  }
   return null;
+}
+
+/**
+ * Soft checks: signs that a real quote may not say what the claim says. Word rules can't read meaning
+ * reliably, so these flag a claim for a model judge (or a visible note) instead of downgrading it:
+ *  - a time unit the quote doesn't use (per minute vs per day)
+ *  - a negation the quote doesn't carry, next to a word the quote uses
+ *  - "must" where the quote only says "may"/"can", or the reverse
+ *  - a swapped tier (restricted vs sensitive, internal vs external, …)
+ */
+export function supportFlags(claimText: string, quote: string): string[] {
+  const flags: string[] = [];
+  const qTime = timeUnits(quote, true);
+  if (qTime.size) {
+    const extra = [...timeUnits(claimText)].filter((u) => !qTime.has(u));
+    if (extra.length) flags.push(`The claim is about ${extra.join(", ")}s; the quote talks about ${[...timeUnits(quote)].join(", ")}s.`);
+  }
+  const c = ` ${words(claimText).join(" ")} `;
+  const qt = ` ${words(quote).join(" ")} `;
+  if (addedNegation(claimText, quote)) flags.push("The claim is negative where the quote is not.");
+  if (STRONG.test(c) && !STRONG.test(qt) && (WEAK.test(qt) || /\bcan\b/.test(qt))) flags.push("The claim says required; the quote says optional or possible.");
+  if (WEAK.test(c) && !WEAK.test(qt) && STRONG.test(qt)) flags.push("The claim says optional or possible; the quote says required.");
+  for (const [a, b] of CONTRASTS) {
+    for (const [x, y] of [[a, b], [b, a]]) {
+      const has = (s: string, w: string) => new RegExp(`\\b${w}\\b`).test(s);
+      if (has(c, x) && !has(qt, x) && has(qt, y)) flags.push(`The claim says "${x}"; the quote says "${y}".`);
+    }
+  }
+  return flags;
 }
 
 const STOP = new Set("the a an and or of to in for on with by is are be can must may your you this that it its from as at not no all any per each into than then them they their which when".split(" "));
@@ -171,7 +308,11 @@ export function enforceEvidence(g: GeneratedGuide, ctx: EvidenceContext): Enforc
   const seen = new Set([...ctx.seenUrls, ...ctx.pages.keys()].map(canonicalUrl));
   const official = new Set((ctx.officialDomains ?? []).map(baseDomain).filter(Boolean));
   const authorityOk = (label: "provider_docs" | "composio_docs", url: string) =>
-    label === "composio_docs" ? isComposio(url) : official.size === 0 || isOfficialDomain(url, official);
+    label === "composio_docs"
+      ? isComposio(url)
+      : ctx.strictOfficial
+        ? official.has(baseDomain(url))
+        : official.size === 0 || isOfficialDomain(url, official);
 
   const claims: ClaimT[] = g.claims.map((c) => {
     const claim: ClaimT = { ...c, note: null };
@@ -204,7 +345,8 @@ export function enforceEvidence(g: GeneratedGuide, ctx: EvidenceContext): Enforc
       const issue = supportIssue(c.text, c.quote);
       if (issue) return { ...downgrade(issue), source_url: foundAt };
       stats.quotes_verified++;
-      return { ...claim, source_url: foundAt, note: overlapNote(c.text, c.quote) };
+      const flags = supportFlags(c.text, c.quote);
+      return { ...claim, source_url: foundAt, note: flags.length ? `${flags.join(" ")} Check the quote.` : overlapNote(c.text, c.quote) };
     }
 
     if (c.label === "probed") {

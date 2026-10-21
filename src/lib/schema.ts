@@ -15,6 +15,22 @@ export const Difficulty = z.enum(["easy", "medium", "hard", "unknown"]);
 export const Path = z.enum(["automatic", "self_serve", "app_review", "partner"]);
 /** What a provider review inspects. One submission can check several. */
 export const ReviewCheck = z.enum(["identity", "use_case", "working_demo", "security", "listing"]);
+export const Trigger = z.enum(["always", "sensitive_scopes", "scale", "none"]);
+export const ModifierKind = z.enum([
+  "customer_admin",
+  "limited_before_approval",
+  "threshold",
+  "paid_access",
+  "builder_prerequisite",
+  "use_restrictions",
+  "recurring",
+]);
+const Modifier = z.object({
+  kind: ModifierKind,
+  qualifier: z.enum(["required", "optional"]).nullable().optional(),
+  note: z.string().describe("At most 10 words"),
+  claim_ids: z.array(z.string()),
+});
 
 /** Labels the generator may assign. "tested" is deliberately absent: only a recorded attempt can award it. */
 export const AgentEvidenceLabel = z.enum(["provider_docs", "composio_docs", "probed", "reported", "unknown"]);
@@ -59,6 +75,12 @@ const Scenario = z.object({
   review_checks: z.array(ReviewCheck).optional().describe("What the review inspects; empty if there is no review"),
   shortcut: z.string().nullable().optional().describe("A documented way to avoid or shrink the review for this goal, in one sentence, or null"),
   extras: z.array(z.string()).optional().describe("Up to 3 short facts that change the experience (max 8 words each): customer admin approval, limits before approval, paid plan, yearly re-review"),
+  // v2: structured categorisation, each part tied to claims.
+  trigger: Trigger.optional().describe("What triggers the review for this setup"),
+  gate_sequence: z.array(z.string()).optional().describe("Mandatory steps before outside customers can connect, in order, each at most 8 words"),
+  modifiers: z.array(Modifier).optional(),
+  path_claim_ids: z.array(z.string()).optional().describe("Claims (from G2 evidence) that back the path"),
+  shortcut_claim_ids: z.array(z.string()).optional(),
 });
 
 const Step = z.object({
@@ -117,6 +139,15 @@ const guideFields = {
 };
 
 export const GeneratedGuideSchema = z.object({ ...guideFields, claims: z.array(AgentClaim) });
+
+/** v2 writer output: claims cite an evidence id; code fills label, url and quote from the evidence ledger. */
+export const WriterClaim = z.object({
+  id: z.string().describe("Short stable id, e.g. c1"),
+  text: z.string().describe("One factual statement, in plain language"),
+  evidence_id: z.string().nullable().describe("An evidence id (E#) from the dossier that supports this claim, or null if unconfirmed"),
+});
+export const WriterGuideSchema = z.object({ ...guideFields, claims: z.array(WriterClaim) });
+export type WriterGuide = z.infer<typeof WriterGuideSchema>;
 export const GuideSchema = z.object({ ...guideFields, claims: z.array(Claim) });
 
 export type GeneratedGuide = z.infer<typeof GeneratedGuideSchema>;
@@ -142,6 +173,34 @@ export const ProbeRecord = z.object({
   at: z.string(),
 });
 
+/** v2 provenance: what was asked, what was found, from where, and how the run ended. */
+export const ResearchRecord = z.object({
+  version: z.literal(2),
+  prompt_version: z.string(),
+  models: z.record(z.string(), z.string()),
+  questions: z.array(
+    z.object({ id: z.string(), status: z.enum(["found", "not_found"]), evidence: z.array(z.string()), tried: z.array(z.string()) }),
+  ),
+  evidence: z.array(
+    z.object({
+      id: z.string(),
+      question: z.string(),
+      url: z.string(),
+      quote: z.string(),
+      answer: z.string(),
+      kind: z.enum(["provider_docs", "composio_docs", "reported"]),
+      status: z.enum(["verified", "not_on_page", "not_fetched"]),
+      via: z.enum(["extract", "gapfill"]),
+      fetched_at: z.string().nullable(),
+      page_hash: z.string().nullable(),
+    }),
+  ),
+  workers: z.array(z.object({ name: z.string(), stop: z.string(), ms: z.number() })),
+  judge: z.object({ checked: z.number(), supported: z.number(), partial: z.number(), contradicted: z.number() }).nullable(),
+  timings_ms: z.record(z.string(), z.number()),
+});
+export type ResearchRecordT = z.infer<typeof ResearchRecord>;
+
 export const GuideRecordSchema = z.object({
   slug: z.string(),
   guide: GuideSchema,
@@ -166,6 +225,7 @@ export const GuideRecordSchema = z.object({
     }),
     sources: z.array(SourceRecord),
     probes: z.array(ProbeRecord),
+    research: ResearchRecord.optional(),
   }),
 });
 

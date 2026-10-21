@@ -167,6 +167,8 @@ export interface FetchedPage {
   title: string | null;
   text: string;
   status: number;
+  /** Outbound links, used to decide which domains an official page vouches for. */
+  links?: string[];
 }
 
 /** Markdown/MDX source: drop JSX/HTML tags but keep their text ("<Link href=..>Client Credentials</Link>" -> "Client Credentials"). */
@@ -184,6 +186,28 @@ export function cleanMarkdown(md: string): string {
 // They also publish the source at URL + ".md", which keeps every word.
 const looksClientRendered = (html: string) => html.includes("mdx-content") || /<!-- -->\s*(or|and|,)/.test(html);
 
+/** Absolute http(s) links found in HTML anchors or Markdown links, resolved against the page URL. */
+export function extractLinks(body: string, base: string, max = 400): string[] {
+  const out = new Set<string>();
+  const add = (href: string) => {
+    try {
+      const u = new URL(decodeEntities(href.trim()), base);
+      if (u.protocol === "http:" || u.protocol === "https:") out.add(u.toString().split("#")[0]);
+    } catch {
+      /* not a URL */
+    }
+  };
+  for (const m of body.matchAll(/<a\b[^>]*?href\s*=\s*["']([^"'#][^"']*)["']/gi)) {
+    add(m[1]);
+    if (out.size >= max) break;
+  }
+  for (const m of body.matchAll(/\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g)) {
+    add(m[1]);
+    if (out.size >= max) break;
+  }
+  return [...out];
+}
+
 export async function fetchPageText(raw: string): Promise<FetchedPage> {
   const res = await safeGet(raw);
   if (res.status >= 400) throw new Error(`HTTP ${res.status}`);
@@ -196,19 +220,19 @@ export async function fetchPageText(raw: string): Promise<FetchedPage> {
         const md = await safeGet(mdUrl, { timeoutMs: 8_000 });
         const mct = md.contentType.toLowerCase();
         if (md.status === 200 && (mct.includes("markdown") || mct.includes("text/plain")) && md.body.length > 200) {
-          return { url: res.url, title, text: cleanMarkdown(md.body), status: res.status };
+          return { url: res.url, title, text: cleanMarkdown(md.body), status: res.status, links: extractLinks(res.body, res.url) };
         }
       } catch {
         /* fall back to the HTML text */
       }
     }
-    return { url: res.url, title, text, status: res.status };
+    return { url: res.url, title, text, status: res.status, links: extractLinks(res.body, res.url) };
   }
   if (ct.includes("markdown") || /\.mdx?(\?|$)/.test(res.url)) {
-    return { url: res.url, title: null, text: cleanMarkdown(res.body), status: res.status };
+    return { url: res.url, title: null, text: cleanMarkdown(res.body), status: res.status, links: extractLinks(res.body, res.url) };
   }
   if (ct.includes("json") || ct.includes("text") || ct === "") {
-    return { url: res.url, title: null, text: res.body, status: res.status };
+    return { url: res.url, title: null, text: res.body, status: res.status, links: ct.includes("json") ? [] : extractLinks(res.body, res.url) };
   }
   throw new Error(`Unsupported content type: ${ct}`);
 }

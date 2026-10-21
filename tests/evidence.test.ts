@@ -75,3 +75,25 @@ describe("enforceEvidence", () => {
     expect(g.steps[0].scenario_ids).toEqual(["s1"]);
   });
 });
+
+describe("v2 verifier rules", () => {
+  it("rejects ellipsis fragments stitched from far apart", async () => {
+    const { quoteInText } = await import("@/lib/evidence");
+    const page = `Apps must pass review before launch. ${"Filler text. ".repeat(60)} Reviews take up to six weeks.`;
+    expect(quoteInText("Apps must pass review before launch ... Reviews take up to six weeks", page)).toBe(false);
+    expect(quoteInText("Apps must pass review ... six weeks", "Apps must pass review, and reviews take up to six weeks.")).toBe(false); // "six weeks" < 12 chars
+    expect(quoteInText("Apps must pass review ... reviews take up to six weeks", "Apps must pass review, and reviews take up to six weeks.")).toBe(true);
+  });
+  it("downgrades a unit swap but only flags a negation", async () => {
+    const { supportIssue, supportFlags } = await import("@/lib/evidence");
+    expect(supportIssue("Unverified apps get 100 requests per 10 days.", "Unverified apps are limited to 100 requests per 10 minutes.")).toMatch(/minute/);
+    expect(supportIssue("Apps must pass a review.", "Apps must not pass a review.")).toBeNull();
+    expect(supportFlags("Apps must not pass a review.", "Apps must pass a review.")).toContain("The claim is negative where the quote is not.");
+    expect(supportFlags("Gmail.send is a restricted scope.", "gmail.send is a sensitive scope.")[0]).toMatch(/restricted/);
+    expect(supportFlags("Listing is optional.", "Listing is required for all public apps.")[0]).toMatch(/optional/);
+  });
+  it("treats 60 minutes in the quote as an hour", async () => {
+    const { supportFlags } = await import("@/lib/evidence");
+    expect(supportFlags("Capped at 30,000 per hour.", "max out at 30,000 per 60 minutes.")).toEqual([]);
+  });
+});

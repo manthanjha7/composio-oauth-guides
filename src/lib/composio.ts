@@ -84,8 +84,8 @@ export async function credentialGuide(slug: string): Promise<{ url: string; titl
   }
 }
 
-/** Uses the toolkit API when a key is configured (no key = docs-only facts). */
-export async function managedSchemesFromApi(slug: string): Promise<string[] | null> {
+/** Toolkit API facts when a key is configured (no key = docs-only facts): managed schemes and the app's own website. */
+export async function toolkitFromApi(slug: string): Promise<{ schemes: string[]; app_url: string | null } | null> {
   const key = process.env.COMPOSIO_API_KEY;
   if (!key) return null;
   try {
@@ -94,11 +94,18 @@ export async function managedSchemesFromApi(slug: string): Promise<string[] | nu
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;
-    const json = (await res.json()) as { composio_managed_auth_schemes?: string[] };
-    return Array.isArray(json.composio_managed_auth_schemes) ? json.composio_managed_auth_schemes : [];
+    const json = (await res.json()) as { composio_managed_auth_schemes?: string[]; meta?: { app_url?: string } };
+    return {
+      schemes: Array.isArray(json.composio_managed_auth_schemes) ? json.composio_managed_auth_schemes : [],
+      app_url: typeof json.meta?.app_url === "string" ? json.meta.app_url : null,
+    };
   } catch {
     return null;
   }
+}
+
+export async function managedSchemesFromApi(slug: string): Promise<string[] | null> {
+  return (await toolkitFromApi(slug))?.schemes ?? null;
 }
 
 /** Composio-wide facts every guide may need (redirect proxy for domain verification, managed-app limits), with their source pages. */
@@ -130,6 +137,8 @@ export interface ComposioLookup {
   chosen: CatalogEntry | null;
   managed_oauth: "yes" | "no" | "not_in_composio" | "unknown";
   api_managed_schemes: string[] | null;
+  /** The app's website according to Composio's catalog: an independent anchor for "official". */
+  app_url?: string | null;
   toolkit: ToolkitFacts | null;
   credential_guide: { url: string; title: string } | null;
   directory_url: string;
@@ -149,7 +158,7 @@ export async function composioLookup(query: string, slugHint?: string): Promise<
   const [toolkit, guide, api, facts] = await Promise.all([
     toolkitPageFacts(slug).catch(() => null),
     credentialGuide(slug),
-    managedSchemesFromApi(slug),
+    toolkitFromApi(slug),
     composioGeneralFacts(),
   ]);
   let managed: ComposioLookup["managed_oauth"] = "unknown";
@@ -157,7 +166,7 @@ export async function composioLookup(query: string, slugHint?: string): Promise<
   else if (!toolkit) managed = "not_in_composio";
   else if (/Composio-managed OAuth available\?\*\*\s*(No|N\/A)/i.test(toolkit.header)) managed = "no";
   else if (/Composio-managed OAuth available\?\*\*\s*Yes/i.test(toolkit.header)) managed = "yes";
-  if (api && api.some((s) => /oauth/i.test(s))) managed = "yes";
+  if (api && api.schemes.some((s) => /oauth/i.test(s))) managed = "yes";
 
   const pages = [{ url, text }, ...facts];
   if (toolkit) pages.push({ url: `https://docs.composio.dev/toolkits/${slug}`, text: `${toolkit.header}\n\n${toolkit.faq}` });
@@ -166,7 +175,8 @@ export async function composioLookup(query: string, slugHint?: string): Promise<
     matches,
     chosen,
     managed_oauth: managed,
-    api_managed_schemes: api,
+    api_managed_schemes: api?.schemes ?? null,
+    app_url: api?.app_url ?? null,
     toolkit,
     credential_guide: guide,
     directory_url: url.replace(/\.md$/, ""),
