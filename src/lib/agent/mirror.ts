@@ -31,15 +31,19 @@ function childEnv(): NodeJS.ProcessEnv {
 
 interface CliResult {
   result: string;
+  /** Present when --json-schema was used: the reply, already parsed and schema-shaped. */
+  structured_output?: unknown;
   usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number };
   is_error?: boolean;
   subtype?: string;
 }
 
 /** One headless Claude Code call. Rejects on timeout, a non-zero exit, or an error result. */
-export function runClaude(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal }): Promise<CliResult> {
+export function runClaude(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object }): Promise<CliResult> {
   return new Promise((resolve, reject) => {
     const args = ["-p", "--output-format", "json", "--model", o.model, "--system-prompt", o.system, "--tools", "", "--effort", o.effort, "--no-session-persistence"];
+    // A JSON schema forces the reply's shape, so the model can't drift into prose instead of tool calls.
+    if (o.schema) args.push("--json-schema", JSON.stringify(o.schema));
     const child = spawn("claude", args, { cwd: WORKDIR, env: childEnv(), stdio: ["pipe", "pipe", "pipe"] });
     let out = "";
     let err = "";
@@ -95,10 +99,9 @@ function transcript(messages: BetaMessageParam[]): string {
 function toolProtocol(tools: BetaToolUnion[]): string {
   const custom = tools.filter((t) => "input_schema" in t) as { name: string; description?: string; input_schema: unknown }[];
   return `# Tools
-You can call these tools. To call tools, reply with ONLY a JSON object, no other text:
-{"tool_calls": [{"name": "<tool name>", "input": { ... }}]}
-You may include several calls. Their results come back as <tool_result> blocks in the next message.
-When you are done and need no more tools, reply with your final answer as plain text (not JSON).
+You request tool calls through your structured reply; you cannot run them yourself.
+- To call tools: put them in "tool_calls" ([{"name": "<tool name>", "input": { ... }}]); several are allowed. Their results come back as <tool_result> blocks in the next message.
+- When you are done and need no more tools: leave "tool_calls" empty and put your final answer in "final".
 
 ${custom.map((t) => `- ${t.name}: ${t.description ?? ""}\n  input schema: ${JSON.stringify(t.input_schema)}`).join("\n")}`;
 }
@@ -116,6 +119,25 @@ const message = (content: Block[], stop: string, usage: CliResult["usage"]): Bet
   }) as unknown as BetaMessage;
 
 let toolSeq = 0;
+
+const TOOL_SCHEMA = {
+  type: "object",
+  properties: {
+    tool_calls: { type: "array", items: { type: "object", properties: { name: { type: "string" }, input: { type: "object" } }, required: ["name", "input"] } },
+    final: { type: "string" },
+  },
+  required: ["tool_calls"],
+};
+const FACTS_SCHEMA = {
+  type: "object",
+  properties: {
+    facts: {
+      type: "array",
+      items: { type: "object", properties: { question: { type: "string" }, answer: { type: "string" }, quote: { type: "string" } }, required: ["question", "answer", "quote"] },
+    },
+  },
+  required: ["facts"],
+};
 
 export function createMirrorLlm(opts: { signal?: AbortSignal } = {}): Llm {
   const spend = newSpend();
@@ -138,16 +160,21 @@ export function createMirrorLlm(opts: { signal?: AbortSignal } = {}): Llm {
       const ask = first.filter((b) => b.type === "text").map((b) => String(b.text)).join("\n");
       const system = `${p.system}
 
-Output format for this run (replaces "## G5" sections): reply with ONLY a JSON array, one object per fact:
-[{"question": "G5", "answer": "one short sentence in plain words", "quote": "the exact sentence copied character for character from the document"}]
-The quote must be copied exactly from the document; it is checked. Reply [] if the document answers none of the questions.`;
-      const r = await runClaude({ system, prompt: `<document title="${doc.title ?? ""}">\n${text}\n</document>\n\n${ask}`, model: p.model, effort: p.effort, timeoutMs, signal: opts.signal });
+Output format for this run (replaces "## G5" sections): your structured reply's "facts" list, one object per fact:
+{"question": "G5", "answer": "one short sentence in plain words", "quote": "the exact sentence copied character for character from the document"}
+The quote must be copied exactly from the document; it is checked. Return an empty list if the document answers none of the questions.`;
+      const r = await runClaude({ system, prompt: `<document title="${doc.title ?? ""}">\n${text}\n</document>\n\n${ask}`, model: p.model, effort: p.effort, timeoutMs, signal: opts.signal, schema: FACTS_SCHEMA });
       track(p, r.usage);
       let facts: { question: string; answer: string; quote: string }[] = [];
-      try {
-        facts = JSON.parse(extractJson(r.result));
-      } catch {
-        facts = [];
+      const so = r.structured_output as { facts?: typeof facts } | undefined;
+      if (Array.isArray(so?.facts)) facts = so.facts;
+      else {
+        try {
+          const parsed = JSON.parse(extractJson(r.result));
+          facts = Array.isArray(parsed) ? parsed : (parsed.facts ?? []);
+        } catch {
+          facts = [];
+        }
       }
       const blocks: Block[] = [];
       for (const f of Array.isArray(facts) ? facts : []) {
@@ -166,21 +193,25 @@ The quote must be copied exactly from the document; it is checked. Reply [] if t
     // Tool loops: emulate tool use with a JSON protocol.
     if (p.tools?.length) {
       const system = `${p.system}\n\n${toolProtocol(p.tools)}`;
-      const r = await runClaude({ system, prompt: transcript(p.messages), model: p.model, effort: p.effort, timeoutMs, signal: opts.signal });
+      const r = await runClaude({ system, prompt: transcript(p.messages), model: p.model, effort: p.effort, timeoutMs, signal: opts.signal, schema: TOOL_SCHEMA });
       track(p, r.usage);
-      try {
-        const parsed = JSON.parse(extractJson(r.result)) as { tool_calls?: { name: string; input: Record<string, unknown> }[] };
-        if (parsed.tool_calls?.length) {
-          return message(
-            parsed.tool_calls.map((t) => ({ type: "tool_use", id: `tu_${++toolSeq}`, name: t.name, input: t.input ?? {} })),
-            "tool_use",
-            r.usage,
-          );
+      type Reply = { tool_calls?: { name: string; input: Record<string, unknown> }[]; final?: string };
+      let reply = r.structured_output as Reply | undefined;
+      if (!reply) {
+        try {
+          reply = JSON.parse(extractJson(r.result)) as Reply;
+        } catch {
+          reply = { tool_calls: [], final: r.result };
         }
-      } catch {
-        /* plain text answer */
       }
-      return message([{ type: "text", text: r.result, citations: null }], "end_turn", r.usage);
+      if (reply.tool_calls?.length) {
+        return message(
+          reply.tool_calls.map((t) => ({ type: "tool_use", id: `tu_${++toolSeq}`, name: t.name, input: t.input ?? {} })),
+          "tool_use",
+          r.usage,
+        );
+      }
+      return message([{ type: "text", text: reply.final ?? r.result, citations: null }], "end_turn", r.usage);
     }
 
     // Plain calls (writer, judge).
