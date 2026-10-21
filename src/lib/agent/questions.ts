@@ -52,10 +52,10 @@ export const QUESTIONS: Question[] = [
   },
   {
     id: "G5",
-    text: "Limits before approval: test-user caps, install or connection caps, rate limits for unreviewed apps, 'unverified app' warnings, development-mode restrictions.",
+    text: "Limits before approval: test-user caps, install or connection caps, rate limits for unreviewed apps, 'unverified app' warnings, development-mode restrictions, and tokens or authorizations that expire sooner in testing mode.",
     critical: true,
     priority: 3,
-    keywords: ["limit", "limits", "test users", "rate limit", "unverified", "development mode", "sandbox", "cap", "quota", "warning"],
+    keywords: ["limit", "limits", "test users", "rate limit", "unverified", "development mode", "testing", "sandbox", "cap", "quota", "warning", "expire", "expiration", "refresh token"],
     search: "{app} unverified app limits test users rate limit",
   },
   {

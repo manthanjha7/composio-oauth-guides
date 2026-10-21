@@ -41,6 +41,7 @@ export const searchQueries = (app: string) => [
   `${app} OAuth app review verification requirements`,
   `${app} OAuth unverified app limits rate limits`,
   `${app} developer app publish marketplace partner program`,
+  `${app} OAuth refresh token expiration testing mode limits`,
 ];
 
 /**
