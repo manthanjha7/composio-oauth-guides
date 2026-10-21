@@ -13,14 +13,28 @@ export interface Candidate {
 const SKIP = /\.(png|jpe?g|gif|svg|webp|zip|mp4|pdf)(\?|$)|\/(login|signin|signup|pricing-calculator)\b|#/i;
 const FORUM = /(stackoverflow|reddit|medium|dev\.to|community|forum|discuss|github\.com\/[^/]+\/[^/]+\/issues)/i;
 const KEYWORDS = [...new Set(QUESTIONS.filter((q) => q.id !== "R1").flatMap((q) => q.keywords))];
-const STRONG = ["oauth", "authorization", "verification", "review", "publish", "distribution", "marketplace", "scopes", "rate-limit", "rate limit", "app-review", "partner"];
+// Terms that, in a page's own address, mark the pages a guide needs.
+const STRONG_PATH = /oauth|authori[sz]ation|authentication|app[-_]?review|approval|verif|publish|distribut|marketplace|app[-_]?(store|directory|gallery|center)|partner|scopes?\b|rate[-_]?limit|security|getting[-_]?started|consent|production|go[-_]?live|quota/;
+// Pages that rarely answer approval questions: tutorials, AI/MCP features, samples, blogs, changelogs, SDK and endpoint references.
+const OFF_TOPIC_PATH = /tutorial|\/mcp|[-/]ai[-/]|sample|example|\/blog|changelog|release[-_]?notes|\/sdks?\b|api[-_]?reference|\/reference\/|\/embed|webhook|cookbook/;
 
-/** Keyword score for a URL plus its link text or search title/snippet. Strong OAuth/review words count double. */
+/**
+ * How likely a page answers the research questions: strong terms in its address count most, generic keywords
+ * in its title or snippet a little (capped), and pages that are usually off topic are pushed down.
+ */
 export function scoreText(url: string, label: string): number {
-  const t = `${decodeURIComponent(url).toLowerCase().replace(/[-_/]/g, " ")} ${label.toLowerCase()}`;
-  let s = 0;
-  for (const k of KEYWORDS) if (t.includes(k)) s += 1;
-  for (const k of STRONG) if (t.includes(k.replace("-", " "))) s += 2;
+  let path = url.toLowerCase();
+  try {
+    path = decodeURIComponent(new URL(url).pathname).toLowerCase();
+  } catch {
+    /* keep the raw string */
+  }
+  const text = `${path.replace(/[-_/]/g, " ")} ${label.toLowerCase()}`;
+  const strongInPath = (path.match(new RegExp(STRONG_PATH.source, "g")) ?? []).length;
+  let s = strongInPath * 4;
+  s += Math.min(4, KEYWORDS.filter((k) => text.includes(k)).length);
+  if (STRONG_PATH.test(label.toLowerCase())) s += 2;
+  if (OFF_TOPIC_PATH.test(path) && strongInPath === 0) s -= 6;
   return s;
 }
 

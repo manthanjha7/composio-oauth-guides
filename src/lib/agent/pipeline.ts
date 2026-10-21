@@ -330,7 +330,8 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     return { outcome: "not_oauth", message };
   }
   if (!ident) {
-    const message = `Could not identify "${opts.query}" or its developer docs.`;
+    const why = workers.find((w) => w.name === "identify")?.stop;
+    const message = `Could not identify "${opts.query}" or its developer docs${why && why !== "finished" ? ` (${why})` : ""}.`;
     emit({ type: "error", message });
     return { outcome: "error", message };
   }

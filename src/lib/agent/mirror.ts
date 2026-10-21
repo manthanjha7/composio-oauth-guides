@@ -39,7 +39,25 @@ interface CliResult {
 }
 
 /** One headless Claude Code call. Rejects on timeout, a non-zero exit, or an error result. */
-export function runClaude(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object }): Promise<CliResult> {
+/** Retries a failed headless call (rate limits, a busy subscription) while time allows. */
+export async function runClaude(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object }): Promise<CliResult> {
+  const deadline = Date.now() + o.timeoutMs;
+  let last: Error | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const left = deadline - Date.now();
+    if (left < 5_000) break;
+    try {
+      return await runClaudeOnce({ ...o, timeoutMs: left });
+    } catch (e) {
+      last = e as Error;
+      if (o.signal?.aborted || /timed out/.test(last.message)) break;
+      await new Promise((r) => setTimeout(r, 2_000 * (attempt + 1) + Math.random() * 1_000));
+    }
+  }
+  throw last ?? new Error("mirror call had no time to run");
+}
+
+function runClaudeOnce(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object }): Promise<CliResult> {
   return new Promise((resolve, reject) => {
     const args = ["-p", "--output-format", "json", "--model", o.model, "--system-prompt", o.system, "--tools", "", "--effort", o.effort, "--no-session-persistence"];
     // A JSON schema forces the reply's shape, so the model can't drift into prose instead of tool calls.
@@ -96,12 +114,19 @@ function transcript(messages: BetaMessageParam[]): string {
     .join("\n\n");
 }
 
+/** Tools that end a conversation; when one exists, finishing means calling it, never writing "final". */
+const TERMINAL = ["submit_identity", "finish", "finish_research"];
+
 function toolProtocol(tools: BetaToolUnion[]): string {
   const custom = tools.filter((t) => "input_schema" in t) as { name: string; description?: string; input_schema: unknown }[];
+  const terminal = custom.map((t) => t.name).filter((n) => TERMINAL.includes(n));
+  const done = terminal.length
+    ? `- When you are done, call ${terminal.map((n) => `"${n}"`).join(" or ")} through "tool_calls". Never put your answer only in "final": it is ignored.`
+    : `- When you are done and need no more tools: leave "tool_calls" empty and put your final answer in "final".`;
   return `# Tools
 You request tool calls through your structured reply; you cannot run them yourself.
 - To call tools: put them in "tool_calls" ([{"name": "<tool name>", "input": { ... }}]); several are allowed. Their results come back as <tool_result> blocks in the next message.
-- When you are done and need no more tools: leave "tool_calls" empty and put your final answer in "final".
+${done}
 
 ${custom.map((t) => `- ${t.name}: ${t.description ?? ""}\n  input schema: ${JSON.stringify(t.input_schema)}`).join("\n")}`;
 }
@@ -193,16 +218,26 @@ The quote must be copied exactly from the document; it is checked. Return an emp
     // Tool loops: emulate tool use with a JSON protocol.
     if (p.tools?.length) {
       const system = `${p.system}\n\n${toolProtocol(p.tools)}`;
-      const r = await runClaude({ system, prompt: transcript(p.messages), model: p.model, effort: p.effort, timeoutMs, signal: opts.signal, schema: TOOL_SCHEMA });
-      track(p, r.usage);
       type Reply = { tool_calls?: { name: string; input: Record<string, unknown> }[]; final?: string };
-      let reply = r.structured_output as Reply | undefined;
-      if (!reply) {
-        try {
-          reply = JSON.parse(extractJson(r.result)) as Reply;
-        } catch {
-          reply = { tool_calls: [], final: r.result };
+      const ask = async (extra: string) => {
+        const r = await runClaude({ system, prompt: transcript(p.messages) + extra, model: p.model, effort: p.effort, timeoutMs: deadlineAt - Date.now(), signal: opts.signal, schema: TOOL_SCHEMA });
+        track(p, r.usage);
+        let reply = r.structured_output as Reply | undefined;
+        if (!reply) {
+          try {
+            reply = JSON.parse(extractJson(r.result)) as Reply;
+          } catch {
+            reply = { tool_calls: [], final: r.result };
+          }
         }
+        return { r, reply };
+      };
+      let { r, reply } = await ask("");
+      // A terminal tool exists but the model answered in prose: remind it once (emulation only; native tool use
+      // in production can't do this).
+      const terminal = p.tools.some((t) => "name" in t && TERMINAL.includes(t.name));
+      if (!reply.tool_calls?.length && terminal && deadlineAt - Date.now() > 15_000) {
+        ({ r, reply } = await ask(`\n\n[system] Your last reply had no tool calls. Reply with "tool_calls" only; to finish, call the finishing tool (${TERMINAL.join(" / ")}).`));
       }
       if (reply.tool_calls?.length) {
         return message(
