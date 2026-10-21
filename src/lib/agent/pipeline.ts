@@ -644,7 +644,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       return v === undefined || v === "supported";
     };
     const fieldOk = (key: string) => verdicts.get(key) === "supported";
-    guide = applyInvariants(g, store, warnings, { claimQuestion, accepted, fieldOk, judged: !!judge });
+    guide = applyInvariants(g, store, warnings, { claimQuestion, accepted, fieldOk, fieldVerdict: (k) => verdicts.get(k), judged: !!judge });
     guide = ensureCriticalLimits(guide, store, accepted, warnings);
   }
   mark("verify", t0);
@@ -941,25 +941,40 @@ export function applyInvariants(
   g: Guide,
   store: ResearchStore,
   warnings: string[],
-  c: { claimQuestion: Map<string, string | undefined>; accepted: (id: string) => boolean; fieldOk: (key: string) => boolean; judged: boolean },
+  c: {
+    claimQuestion: Map<string, string | undefined>;
+    accepted: (id: string) => boolean;
+    fieldOk: (key: string) => boolean;
+    fieldVerdict?: (key: string) => string | undefined;
+    judged: boolean;
+  },
 ): Guide {
-  const fromQuestion = (id: string, qs: string[]) => c.accepted(id) && qs.includes(c.claimQuestion.get(id) ?? "");
-  // Self-serve can't be quoted when docs simply describe no review. It may be inferred, and is labelled as such,
-  // only when setup steps were found and no verified evidence anywhere mentions a review, verification or approval.
-  // Phrases about the APP being reviewed, not about a customer's admin approving it or a user authorising access.
+  // A categorical field rests on two checks: its claims are sourced (a contradicted or unsupported claim is already
+  // unconfirmed), and the field itself, as the guide states it, was judged supported by those claims' quotes. The
+  // field-level verdict is the semantic check; requiring every claim to be fully supported as well dropped fields
+  // the judge had confirmed.
+  const claimById = new Map(g.claims.map((x) => [x.id, x]));
+  const sourced = (id: string) => {
+    const x = claimById.get(id);
+    return !!x && x.label !== "unknown";
+  };
+  const fromQuestion = (id: string, qs: string[]) => sourced(id) && qs.includes(c.claimQuestion.get(id) ?? "");
+  // Self-serve can't be quoted when docs simply say nothing about a review. It may be inferred for a setup, and is
+  // labelled as such, when setup steps were found, none of that setup's own evidence mentions the app being
+  // reviewed, and the judge did not find its path statement contradicted.
   const REVIEW_WORDS =
     /\b(?:app|application|integration|listing)s?\s+(?:review|approval|verification|certification)|review (?:process|team|period)|submit(?:ted)?(?:\s+(?:it|your app|the app|your application))?\s+(?:for|to)\s+(?:review|approval|verification)|security (?:review|assessment)|partner program|must be (?:approved|reviewed|verified)\b/i;
-  // Only evidence about the path itself (G2) can block the inference; a review of an optional directory listing
-  // (usually G3/G11 evidence) says nothing about whether customers can connect without one.
-  const anyReviewEvidence = store.verified("G2").some((e) => e.kind !== "reported" && REVIEW_WORDS.test(`${e.quote} ${e.answer}`));
-  const canInferSelfServe = !anyReviewEvidence && store.status("G10") === "found";
+  const setupFound = store.status("G10") === "found";
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };
     let pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
     out.path_basis = pathOk ? "stated" : undefined;
-    if (!pathOk && out.path === "self_serve" && canInferSelfServe) {
-      pathOk = true;
-      out.path_basis = "inferred";
+    if (!pathOk && out.path === "self_serve" && setupFound && c.fieldVerdict?.(`${s.id}.path`) !== "contradicted") {
+      const own = [...s.claim_ids, ...(s.path_claim_ids ?? [])].map((id) => claimById.get(id)).filter((x) => x && x.label !== "unknown");
+      if (own.length > 0 && !own.some((x) => REVIEW_WORDS.test(`${x!.text} ${x!.quote ?? ""}`))) {
+        pathOk = true;
+        out.path_basis = "inferred";
+      }
     }
     if (!pathOk) {
       if (out.path) warnings.push(`"${s.label}": the path ("${out.path}") is not backed by a verified source, so it is shown as unconfirmed.`);
@@ -986,8 +1001,8 @@ export function applyInvariants(
       const noReview = pathOk && (out.path === "self_serve" || out.path === "automatic");
       if (!noReview) out.waiting = { estimate: "Unknown", basis: `No verified source confirms "${est}".`, max_days: null };
     }
-    if (out.shortcut && !((out.shortcut_claim_ids ?? []).some(c.accepted) && c.fieldOk(`${s.id}.shortcut`))) out.shortcut = null;
-    if (out.modifiers) out.modifiers = out.modifiers.filter((m, i) => m.claim_ids.some(c.accepted) && c.fieldOk(`${s.id}.mod${i}`)).slice(0, 6);
+    if (out.shortcut && !((out.shortcut_claim_ids ?? []).some(sourced) && c.fieldOk(`${s.id}.shortcut`))) out.shortcut = null;
+    if (out.modifiers) out.modifiers = out.modifiers.filter((m, i) => m.claim_ids.some(sourced) && c.fieldOk(`${s.id}.mod${i}`)).slice(0, 6);
     // Displayed extras come only from modifiers that survived; the writer's free-text extras are never shown in v2.
     out.extras = (out.modifiers ?? []).map((m) => m.note).slice(0, 3).map((x) => x.split(/\s+/).slice(0, 8).join(" "));
     if (out.gate_sequence) out.gate_sequence = out.gate_sequence.slice(0, 5);
