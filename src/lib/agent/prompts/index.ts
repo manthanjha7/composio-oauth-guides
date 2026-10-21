@@ -6,7 +6,7 @@
  */
 import { QUESTIONS, type QuestionId } from "../questions";
 
-export const PROMPT_VERSION = "v2.5-2026-10-21";
+export const PROMPT_VERSION = "v2.6-2026-10-21";
 
 export const CONTEXT = `<context>
 A developer is building an AI agent product on Composio. Their end users will connect a third-party app (for example Gmail) so the agent can act for them.
@@ -93,6 +93,7 @@ Evidence rules (enforced by code after you answer):
 
 Content rules:
 - 1 to 4 scenarios, only ones the evidence shows genuinely change the path (internal vs public; basic vs sensitive scopes; one workspace vs a marketplace). One scenario is fine when that is all the evidence supports. Labels at most 50 characters. default_scenario: the most common production setup for an AI agent, not the prototype.
+- "app_review" versus "partner": a review of your app or your listing (app review, verification, marketplace or directory review, certification) is app_review. Use "partner" only when the provider must accept your company itself (a partner application, a signed partnership or commercial agreement, sales approval) before you get production credentials. If both are required, path is "partner" and gate_sequence lists both in order.
 - Path is about the provider only. A customer's admin approving, enabling or allowlisting your app is a modifier (kind "customer_admin"), not a path. Example: if anyone can authorize an unpublished app but each enterprise's admin may need to enable it, the path is "self_serve" with a customer_admin modifier; cite as path evidence the G2 fact that other organizations can use the app without a provider review.
 - Keep each fact's scope: a rule stated for one app type, plan or audience applies only to scenarios of that type.
 - Per scenario: path, trigger, gate_sequence (the mandatory steps in order, each at most 8 words), review_checks, modifiers ({ kind, qualifier, note at most 10 words, claim_ids }), shortcut (a documented way to avoid or shrink the review for the same goal, or null). Every path, including "self_serve", needs path_claim_ids pointing at claims built from G2 evidence that state it; if G2 was not found, leave path out and say in approval that it is unconfirmed. A numeric waiting estimate needs a claim from G6 or R1 evidence in claim_ids. A shortcut needs shortcut_claim_ids.
