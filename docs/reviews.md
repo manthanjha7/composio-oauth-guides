@@ -108,3 +108,7 @@ Zero-setup summaries and compound words confirmed fixed. Two remaining, fixed ne
 ### Codex confirmation pass (commit bb75f3f)
 
 Both previous items confirmed fixed. One parser edge remained ("one hundred-two hundred" read as 10200; "twenty and one" as 21): a hyphen now joins only a tens compound and otherwise marks a range; "and" joins only after hundred/thousand. Nine number-word cases added as tests (106 total).
+
+### Codex readiness check (commit f5a6dc7)
+
+Ranges and "twenty and one" confirmed fixed. Blocking: coordinated scaled quantities ("one hundred and two hundred" → 10200). Fixed: after hundred/thousand, a value with its own scale of the same or larger size starts a new quantity; smaller ones remain a remainder (1200, 121, 1005, 200000 still parse). 112 tests pass.

@@ -138,6 +138,12 @@ describe("number words", () => {
     ["two thousand five hundred", "2500"],
     ["thirty-forty minutes", "30-40 minutes"],
     ["one", "one"],
+    ["one hundred and two hundred users", "100 and 200 users"],
+    ["one thousand and two thousand users", "1000 and 2000 users"],
+    ["one thousand two hundred", "1200"],
+    ["one hundred and twenty-one", "121"],
+    ["two hundred thousand", "200000"],
+    ["one thousand and five", "1005"],
   ])("number words: %s -> %s", async (input, out) => {
     const { wordsToDigits } = await import("@/lib/evidence");
     expect(wordsToDigits(input)).toBe(out);

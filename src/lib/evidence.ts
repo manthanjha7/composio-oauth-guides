@@ -161,21 +161,26 @@ export function wordsToDigits(text: string): string {
     const tokens = [...run.matchAll(/(\s+and\s+|\s+|-)?([a-z]+)/gi)].map((m) => ({ sep: m[1] ?? "", w: m[2].toLowerCase() }));
     if (tokens.length === 1 && tokens[0].w === "one") return run;
     const groups: { sep: string; ws: string[] }[] = [];
-    for (const t of tokens) {
+    const mag = (w: string) => (w === "thousand" ? 1000 : w === "hundred" ? 100 : 0);
+    tokens.forEach((t, i) => {
       const g = groups.at(-1);
       const last = g?.ws.at(-1);
+      // After a scale, a value carrying its own scale of the same or larger size is a separate quantity
+      // ("one hundred and two hundred" = 100 and 200), while a smaller one is a remainder ("one thousand two hundred").
+      const nextScale = tokens[i + 1] && !/-|and/.test(tokens[i + 1].sep) ? mag(tokens[i + 1].w) : 0;
       // A new number starts when two values can't combine: "two three", "twenty thirty", "fifteen four".
       const hyphen = t.sep === "-";
       const and = /and/.test(t.sep);
       const tensCompound = !!last && last in TENS && t.w in SMALL && SMALL[t.w] < 10 && !and; // twenty-one, twenty one
       const scale = (t.w === "hundred" || t.w === "thousand") && !hyphen && !and; // two hundred
-      const afterScale = (last === "hundred" || last === "thousand") && (t.w in SMALL || t.w in TENS) && !hyphen; // one hundred (and) five
+      const afterScale =
+        (last === "hundred" || last === "thousand") && (t.w in SMALL || t.w in TENS) && !hyphen && !(nextScale && nextScale >= mag(last)); // one hundred (and) five
       // A hyphen only joins a tens compound; otherwise it marks a range ("one hundred-two hundred" = 100-200).
       // "and" only joins after hundred/thousand ("twenty and one" stays two numbers).
       const joins = !!last && (tensCompound || scale || afterScale);
       if (g && joins) g.ws.push(t.w);
       else groups.push({ sep: t.sep, ws: [t.w] });
-    }
+    });
     const value = (ws: string[]) => {
       let total = 0;
       let current = 0;
