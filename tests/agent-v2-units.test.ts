@@ -188,3 +188,12 @@ describe("factor sweep", () => {
     expect(mods).toEqual([["customer_admin", ["c3"]], ["threshold", ["c1"]]]);
   });
 });
+
+describe("endpoint pages", () => {
+  it("rank below approval docs even with underscores and strong words in the address", () => {
+    const endpoint = scoreText("https://docs.gusto.com/embedded-payroll/reference/post-partner-managed-companies-company_uuid-accept_terms_of_service", "");
+    const review = scoreText("https://docs.gusto.com/app-integrations/docs/security-review", "");
+    expect(endpoint).toBeLessThan(review);
+    expect(endpoint).toBeLessThan(1);
+  });
+});

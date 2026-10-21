@@ -15,7 +15,7 @@ const FORUM = /(stackoverflow|reddit|medium|dev\.to|community|forum|discuss|gith
 const KEYWORDS = [...new Set(QUESTIONS.filter((q) => q.id !== "R1").flatMap((q) => q.keywords))];
 // Terms that, in a page's own address, mark the pages a guide needs.
 const STRONG_PATH = /oauth|authori[sz]ation|authentication|app[-_]?review|approval|verif|publish|distribut|marketplace|app[-_]?(store|directory|gallery|center)|partner|scopes?\b|rate[-_]?limit|security|getting[-_]?started|consent|production|go[-_]?live|quota/;
-const ENDPOINT_PAGE = /\/(?:get|post|put|patch|delete|create|update|list|search|lookup|publish|retrieve|fetch|remove|add)-[a-z0-9-]+(?:\.md)?$/;
+const ENDPOINT_PAGE = /\/(?:get|post|put|patch|delete|create|update|list|search|lookup|publish|retrieve|fetch|remove|add)[-_][a-z0-9_-]+(?:\.md)?$/;
 // Terms that suggest a page about access, rules or limits (a smaller boost).
 const MEDIUM = /getting access|first request|guidelines|polic(?:y|ies)|pricing|developer (?:agreement|terms)|terms of (?:use|service)|credentials|console|dashboard|portal|limits?\b|access level|tiers?\b/;
 // Pages that rarely answer approval questions: tutorials, AI/MCP features, samples, blogs, changelogs, SDK and endpoint references.
