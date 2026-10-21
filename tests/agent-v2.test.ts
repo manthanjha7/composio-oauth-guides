@@ -39,6 +39,7 @@ vi.mock("@/lib/web", async (orig) => {
   };
 });
 
+import { composioLookup } from "@/lib/composio";
 import { anchorOfficial, collectCitations, ensureCriticalLimits, runAgentV2 } from "@/lib/agent/pipeline";
 import { EXTRACT_SYSTEM, GAPFILL_SYSTEM, IDENTIFY_SYSTEM, JUDGE_SYSTEM, MODIFIER_SWEEP_SYSTEM } from "@/lib/agent/prompts";
 import { ResearchStore } from "@/lib/agent/research";
@@ -564,6 +565,18 @@ describe("self-serve inference", () => {
     if (r.outcome !== "ok") throw new Error(r.outcome);
     // Acme's docs say public apps must pass a review, so self-serve can't be inferred for s1.
     expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.path).toBeUndefined();
+  });
+});
+
+describe("identify fallback", () => {
+  it("continues from Composio's toolkit and website when identify never submits", async () => {
+    const base = await (composioLookup as unknown as () => Promise<Record<string, unknown>>)();
+    vi.mocked(composioLookup).mockResolvedValueOnce({ ...base, toolkit: { slug: "acme", header: "Acme" } } as never);
+    const events: AgentEvent[] = [];
+    const c = fakeClient({ identify: () => msg([{ type: "text", text: "Still checking." }]) });
+    const r = await runAgentV2({ query: "Acme", client: c.client, search: null, emit: (e) => events.push(e) });
+    expect(r.outcome).toBe("ok");
+    expect(events.some((e) => e.type === "warning" && /continuing from what Composio knows/.test(e.message))).toBe(true);
   });
 });
 

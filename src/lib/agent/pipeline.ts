@@ -267,7 +267,8 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     const sBudget = { left: 2 };
     const fBudget = { left: 2 };
     const counter = serverSearchCounter();
-    const deadline = Math.min(Date.now() + 25_000 * k, researchDeadline);
+    // With a fetched page in context the model can think for 15+ seconds before submitting; 25 s timed out 4 of 6.
+    const deadline = Math.min(Date.now() + 45_000 * k, researchDeadline);
     const composioSummary = lookup
       ? JSON.stringify({
           managed_oauth: lookup.managed_oauth,
@@ -321,7 +322,14 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
         return { content: `Unknown tool ${name}`, isError: true };
       },
     });
-    workers.push({ name: "identify", stop, ms: Date.now() - t0 });
+    // A slow identify call shouldn't sink the run when Composio already knows the app and its website: continue
+    // from that, with no model-picked entry points (discovery still searches and reads the site's llms.txt).
+    const known = lookup?.app_url && (lookup.chosen ?? lookup.toolkit);
+    if (!identity && known && stop !== "finished") {
+      identity = { name: opts.query.replace(/\s*\(.*\)\s*$/, "").trim(), website: lookup!.app_url!, developer_docs_url: null, oauth: "unclear", entry_points: [] } as IdentityT;
+      emit({ type: "warning", message: `Identifying the provider did not finish (${stop}); continuing from what Composio knows about ${opts.query}.` });
+    }
+    workers.push({ name: "identify", stop: identity && stop !== "finished" ? `${stop} (continued from Composio)` : stop, ms: Date.now() - t0 });
   }
   mark("identify", t0);
   const ident = identity as IdentityT | null;
