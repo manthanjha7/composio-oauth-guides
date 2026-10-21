@@ -47,11 +47,13 @@ export async function createComposioSearch(runId: string): Promise<ComposioSearc
 
   return {
     async search(query) {
-      // A healthy search answers in 4-6 s; a stuck one hangs until the timeout. Give up early and try once more.
+      // A healthy search answers in 4-6 s with results. A struggling one hangs, or answers with nothing; either
+      // way, try once more.
       for (const ms of [9_000, 12_000]) {
         await throttle();
         try {
-          return extractHits(await timed(session.execute(SEARCH, { query }), ms)).slice(0, 8);
+          const hits = extractHits(await timed(session.execute(SEARCH, { query }), ms)).slice(0, 8);
+          if (hits.length || ms === 12_000) return hits;
         } catch (e) {
           if (!/timed out/.test((e as Error).message) || ms === 12_000) throw e;
         }
