@@ -112,3 +112,7 @@ Both previous items confirmed fixed. One parser edge remained ("one hundred-two 
 ### Codex readiness check (commit f5a6dc7)
 
 Ranges and "twenty and one" confirmed fixed. Blocking: coordinated scaled quantities ("one hundred and two hundred" → 10200). Fixed: after hundred/thousand, a value with its own scale of the same or larger size starts a new quantity; smaller ones remain a remainder (1200, 121, 1005, 200000 still parse). 112 tests pass.
+
+### Codex final readiness check (commit 7821ebc)
+
+**Ready for the small six-app paid evaluation; no blocking issues.** 112 tests pass; the mutation suite still shows zero correct claims wrongly downgraded and 44% of mutations escaping the word-level checks. Those escapes are covered by the entailment judge on critical claims and categorical fields, whose live accuracy only the paid evaluation can measure.
