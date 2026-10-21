@@ -1,6 +1,6 @@
 /**
  * Scores the live v2 runs in eval/runs/ against stored v1 guides and the categorisation study (no model calls).
- *   npx tsx scripts/eval-score.mts
+ *   npx tsx scripts/eval-score.mts [suffix]     e.g. "mirror" or "mirror-round2" to score eval/runs/<app>-<suffix>-v2.json
  */
 import { existsSync, readFileSync } from "node:fs";
 import { GuideRecordSchema, type GuideRecord } from "../src/lib/schema";
@@ -67,8 +67,9 @@ function score(r: GuideRecord, app: string) {
   };
 }
 
+const suffix = process.argv[2] ? `-${process.argv[2]}` : "";
 for (const app of ["gmail", "slack", "xero", "intercom", "harvest", "box"]) {
-  const f = `eval/runs/${app}-v2.json`;
+  const f = `eval/runs/${app}${suffix}-v2.json`;
   if (!existsSync(f)) {
     console.log(`\n## ${app}: no v2 run`);
     continue;

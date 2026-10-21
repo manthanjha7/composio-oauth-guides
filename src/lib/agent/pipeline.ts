@@ -42,6 +42,8 @@ export interface RunOptionsV2 {
   /** Whole run; keep below the route's maxDuration (300 s) to leave time to save. */
   totalBudgetMs?: number;
   signal?: AbortSignal;
+  /** Swap the model transport (tests and the Claude Code test mirror). Production leaves this unset. */
+  llm?: Llm;
 }
 
 const Identity = z.object({
@@ -171,9 +173,8 @@ const searchTool: BetaToolUnion = {
 export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   const started = Date.now();
   const emit = opts.emit;
-  const client = opts.client ?? new Anthropic();
   const models = resolveModels(opts.models);
-  const llm = createLlm(client, { signal: opts.signal, onWarning: (m) => emit({ type: "warning", message: m }) });
+  const llm = opts.llm ?? createLlm(opts.client ?? new Anthropic(), { signal: opts.signal, onWarning: (m) => emit({ type: "warning", message: m }) });
   const runDeadline = started + (opts.totalBudgetMs ?? 270_000);
   // Plan backwards: save, then the judge, then the writer (the slowest step) get their time first.
   const writeReserve = Math.min(190_000, Math.max(90_000, Math.round((7_000 / capabilities(models.write).outputTps) * 1000) + 20_000));
