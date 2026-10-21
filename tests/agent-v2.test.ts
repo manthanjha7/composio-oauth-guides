@@ -402,6 +402,29 @@ describe("agent v2: review follow-ups (offline)", () => {
     expect(r.record.guide.summary).toMatch(/approval path unconfirmed/); // s1 had no G2 claim
   });
 
+  it("replaces the summary even when no setup survives", async () => {
+    const c = fakeClient({ writer: (d) => writerGuide({ summary: "No review needed for anyone.", scenarios: [] }, d) });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.summary).not.toMatch(/no review/i);
+  });
+
+  it("checks a wait written in words, even on a confirmed self-serve path", async () => {
+    const c = fakeClient({
+      writer: (d) => {
+        const g = writerGuide({}, d);
+        const s1 = g.scenarios[0] as Record<string, unknown>;
+        s1.path_claim_ids = ["c1"]; // backed by a G2 claim for the test
+        s1.waiting = { estimate: "ten weeks", basis: "guess" };
+        return g;
+      },
+      judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "s1.wait" ? "unsupported" : "supported" })),
+    });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.waiting.estimate).toBe("Unknown");
+  });
+
   it("marks difficulty unknown when a setup's path can't be confirmed", async () => {
     const c = fakeClient();
     const r = await run(c);

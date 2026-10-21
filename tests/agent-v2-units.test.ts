@@ -121,5 +121,12 @@ describe("number words", () => {
     expect([...numberUnitPairs("Review takes ten weeks.")]).toContain("10 week");
     expect(supportIssue("Review takes ten weeks.", "Review takes 10 days.")).toMatch(/week/);
   });
+  it("parses compound number words without false alarms", async () => {
+    const { supportIssue, wordsToDigits } = await import("@/lib/evidence");
+    expect(wordsToDigits("twenty-one days, two hundred users, one of them")).toBe("21 days, 200 users, one of them");
+    expect(supportIssue("Review takes twenty-one days.", "Review takes 21 days.")).toBeNull();
+    expect(supportIssue("Review takes thirteen weeks.", "Review takes thirteen days.")).toMatch(/13 weeks/);
+    expect(supportIssue("Each customer installs one app.", "Each customer installs the app.")).toBeNull();
+  });
 });
 

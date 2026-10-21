@@ -143,13 +143,40 @@ function safeHost(url: string): string {
   }
 }
 
-const NUM_WORDS: Record<string, string> = {
-  two: "2", three: "3", four: "4", five: "5", six: "6", seven: "7", eight: "8", nine: "9", ten: "10",
-  eleven: "11", twelve: "12", fifteen: "15", twenty: "20", thirty: "30", fifty: "50", hundred: "100",
+const SMALL: Record<string, number> = {
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
 };
+const TENS: Record<string, number> = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const NUMBER_WORD = `(?:${[...Object.keys(SMALL), ...Object.keys(TENS), "hundred", "thousand"].join("|")})`;
+const NUMBER_RUN = new RegExp(`\\b${NUMBER_WORD}(?:(?:\\s+|-|\\s+and\\s+)${NUMBER_WORD})*\\b`, "gi");
+
+/**
+ * Spelled-out numbers to digits, compounds included: "twenty-one" -> 21, "two hundred" -> 200,
+ * "thirteen" -> 13. A lone "one" is left alone ("one of the apps" is not a quantity worth checking).
+ */
+export function wordsToDigits(text: string): string {
+  return text.replace(NUMBER_RUN, (run) => {
+    const parts = run.toLowerCase().split(/\s+and\s+|\s+|-/).filter(Boolean);
+    if (parts.length === 1 && parts[0] === "one") return run;
+    let total = 0;
+    let current = 0;
+    for (const w of parts) {
+      if (w in SMALL) current += SMALL[w];
+      else if (w in TENS) current += TENS[w];
+      else if (w === "hundred") current = (current || 1) * 100;
+      else if (w === "thousand") {
+        total += (current || 1) * 1000;
+        current = 0;
+      }
+    }
+    return String(total + current);
+  });
+}
+
 function numbersIn(text: string): Set<string> {
   // Not quantities: protocol/API versions ("OAuth 2.0", "v3") and HTTP status codes ("401 error", "HTTP 403").
-  const t = text
+  const t = wordsToDigits(text)
     .toLowerCase()
     .replace(/\b(?:oauth|http|https|tls|api|v)\s*\d+(?:\.\d+)*\b/g, " ")
     .replace(/\b(?:status|error|code|http)\s*[1-5]\d\d\b/g, " ")
@@ -157,7 +184,6 @@ function numbersIn(text: string): Set<string> {
     .replace(/\b(?:returns?|returned|responds? with|redirects? with|→)\s*(?:an?\s*)?(?:http\s*)?[1-5]\d\d\b/g, " ");
   const out = new Set<string>();
   for (const m of t.matchAll(/(?<![\w.$])\$?(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?![\w])/g)) out.add(m[1].replace(/,/g, ""));
-  for (const [w, d] of Object.entries(NUM_WORDS)) if (new RegExp(`\\b${w}\\b`).test(t)) out.add(d);
   return out;
 }
 // Units that change a claim's meaning when swapped ("100 per minute" vs "100 per day").
@@ -183,12 +209,11 @@ const unitOf = (w: string) => UNIT.find(([re]) => re.test(w))?.[1] ?? null;
 /** Normalised words, with "non-sensitive" kept apart from "sensitive" and contractions expanded. */
 /** Normalised words; number words become digits ("ten weeks" -> "10 weeks") so unit checks see them. */
 function words(text: string): string[] {
-  return normalizeForMatch(text)
+  return normalizeForMatch(wordsToDigits(text))
     .replace(/\bnon-(\w)/g, "non$1")
     .replace(/n't\b/g, " not")
     .split(/[^a-z0-9$,]+/)
-    .filter(Boolean)
-    .map((w) => NUM_WORDS[w] ?? w);
+    .filter(Boolean);
 }
 
 /** Every quantity in a text, digits or number words ("ten" -> "10"); versions and HTTP codes excluded. */

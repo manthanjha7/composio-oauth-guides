@@ -67,6 +67,9 @@ const EXTRACT_MAX_TOKENS = 3_000;
 const JUDGE_RESERVE = 20_000;
 const SAVE_RESERVE = 5_000;
 const TIMELINE_QUESTIONS = new Set(["G6", "R1"]);
+/** Explicit "no wait" values; anything else that isn't Unknown is a substantive wait that must be sourced. */
+const NO_WAIT = /^(none|no wait|no review|n\/a|0)\b/i;
+const isSubstantiveWait = (est: string) => !/^unknown$/i.test(est.trim()) && !NO_WAIT.test(est.trim());
 
 type ToolResult = { content: string; isError?: boolean; stop?: boolean };
 
@@ -862,7 +865,7 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
       ].filter(Boolean);
       items.push({ id: `${s.id}.path`, statement: `${parts.join("; ")}.`, quotes: gather(s.path_claim_ids) });
     }
-    if (/\d/.test(s.waiting.estimate)) {
+    if (isSubstantiveWait(s.waiting.estimate)) {
       const ids = s.claim_ids.filter((id) => TIMELINE_QUESTIONS.has(claimQuestion.get(id) ?? ""));
       items.push({ id: `${s.id}.wait`, statement: `${who}: the wait on the provider is ${s.waiting.estimate}.`, quotes: gather(ids) });
     }
@@ -912,10 +915,11 @@ export function applyInvariants(
     // Waits: a number needs an accepted timeline claim (G6/R1) and a supported field; "None" needs an accepted
     // no-review path. Otherwise the wait is Unknown.
     const est = out.waiting.estimate.trim();
-    if (/\d/.test(est)) {
+    if (isSubstantiveWait(est)) {
+      // Any real wait ("ten weeks", "a few days", "3-5 business days") needs a sourced timeline and a supported field.
       const ok = out.claim_ids.some((id) => fromQuestion(id, ["G6", "R1"])) && c.fieldOk(`${s.id}.wait`);
       if (!ok) out.waiting = { estimate: "Unknown", basis: `No verified source backs this timeline (the agent's estimate was "${est}").`, max_days: null };
-    } else if (!/^unknown$/i.test(est)) {
+    } else if (NO_WAIT.test(est)) {
       const noReview = pathOk && (out.path === "self_serve" || out.path === "automatic");
       if (!noReview) out.waiting = { estimate: "Unknown", basis: `No verified source confirms "${est}".`, max_days: null };
     }
@@ -954,7 +958,7 @@ export function applyInvariants(
   if (!verdict) verdict = easiest && hardest && easiest.id !== hardest.id ? `Easiest: ${describe(easiest)}. Hardest: ${describe(hardest)}.` : easiest ? `${describe(easiest)}.` : undefined;
   const summary = scenarios.length
     ? `${scenarios.map(describe).join("; ")}.${known.length < scenarios.length ? " Where the path is unconfirmed, the agent did not find it in the provider's docs." : ""}`
-    : g.summary;
+    : "The agent could not confirm any setup for this app. The verified facts and open questions are below.";
   const open = openQuestions(store);
   const open_questions = [...g.open_questions, ...open.filter((o) => !g.open_questions.some((x) => x.includes(o.slice(11, 40))))];
   if (!c.judged && g.scenarios.length) warnings.push("Setup details (path, waits, shortcuts) could not be double-checked, so they are not shown.");

@@ -96,3 +96,7 @@ Known limits, not fixed: a question with several parts counts as answered when o
 ### Codex second verification pass (commit 301f471)
 
 Verdict "not ready" because free-text conclusions escaped verification. Fixed in the next commit: the one-line verdict is now a judged item and is rebuilt from the surviving setups unless supported; the summary is always built from the surviving setups (no free text); a setup whose path can't be confirmed gets difficulty "unknown"; number words ("ten weeks") are checked with their units; Composio pages no longer answer the timeline question; cancelled or late fetches start no fallback work and record nothing; an already-aborted signal stops DNS at once. 90 tests pass.
+
+### Codex final pass (commit b34dcf5)
+
+Resolved: difficulty after path removal, G6 vs Composio, fallback after cancellation, aborted DNS. Remaining, fixed in the next commit: a guide with zero setups kept an unchecked summary (now always replaced); waits in words ("ten weeks") skipped the wait check (every substantive wait is now judged and needs a sourced timeline; only explicit "None" can rely on a confirmed no-review path); compound number words ("twenty-one", "thirteen") were misparsed (a proper parser, with a lone "one" left alone; still zero correct claims wrongly downgraded). 93 tests pass.
