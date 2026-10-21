@@ -509,7 +509,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   // ---- 6b. Read in full the official pages the gap workers found. They record only a few findings each; when
   // discovery came back thin (search down, site blocking fetches), these pages are often the best evidence.
   const late = [...store.pages.values()]
-    .filter((p) => store.kindOf(p.url) === "provider_docs" && !extracted.has(canonicalUrl(p.url)) && !/\/llms\.txt$/.test(p.url) && p.text.length > 800)
+    .filter((p) => store.kindOf(p.url) === "provider_docs" && !extracted.has(canonicalUrl(p.url)) && !/\/llms\.txt$/.test(p.url) && !isHomePage(p.url) && p.text.length > 800)
     .slice(0, MAX_LATE_PAGES);
   if (late.length && researchDeadline - Date.now() > 25_000) {
     t0 = Date.now();
@@ -772,6 +772,15 @@ export async function anchorOfficial(store: ResearchStore, ident: IdentityT, loo
   const noVoucher = !lookup?.app_url && !siteOk;
   if (docs && (sameOwner(docs) || linksTo(catalog, docs) || (siteOk && linksTo(site, docs)) || (noVoucher && nameInDomain(docs) && mentions(docs)))) store.addOfficial(docs.url);
   store.expandOfficialFromLinks();
+}
+
+/** A site's front page ("slack.com/", "slack.com/intl/en-in/"): marketing, not documentation. */
+function isHomePage(url: string): boolean {
+  try {
+    return /^\/(?:intl\/[a-z-]+\/*)?$/i.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
 }
 
 function dedupePages(pages: Page[]): Page[] {
