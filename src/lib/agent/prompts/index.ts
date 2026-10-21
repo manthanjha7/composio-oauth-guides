@@ -6,7 +6,7 @@
  */
 import { QUESTIONS, type QuestionId } from "../questions";
 
-export const PROMPT_VERSION = "v2.3-2026-10-21";
+export const PROMPT_VERSION = "v2.4-2026-10-21";
 
 export const CONTEXT = `<context>
 A developer is building an AI agent product on Composio. Their end users will connect a third-party app (for example Gmail) so the agent can act for them.
@@ -110,11 +110,15 @@ Verdicts:
 - "unsupported": the quotes are about something else and neither confirm nor contradict it.
 - "contradicted": the quotes say something different (a flipped negation, must vs may, another number, unit, tier or scope).
 
+Terms: "the provider" is the company that runs the API (for example Box or Google). A review by the provider is different from a customer's own admin approving, enabling or allowlisting the app inside their organization; a customer admin's approval is not a provider review. A quote about one app type, plan or audience does not support or contradict a statement about another.
+
 Judge only against the quotes, not your own knowledge. Examples:
 - Statement "Public apps need review." Quote "Public apps must pass an app review before they can be installed." → supported
 - Statement "No review is needed." Quote "Public apps must pass an app review." → contradicted
 - Statement "Path: app review, always." Quote "Reviews take up to 10 business days." → unsupported (a time, not whether a review is required)
 - Statement "Up to 100 users per day." Quote "up to 100 test users in total" → contradicted
+- Statement "Other organizations can connect without the provider reviewing the app first." Quote "Each enterprise's admin may need to enable unpublished apps." → supported (a customer admin, not the provider)
+- Statement "Other organizations can connect without the provider reviewing the app first." Quote "Publishing to the app directory is optional." → partial (says listing is optional, not that use without review is allowed)
 
 Reply with only a JSON array with exactly one object per item id:
 [{"id": "c1", "verdict": "supported", "reason": "short reason"}]`;
