@@ -20,7 +20,7 @@ Design and decisions: [SPEC.md](SPEC.md). v1 (`src/lib/agent/run.ts`) is the def
 |---|---|---|
 | `AGENT_VERSION` | `v1` | `v2` switches the live route and `scripts/generate.mts` |
 | `AGENT_MODEL_ALL` | unset | Every stage on one model, e.g. `claude-opus-5-5` |
-| `AGENT_MODEL_IDENTIFY` / `_RESEARCH` / `_WRITE` / `_CRITIC` | haiku / haiku / sonnet / haiku (5.5) | Per stage |
+| `AGENT_MODEL_IDENTIFY` / `_RESEARCH` / `_WRITE` / `_CRITIC` | haiku / haiku / sonnet / sonnet (5.5) | Per stage |
 | `AGENT_EFFORT_<STAGE>` | medium (critic: low) | Effort per stage, always sent explicitly |
 
 One-off run on another model (uses the API): `npx tsx --env-file=.env.local scripts/generate.mts --v2 --model claude-opus-5-5 "Xero"`.

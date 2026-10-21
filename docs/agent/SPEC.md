@@ -108,7 +108,7 @@ Order matters (Codex review): the judge runs **before** any conclusion is drawn,
 | identify | `AGENT_MODEL_IDENTIFY` | claude-haiku-5-5 |
 | extract + gap fill | `AGENT_MODEL_RESEARCH` | claude-haiku-5-5 |
 | write | `AGENT_MODEL_WRITE` | claude-sonnet-5-5 |
-| entailment | `AGENT_MODEL_CRITIC` | claude-haiku-5-5 |
+| entailment | `AGENT_MODEL_CRITIC` | claude-sonnet-5-5 |
 | all | `AGENT_MODEL_ALL` | unset (e.g. claude-opus-5-5 for one run) |
 
 Per-run override: `runAgent({ models })`, `scripts/generate.mts --model`. A capabilities table by model family (refusal fallback, web-search tool version, prices incl. cache reads and Haiku's long-prompt rate, typical output speed for budget planning) has conservative defaults for unknown ids; `us.anthropic.` prefixes and `[1m]` suffixes are normalised. Effort is set explicitly per stage. Model ids and prompt version are stored with the guide.

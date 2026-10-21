@@ -13,7 +13,9 @@ const DEFAULTS: StageModels = {
   identify: "claude-haiku-5-5",
   research: "claude-haiku-5-5",
   write: "claude-sonnet-5-5",
-  critic: "claude-haiku-5-5",
+  // The judge decides what the developer sees (paths, factors). Haiku swung 17 → 12 of 18 between identical
+  // rounds; Sonnet held 18 and 17 (docs/agent/EVAL.md). About $0.03 a guide.
+  critic: "claude-sonnet-5-5",
 };
 
 // v1 variable names keep working: AGENT_RESEARCH_MODEL covered research, AGENT_MODEL covered writing.
