@@ -78,3 +78,7 @@ v1 (data/guides/box.json): 25 claims (25 sourced) · quotes 25/25 · must-have 3
 6 apps on the real API with the Sonnet judge: Box and Xero passed; Gmail, Slack, Gusto and X did not. $0.91 total ($0.13–0.19 per guide).
 
 Cause: the API runs collected about a third of the evidence the mirror runs did (Slack: 85 facts vs 207–247), and four of Slack's key pages returned 0 facts. A direct check showed Haiku 5.5 spending the whole 3,000-token output limit on thinking and returning no text. Current models think by default and thinking counts toward the output limit; the Claude Code mirror doesn't apply that limit, so mirror rounds never hit it. Raised extraction to 16,000 (same page: 44 cited facts, 28 s, about $0.005), and the judge, factor sweep and tool loops likewise. The mirror results stand for everything after extraction; the API rounds need re-running.
+
+# API confirmation, round 2 (21 October 2026)
+
+Extraction fix confirmed: no page cut off at the output limit (Gmail's consent-screen help page: 42 facts). But 4 of 6 runs stopped at identify (25 s cap) and the other 2 ran without Composio Search: Composio Search was degraded during the run (sessions 20–23 s to start, searches timing out with 0 results, checked directly afterwards). Without code-side search, discovery falls back to entry points and llms.txt, and Gusto read API endpoint pages. $0.32 spent. Fixes: identify cap 45 s, and identify falls back to Composio's toolkit and website instead of failing the run. Re-run when Composio Search is healthy.
