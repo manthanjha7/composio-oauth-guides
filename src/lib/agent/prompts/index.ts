@@ -6,7 +6,7 @@
  */
 import { QUESTIONS, type QuestionId } from "../questions";
 
-export const PROMPT_VERSION = "v2.4-2026-10-21";
+export const PROMPT_VERSION = "v2.5-2026-10-21";
 
 export const CONTEXT = `<context>
 A developer is building an AI agent product on Composio. Their end users will connect a third-party app (for example Gmail) so the agent can act for them.
@@ -89,6 +89,7 @@ Evidence rules (enforced by code after you answer):
 - Only cite an evidence item that actually supports the claim's text. Keep its numbers, units and conditions. Do not add facts the evidence does not state.
 - Code fills each claim's source, quote and label from the evidence. A claim with evidence_id null is shown as unconfirmed; use that freely when something matters but was not found.
 - Other fields reference claims by id in claim_ids. At most 40 claims.
+- Choosing what to include: first cover every distinct fact in the dossier's critical evidence (G2, G3, G5, G8: gates, what reviews check, limits before approval such as user caps and token expiry, customer-admin requirements), merging duplicates; then timelines, pricing and setup details. Drop repetition, never a distinct limit or requirement.
 
 Content rules:
 - 1 to 4 scenarios, only ones the evidence shows genuinely change the path (internal vs public; basic vs sensitive scopes; one workspace vs a marketplace). One scenario is fine when that is all the evidence supports. Labels at most 50 characters. default_scenario: the most common production setup for an AI agent, not the prototype.

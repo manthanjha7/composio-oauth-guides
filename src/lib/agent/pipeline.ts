@@ -804,9 +804,13 @@ function buildDossier(query: string, ident: IdentityT, lookup: ComposioLookup | 
       .map((q) => `- ${q.id}: ${q.status === "found" ? `found (${q.evidence.join(", ")})` : `NOT FOUND${q.tried.length ? `; tried ${q.tried.slice(0, 4).join(", ")}` : ""}`}`)
       .join("\n")}`,
   );
-  const verified = store.evidence.filter((e) => e.status === "verified");
+  // Critical questions' evidence first, so the writer covers gates, review checks, limits and admin rules before details.
+  const ORDER = ["G2", "G3", "G5", "G8", "G4", "G6", "G11", "G7", "G9", "G1", "G10", "C1", "R1"];
+  const verified = store.evidence
+    .filter((e) => e.status === "verified")
+    .sort((a, b) => ORDER.indexOf(a.question) - ORDER.indexOf(b.question));
   parts.push(
-    `## Verified evidence (cite these ids)\n${verified
+    `## Verified evidence, critical questions first (cite these ids)\n${verified
       .map((e) => {
         const extra = e.extra_quotes?.length ? `\n  also: ${e.extra_quotes.map((q) => `"${q.slice(0, 200)}"`).join(" ")}` : "";
         return `${e.id} [${e.kind}] (${e.question}) ${e.url}\n  quote: "${e.quote.slice(0, 400)}"${extra}\n  answer: ${e.answer.slice(0, 300)}`;
