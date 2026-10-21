@@ -39,7 +39,7 @@ vi.mock("@/lib/web", async (orig) => {
   };
 });
 
-import { anchorOfficial, collectCitations, runAgentV2 } from "@/lib/agent/pipeline";
+import { anchorOfficial, collectCitations, ensureCriticalLimits, runAgentV2 } from "@/lib/agent/pipeline";
 import { EXTRACT_SYSTEM, GAPFILL_SYSTEM, IDENTIFY_SYSTEM, JUDGE_SYSTEM } from "@/lib/agent/prompts";
 import { ResearchStore } from "@/lib/agent/research";
 import type { AgentEvent } from "@/lib/agent/run";
@@ -552,6 +552,27 @@ describe("self-serve inference", () => {
     if (r.outcome !== "ok") throw new Error(r.outcome);
     // Acme's docs say public apps must pass a review, so self-serve can't be inferred for s1.
     expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.path).toBeUndefined();
+  });
+});
+
+describe("ensureCriticalLimits", () => {
+  it("adds a numeric limit from critical evidence that no claim covers, and nothing already covered", () => {
+    const store = new ResearchStore(null);
+    store.addOfficial("https://g.example");
+    const page = { url: "https://g.example/t", title: null, text: "Testing apps allow up to 100 test users. Refresh tokens expire after 7 days in testing.", links: [], fetched_at: "", hash: "g", via: "direct" as const };
+    store.pages.set(page.url, page);
+    store.addEvidence({ question: "G5", url: page.url, quote: "Testing apps allow up to 100 test users.", answer: "Up to 100 test users in testing.", via: "extract" });
+    store.addEvidence({ question: "G5", url: page.url, quote: "Refresh tokens expire after 7 days in testing.", answer: "Refresh tokens expire after 7 days in testing mode.", via: "extract" });
+    const g = {
+      claims: [{ id: "c1", text: "Up to 100 test users in testing.", label: "provider_docs", source_url: page.url, quote: "Testing apps allow up to 100 test users.", probe_id: null, note: null }],
+      traps: [],
+    } as never;
+    const warnings: string[] = [];
+    const out = ensureCriticalLimits(g, store, () => true, warnings);
+    expect(out.claims).toHaveLength(2);
+    expect(out.claims[1].text).toMatch(/7 days/);
+    expect(out.traps[0].claim_ids).toEqual([out.claims[1].id]);
+    expect(warnings[0]).toMatch(/added under "Watch out"/);
   });
 });
 

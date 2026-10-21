@@ -645,6 +645,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     };
     const fieldOk = (key: string) => verdicts.get(key) === "supported";
     guide = applyInvariants(g, store, warnings, { claimQuestion, accepted, fieldOk, judged: !!judge });
+    guide = ensureCriticalLimits(guide, store, accepted, warnings);
   }
   mark("verify", t0);
 
@@ -945,7 +946,9 @@ export function applyInvariants(
   const fromQuestion = (id: string, qs: string[]) => c.accepted(id) && qs.includes(c.claimQuestion.get(id) ?? "");
   // Self-serve can't be quoted when docs simply describe no review. It may be inferred, and is labelled as such,
   // only when setup steps were found and no verified evidence anywhere mentions a review, verification or approval.
-  const REVIEW_WORDS = /\b(review|verif|approv|certif|audit|assessment|partner program|publish)/i;
+  // Phrases about the APP being reviewed, not about a customer's admin approving it or a user authorising access.
+  const REVIEW_WORDS =
+    /\b(?:app|application|integration|listing)s?\s+(?:review|approval|verification|certification)|review (?:process|team|period)|submit(?:ted)?(?:\s+(?:it|your app|the app|your application))?\s+(?:for|to)\s+(?:review|approval|verification)|security (?:review|assessment)|partner program|must be (?:approved|reviewed|verified)\b/i;
   // Only evidence about the path itself (G2) can block the inference; a review of an optional directory listing
   // (usually G3/G11 evidence) says nothing about whether customers can connect without one.
   const anyReviewEvidence = store.verified("G2").some((e) => e.kind !== "reported" && REVIEW_WORDS.test(`${e.quote} ${e.answer}`));
@@ -1024,3 +1027,30 @@ export function applyInvariants(
   if (!c.judged && g.scenarios.length) warnings.push("Setup details (path, waits, shortcuts) could not be double-checked, so they are not shown.");
   return { ...g, scenarios, default_scenario, verdict, summary, open_questions };
 }
+
+/**
+ * Coverage guarantee: a limit or requirement with a number (a user cap, a token expiry, a connection threshold)
+ * found in verified evidence for a critical question must not vanish because the writer chose other facts.
+ * Any such fact no accepted claim covers is added from its evidence and shown under "Watch out".
+ */
+export function ensureCriticalLimits(g: Guide, store: ResearchStore, accepted: (id: string) => boolean, warnings: string[]): Guide {
+  const covered = numberUnitPairs(g.claims.filter((c) => accepted(c.id)).map((c) => `${c.text} ${c.quote ?? ""}`).join(" "));
+  const added: Guide["claims"] = [];
+  const traps: Guide["traps"] = [];
+  const seen = new Set<string>();
+  for (const e of store.verified()) {
+    if (!["G2", "G3", "G5", "G8"].includes(e.question) || e.kind === "reported") continue;
+    const pairs = [...numberUnitPairs(e.quote)].filter((p) => !covered.has(p) && !seen.has(p));
+    if (!pairs.length) continue;
+    pairs.forEach((p) => seen.add(p));
+    const id = `c${g.claims.length + added.length + 1}x`;
+    const text = e.answer.length > 240 ? `${e.answer.slice(0, 237)}...` : e.answer;
+    added.push({ id, text, label: e.kind, source_url: e.url, quote: e.quote, probe_id: null, note: null });
+    traps.push({ title: text.split(/\s+/).slice(0, 9).join(" ").replace(/[.,;:]$/, ""), detail: text, claim_ids: [id] });
+    if (added.length >= 5) break;
+  }
+  if (!added.length) return g;
+  warnings.push(`${added.length} limit${added.length > 1 ? "s" : ""} from the sources ${added.length > 1 ? "were" : "was"} missing from the written guide and ${added.length > 1 ? "were" : "was"} added under "Watch out".`);
+  return { ...g, claims: [...g.claims, ...added], traps: [...traps, ...g.traps] };
+}
+
