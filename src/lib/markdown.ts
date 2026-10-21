@@ -1,5 +1,5 @@
 import { LABEL_INFO } from "./evidence";
-import { appliesTo, CHECK_INFO, PATH_INFO } from "./guide-view";
+import { appliesTo, CHECK_INFO, PATH_INFO, pathLabel } from "./guide-view";
 import type { ClaimT, GuideRecord } from "./schema";
 
 const OWNER = { agent: "🤖 Agent can do", you: "👤 You", waiting: "⏳ Waiting on provider" } as const;
@@ -49,7 +49,7 @@ export function guideToMarkdown(r: GuideRecord, baseUrl: string, scenarioId?: st
 
   if (selected) {
     L.push("", `## Your setup: ${selected.label}`);
-    if (selected.path) L.push(`- **${PATH_INFO[selected.path].name}:** ${PATH_INFO[selected.path].meaning}.`);
+    if (selected.path) L.push(`- **${pathLabel(selected)}:** ${PATH_INFO[selected.path].meaning}.`);
     if (selected.review_checks?.length) L.push(`- **The review checks:** ${selected.review_checks.map((c) => CHECK_INFO[c]).join(", ")}.`);
     if (selected.shortcut) L.push(`- **Shortcut:** ${t(selected.shortcut)}`);
     (selected.extras ?? []).forEach((x) => L.push(`- ${t(x)}`));

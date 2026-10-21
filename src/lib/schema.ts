@@ -80,6 +80,7 @@ const Scenario = z.object({
   gate_sequence: z.array(z.string()).optional().describe("Mandatory steps before outside customers can connect, in order, each at most 8 words"),
   modifiers: z.array(Modifier).optional(),
   path_claim_ids: z.array(z.string()).optional().describe("Claims (from G2 evidence) that back the path"),
+  path_basis: z.enum(["stated", "inferred"]).optional().describe("Set by code: stated in the docs, or inferred (self-serve with no review found anywhere)"),
   shortcut_claim_ids: z.array(z.string()).optional(),
 });
 

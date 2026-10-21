@@ -9,6 +9,10 @@ export const PATH_INFO: Record<NonNullable<Scenario["path"]>, { name: string; me
   partner: { name: "Partner acceptance", meaning: "The provider must accept your company first, and can say no" },
 };
 
+/** Label for a path, with the inference made visible. */
+export const pathLabel = (s: { path?: keyof typeof PATH_INFO; path_basis?: "stated" | "inferred" }) =>
+  s.path ? (s.path_basis === "inferred" ? `${PATH_INFO[s.path].name} (no review step found in the docs)` : PATH_INFO[s.path].name) : null;
+
 export const CHECK_INFO: Record<NonNullable<Scenario["review_checks"]>[number], string> = {
   identity: "Who you are",
   use_case: "Why you need the data",

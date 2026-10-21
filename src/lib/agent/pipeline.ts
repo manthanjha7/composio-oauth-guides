@@ -9,7 +9,7 @@ import type {
 import { z } from "zod";
 import { composioLookup, type ComposioLookup } from "../composio";
 import { baseDomain, canonicalUrl, enforceEvidence, numbersInText, numberUnitPairs, type EvidenceContext } from "../evidence";
-import { PATH_INFO, CHECK_INFO } from "../guide-view";
+import { CHECK_INFO, pathLabel } from "../guide-view";
 import { type GeneratedGuide, type Guide, type GuideRecord, type WriterGuide, WriterGuideSchema } from "../schema";
 import { createComposioSearch, type ComposioSearch } from "../search";
 import { slugify } from "../slug";
@@ -861,9 +861,9 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
   // One atomic statement per part, so an unproven detail drops only itself, never the whole path.
   const PATH_STATEMENT = {
     automatic: "nothing has to be registered: the app's client registers itself automatically.",
-    self_serve: "other organizations can connect without the provider reviewing the app first.",
-    app_review: "the provider reviews the app before customers outside the developer's company can connect.",
-    partner: "the provider must accept the developer's company (for example as a partner) before customers can connect.",
+    self_serve: "no review by the provider is needed before the app can be used in this setup.",
+    app_review: "the provider reviews, verifies or approves the app before it can be used in this setup.",
+    partner: "the provider must accept the developer's company (for example as a partner) before the app can be used in this setup.",
   } as const;
   const TRIGGER_STATEMENT = { always: "the review is always required", sensitive_scopes: "the review is required only for sensitive scopes", scale: "the review is required only above a number of users, installs or calls", none: "" } as const;
   for (const s of g.scenarios) {
@@ -910,9 +910,19 @@ export function applyInvariants(
   c: { claimQuestion: Map<string, string | undefined>; accepted: (id: string) => boolean; fieldOk: (key: string) => boolean; judged: boolean },
 ): Guide {
   const fromQuestion = (id: string, qs: string[]) => c.accepted(id) && qs.includes(c.claimQuestion.get(id) ?? "");
+  // Self-serve can't be quoted when docs simply describe no review. It may be inferred, and is labelled as such,
+  // only when setup steps were found and no verified evidence anywhere mentions a review, verification or approval.
+  const REVIEW_WORDS = /\b(review|verif|approv|certif|audit|assessment|partner program|publish)/i;
+  const anyReviewEvidence = store.verified().some((e) => e.kind !== "reported" && REVIEW_WORDS.test(`${e.quote} ${e.answer}`));
+  const canInferSelfServe = !anyReviewEvidence && store.status("G10") === "found";
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };
-    const pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
+    let pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
+    out.path_basis = pathOk ? "stated" : undefined;
+    if (!pathOk && out.path === "self_serve" && canInferSelfServe) {
+      pathOk = true;
+      out.path_basis = "inferred";
+    }
     if (!pathOk) {
       if (out.path) warnings.push(`"${s.label}": the path ("${out.path}") is not backed by a verified source, so it is shown as unconfirmed.`);
       delete out.path;
@@ -962,7 +972,7 @@ export function applyInvariants(
     verdict = undefined;
   }
   const describe = (s: (typeof scenarios)[number]) => {
-    const how = s.path ? PATH_INFO[s.path].name.toLowerCase() : "approval path unconfirmed";
+    const how = s.path ? pathLabel(s)!.toLowerCase() : "approval path unconfirmed";
     const wait = /^unknown$/i.test(s.waiting.estimate) ? "" : `, wait ${s.waiting.estimate.toLowerCase()}`;
     return `${s.label} (${how}${wait})`;
   };

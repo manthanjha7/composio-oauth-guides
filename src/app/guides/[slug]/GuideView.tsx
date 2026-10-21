@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, DifficultyBadge, ManagedBadge, ReviewBadge } from "@/components/badges";
 import { LABEL_INFO } from "@/lib/evidence";
-import { appliesTo, CHECK_INFO, defaultScenario, PATH_INFO, verdictOf } from "@/lib/guide-view";
+import { appliesTo, CHECK_INFO, defaultScenario, PATH_INFO, pathLabel, verdictOf } from "@/lib/guide-view";
 import type { ClaimT, GuideRecord } from "@/lib/schema";
 import { plain, Sources } from "./claims";
 
@@ -208,7 +208,7 @@ export function GuideView({ record, initialScenario, libraryTwin }: { record: Gu
 
               {scenario.path && (
                 <p className="text-sm">
-                  <span className="font-medium text-ink">{PATH_INFO[scenario.path].name}:</span>{" "}
+                  <span className="font-medium text-ink">{pathLabel(scenario)}:</span>{" "}
                   <span className="text-muted">{PATH_INFO[scenario.path].meaning}.</span>
                 </p>
               )}

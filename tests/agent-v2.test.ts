@@ -538,3 +538,20 @@ describe("anchorOfficial", () => {
   });
 });
 
+describe("self-serve inference", () => {
+  const run = (c: ReturnType<typeof fakeClient>) => runAgentV2({ query: "Acme", client: c.client, search: null, emit: () => {} });
+  it("is not inferred when any verified evidence mentions a review", async () => {
+    const c = fakeClient({
+      writer: (d) => {
+        const g = writerGuide({}, d);
+        (g.scenarios[0] as Record<string, unknown>).path_claim_ids = [];
+        return g;
+      },
+    });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    // Acme's docs say public apps must pass a review, so self-serve can't be inferred for s1.
+    expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.path).toBeUndefined();
+  });
+});
+
