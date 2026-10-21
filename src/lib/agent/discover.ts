@@ -15,6 +15,9 @@ const FORUM = /(stackoverflow|reddit|medium|dev\.to|community|forum|discuss|gith
 const KEYWORDS = [...new Set(QUESTIONS.filter((q) => q.id !== "R1").flatMap((q) => q.keywords))];
 // Terms that, in a page's own address, mark the pages a guide needs.
 const STRONG_PATH = /oauth|authori[sz]ation|authentication|app[-_]?review|approval|verif|publish|distribut|marketplace|app[-_]?(store|directory|gallery|center)|partner|scopes?\b|rate[-_]?limit|security|getting[-_]?started|consent|production|go[-_]?live|quota/;
+const ENDPOINT_PAGE = /\/(?:get|post|put|patch|delete|create|update|list|search|lookup|publish|retrieve|fetch|remove|add)-[a-z0-9-]+(?:\.md)?$/;
+// Terms that suggest a page about access, rules or limits (a smaller boost).
+const MEDIUM = /getting access|first request|guidelines|polic(?:y|ies)|pricing|developer (?:agreement|terms)|terms of (?:use|service)|credentials|console|dashboard|portal|limits?\b|access level|tiers?\b/;
 // Pages that rarely answer approval questions: tutorials, AI/MCP features, samples, blogs, changelogs, SDK and endpoint references.
 const OFF_TOPIC_PATH = /tutorial|\/mcp|[-/]ai[-/]|sample|example|\/blog|changelog|release[-_]?notes|\/sdks?\b|api[-_]?reference|\/reference\/|\/embed|webhook|cookbook/;
 
@@ -34,7 +37,10 @@ export function scoreText(url: string, label: string): number {
   let s = strongInPath * 4;
   s += Math.min(4, KEYWORDS.filter((k) => text.includes(k)).length);
   if (STRONG_PATH.test(label.toLowerCase())) s += 2;
+  s += Math.min(3, (text.match(new RegExp(MEDIUM.source, "g")) ?? []).length);
   if (OFF_TOPIC_PATH.test(path) && strongInPath === 0) s -= 6;
+  // API endpoint pages ("get-marketplace-handle-availability", "publish-article") describe one call, not the rules.
+  if (ENDPOINT_PAGE.test(path)) s -= 8;
   return s;
 }
 
@@ -93,9 +99,18 @@ export async function discover(opts: {
   const llms = origins.map(async (o) => {
     const page = await store.fetch(`${o}/llms.txt`, opts.deadlineAt);
     if (!page) return;
-    for (const l of parseLlmsTxt(page.text, o)) {
+    const links = parseLlmsTxt(page.text, o);
+    // Large docs sites split the index: follow up to two nested llms.txt files on official hosts, most relevant first.
+    const nested = links
+      .filter((l) => /llms\.txt$/.test(l.url) && officialish(l.url) && l.url !== `${o}/llms.txt`)
+      .sort((a, b) => scoreText(b.url, b.label) + (/\bapi\b/i.test(b.label) ? 2 : 0) - (scoreText(a.url, a.label) + (/\bapi\b/i.test(a.label) ? 2 : 0)))
+      .slice(0, 2);
+    const more = await Promise.all(nested.map((n) => store.fetch(n.url, opts.deadlineAt)));
+    more.forEach((p, i) => p && links.push(...parseLlmsTxt(p.text, nested[i].url)));
+    for (const l of links) {
+      if (/llms\.txt$/.test(l.url)) continue;
       const s = scoreText(l.url, l.label);
-      if (s >= 2) add({ url: l.url, label: l.label, score: s + (officialish(l.url) ? 2 : 0), from: "llms" });
+      if (s >= 1) add({ url: l.url, label: l.label, score: s + (officialish(l.url) ? 4 : -5), from: "llms" });
     }
   });
 
@@ -113,7 +128,8 @@ export async function discover(opts: {
             hits.push(r);
             store.seenUrls.add(r.url);
             const s = scoreText(r.url, `${r.title} ${r.snippet}`);
-            add({ url: r.url, label: r.title, score: s + (officialish(r.url) ? 3 : 0) - (FORUM.test(r.url) ? 4 : 0), from: "search" });
+            // The provider's own pages first; others only fill in (developer reports have their own search later).
+            add({ url: r.url, label: r.title, score: s + (officialish(r.url) ? 4 : -5) - (FORUM.test(r.url) ? 4 : 0), from: "search" });
           });
         } catch {
           /* a failed search just contributes nothing */

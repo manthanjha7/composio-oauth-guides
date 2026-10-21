@@ -1,0 +1,2248 @@
+{
+  "slug": "kintone",
+  "guide": {
+    "app": {
+      "name": "Kintone",
+      "website": "https://www.kintone.com/",
+      "developer_docs_url": "https://kintone.dev/en/docs/common/authentication/"
+    },
+    "oauth_supported": "yes",
+    "summary": "OAuth client in a Kintone domain, basic scopes (self-serve (no review step found in the docs), wait none).",
+    "verdict": "OAuth client in a Kintone domain, basic scopes (self-serve (no review step found in the docs), wait none).",
+    "default_scenario": "s1",
+    "composio": {
+      "toolkit_slug": "kintone_rest",
+      "managed_oauth": "no",
+      "credential_guide_url": null,
+      "note": "Kintone REST is listed under 'Bring your own OAuth app', so create an auth config with your own client ID and secret."
+    },
+    "need_own_app": {
+      "answer": "Yes. Composio has no managed OAuth app for Kintone REST, so you must register your own OAuth client in Kintone and supply its client ID and secret.",
+      "reasons": [
+        "No Composio managed app exists for Kintone REST",
+        "Your brand appears on the consent screen only with your own app",
+        "Your own app gets a dedicated rate-limit quota",
+        "Managed auth enforces a 15-minute minimum polling interval"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "OAuth client in a Kintone domain, basic scopes",
+        "when_this_applies": "Your agent connects users of a Kintone domain where you can register the OAuth client in the admin settings.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No provider review is described in the registration docs (c1, c2).",
+          "max_days": null
+        },
+        "approval": "No review found. The client is registered manually and limited to users of that Kintone domain; an admin must enable each user.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c4",
+          "c5",
+          "c6"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Admin must grant each user access to the",
+          "IP-restricted domains need the client IP whitelisted."
+        ],
+        "trigger": "none",
+        "gate_sequence": [
+          "Register OAuth client in Kintone admin settings",
+          "Admin enables users via Configure users"
+        ],
+        "modifiers": [
+          {
+            "kind": "customer_admin",
+            "qualifier": "required",
+            "note": "Admin must grant each user access to the client.",
+            "claim_ids": [
+              "c4",
+              "c5"
+            ]
+          },
+          {
+            "kind": "customer_admin",
+            "qualifier": "required",
+            "note": "IP-restricted domains need the client IP whitelisted.",
+            "claim_ids": [
+              "c6"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c1",
+          "c2"
+        ],
+        "path_basis": "inferred"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Kintone admin access",
+        "detail": "Registering the client and enabling users needs the User & System Administration page.",
+        "claim_ids": [
+          "c7",
+          "c8"
+        ]
+      },
+      {
+        "title": "Public HTTPS redirect URL",
+        "detail": "Kintone requires a redirect endpoint. Copy the redirect URI from the Composio dashboard.",
+        "claim_ids": [
+          "c9"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Open OAuth settings in Kintone admin",
+        "owner": "you",
+        "detail": "Log in, click the gear icon, open User & System Administration, then OAuth under System Administration.",
+        "inputs": [
+          "Kintone admin login"
+        ],
+        "done_when": "The OAuth client list is visible.",
+        "scenario_ids": [],
+        "link": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "claim_ids": [
+          "c7",
+          "c8"
+        ]
+      },
+      {
+        "title": "Copy redirect URI from Composio",
+        "owner": "you",
+        "detail": "Copy the redirect URI from the Composio dashboard for the kintone_rest auth config.",
+        "inputs": [
+          "Composio dashboard access"
+        ],
+        "done_when": "You have the redirect URI.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c9"
+        ]
+      },
+      {
+        "title": "Add the OAuth client",
+        "owner": "you",
+        "detail": "Click Add OAuth Client, enter a client name and the redirect endpoint, and save.",
+        "inputs": [
+          "Client name",
+          "Redirect URI"
+        ],
+        "done_when": "Client ID, client secret and endpoints are shown.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c1",
+          "c10",
+          "c11",
+          "c9"
+        ]
+      },
+      {
+        "title": "Enable users with Configure users",
+        "owner": "you",
+        "detail": "Check the users who may use the client and save. New users are unchecked by default.",
+        "inputs": [],
+        "done_when": "Target users are checked.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c12"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create a kintone_rest auth config with your client ID and secret, and request the scopes you need, separated by spaces.",
+        "inputs": [
+          "Client ID",
+          "Client secret",
+          "Scope list"
+        ],
+        "done_when": "Auth config exists and a test connection succeeds.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c13",
+          "c14"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Authorization codes are valid for 10 minutes",
+        "detail": "Authorization codes are valid for 10 minutes.",
+        "claim_ids": [
+          "c21x"
+        ]
+      },
+      {
+        "title": "Users are disabled by default",
+        "detail": "No user can use a new client until an admin checks them in Configure users. Each newly created Kintone user is also unchecked.",
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c12"
+        ]
+      },
+      {
+        "title": "IP restrictions block OAuth",
+        "detail": "OAuth client features fail on domains with IP restrictions unless the client's IP is whitelisted.",
+        "claim_ids": [
+          "c6"
+        ]
+      },
+      {
+        "title": "Client limited to its own domain",
+        "detail": "Access is limited to users in the Kintone domain where the client was registered. Multi-customer use is not documented.",
+        "claim_ids": [
+          "c2"
+        ]
+      },
+      {
+        "title": "Token and client limits",
+        "detail": "Max 20 OAuth clients, and 10 refresh tokens per client per user. Access tokens last 1 hour; refresh tokens do not expire.",
+        "claim_ids": [
+          "c15",
+          "c16",
+          "c17",
+          "c18"
+        ]
+      },
+      {
+        "title": "Redirect URI must match exactly",
+        "detail": "The URI in the token request must equal the one in the authorization request, and be URL-encoded.",
+        "claim_ids": [
+          "c19",
+          "c20"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Users cannot complete the OAuth flow",
+        "what_it_means": "The user is not enabled for the client in Configure users.",
+        "what_to_do": "Have a Kintone admin check the user in Configure users and save.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c12"
+        ]
+      },
+      {
+        "symptom": "OAuth fails on a domain with IP restrictions",
+        "what_it_means": "The client's IP is not whitelisted.",
+        "what_to_do": "Ask the admin to whitelist the OAuth client's IP.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c6"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Can one OAuth client serve users in other customers' Kintone domains, or must each customer register one? Check with Kintone developer support.",
+      "Does any scope trigger review? Not found; ask Kintone developer support.",
+      "Is there a review or timeline for listing or certification? Not found; the partner-service certification page was not cited.",
+      "Not found: what each review or verification checks and what the developer must submit. Checked kintone.dev, cybozu.dev."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Client registration is manual: the developer clicks Add OAuth Client in the admin settings.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Click on the green Add OAuth Client button under Set up Advanced Services .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "Access to the OAuth client is limited to users in the developer's own Kintone domain, selected through Configure users.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Click on Configure users next to the added client, to set which users in your Kintone domain have permission to interact with the client.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Scopes limit an app's access and do not grant permissions beyond the user's own access.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+        "quote": "Scopes are an OAuth 2.0 mechanism that places limits on OAuth tokens and thus limiting an application's access to a user's account. They do not grant additional permissions beyond the user's access.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "When a client is first registered, no users can use it until they are given permission through Configure users.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "When the client is initially registered to kintone.com, by default, no users are able to interact with the application until they are given permission through this setting.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "The admin chooses which users can use the client on the Configure Users screen and then saves.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "From the Configure Users settings screen, choose which users will be able to interact with the client to process the OAuth flow and click save.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "OAuth client features cannot be used from Kintone domains that use IP restrictions, unless the OAuth client's IP is whitelisted.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "OAuth client features cannot be used from Kintone domains that use IP restrictions , unless the IP of the OAuth Client is white-listed on the IP restriction settings.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "The OAuth client is registered from the User & System Administration page, reached through the gear icon.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Log into Kintone, click the gear icon on the upper right menu of Kintone and navigate to the User & System Administration page.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "In the admin area, OAuth is found under System Administration.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Click on OAuth under System Administration .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "The redirect endpoint is required and is where kintone.com sends the user after they grant access.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Redirect endpoint (required): The URL where kintone.com will redirect the user to after granting access to the application.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "Client name is required and is shown to users when they are asked to grant access.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Client name (required): The name of the application. Users will view this name when they are asked to grant access to your application.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "Saving the client generates the client ID, client secret, authorization endpoint and token endpoint.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Clicking Save will add the client, and the following information will be automatically generated:",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "A newly created Kintone user has the OAuth client disabled by default until the box is checked.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Be aware that when a new user is created in Kintone, the check box for the new user is unchecked by default, and the OAuth client is disabled for the user.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "Composio lists Kintone REST under 'Bring your own OAuth app', so you must register your own app.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "| [Kintone REST](/toolkits/kintone_rest.md) | `KINTONE_REST` |",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "When requesting multiple scopes, they are separated by spaces.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "When specifying multiple scopes, each scope must be separated by a space.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "Up to 20 OAuth clients can be registered.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Up to 20 OAuth clients can be registered",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "Up to 10 refresh tokens can be generated from one OAuth client for one user.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Up to 10 refresh tokens can be generated from 1 OAuth client for 1 user.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "Access tokens are valid for 1 hour.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Access tokens are valid for 1 hour .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "Refresh tokens do not expire.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Refresh tokens do not expire.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "The redirect URI used in the token request must match the one used in the authorization request.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "The redirect endpoint, which must be the same value stated in Step 1. Make sure to encode the URL.",
+        "probe_id": null,
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      },
+      {
+        "id": "c20",
+        "text": "The redirect URI must be URL-encoded when used in the authorization request.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "The redirect endpoint. Make sure to encode the URL.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21x",
+        "text": "Authorization codes are valid for 10 minutes.",
+        "label": "provider_docs",
+        "source_url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "quote": "Authorization codes are valid for 10 minutes .",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T11:33:31.093Z",
+    "generated_by": "agent v2 (v2.7-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-haiku-5-5 · composio_search",
+    "duration_ms": 110851,
+    "query": "Kintone",
+    "partial": true,
+    "warnings": [
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups.",
+      "1 limit from the sources was missing from the written guide and was added under \"Watch out\"."
+    ],
+    "verification": {
+      "claims_total": 20,
+      "quotes_checked": 20,
+      "quotes_verified": 20,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 91780,
+      "output_tokens": 33161,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T11:31:40.522Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T11:31:40.522Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T11:31:40.522Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/kintone_rest",
+        "title": null,
+        "fetched_at": "2026-10-21T11:31:40.522Z",
+        "via": "direct",
+        "chars": 294
+      },
+      {
+        "url": "https://www.kintone.com/en-us/",
+        "title": "Kintone - All your team's workflows & AI in one place",
+        "fetched_at": "2026-10-21T11:31:46.091Z",
+        "via": "direct",
+        "chars": 11073
+      },
+      {
+        "url": "https://kintone.dev/en/docs/common/authentication/",
+        "title": "Authentication -\n      Kintone Developer Program",
+        "fetched_at": "2026-10-21T11:31:56.489Z",
+        "via": "direct",
+        "chars": 8221
+      },
+      {
+        "url": "https://kintone.dev/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T11:31:56.500Z",
+        "via": "direct",
+        "chars": 450
+      },
+      {
+        "url": "https://cybozu.dev/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T11:31:56.680Z",
+        "via": "direct",
+        "chars": 665
+      },
+      {
+        "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+        "title": "OAuth Permission Scopes -\n      Kintone Developer Program",
+        "fetched_at": "2026-10-21T11:31:59.999Z",
+        "via": "direct",
+        "chars": 1931
+      },
+      {
+        "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+        "title": "kintoneのOAuthスコープ -\n      cybozu developer network",
+        "fetched_at": "2026-10-21T11:32:00.007Z",
+        "via": "direct",
+        "chars": 1786
+      },
+      {
+        "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+        "title": "How to Add OAuth Clients -\n      Kintone Developer Program",
+        "fetched_at": "2026-10-21T11:32:00.076Z",
+        "via": "direct",
+        "chars": 8749
+      },
+      {
+        "url": "https://www.kintone.com/en-us/become-a-partner/",
+        "title": "Become a Partner - Kintone, No-Code Enterprise Application Platform | Kintone",
+        "fetched_at": "2026-10-21T11:32:00.013Z",
+        "via": "direct",
+        "chars": 917
+      },
+      {
+        "url": "https://cybozu.dev/ja/common/docs/oauth-client/",
+        "title": "OAuthクライアント -\n      cybozu developer network",
+        "fetched_at": "2026-10-21T11:32:00.603Z",
+        "via": "composio_fetch",
+        "chars": 233
+      },
+      {
+        "url": "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+        "title": "KDDI America, Inc. and Kintone Corporation Strengthen Partnership with Launch of Plug-in Marketplace | KDDI America",
+        "fetched_at": "2026-10-21T11:32:00.806Z",
+        "via": "direct",
+        "chars": 8515
+      },
+      {
+        "url": "https://kintone.dev/en/plugins/introduction-to-plug-ins/plug-in-development-specifications/",
+        "title": "Plug-in Development Specifications -\n      Kintone Developer Program",
+        "fetched_at": "2026-10-21T11:32:45.391Z",
+        "via": "direct",
+        "chars": 9074
+      },
+      {
+        "url": "https://kintone.dev/en/developer-license-registration-form/",
+        "title": "Developer License Registration Form -\n      Kintone Developer Program",
+        "fetched_at": "2026-10-21T11:32:45.393Z",
+        "via": "direct",
+        "chars": 2774
+      },
+      {
+        "url": "https://kintone-sol.cybozu.co.jp/integrate/guidelines.html",
+        "title": "kintone 連携サービス認定基準 - kintone（キントーン）- プラグイン・連携サービス | サイボウズの業務改善プラットフォーム",
+        "fetched_at": "2026-10-21T11:32:45.915Z",
+        "via": "direct",
+        "chars": 1803
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.7-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-haiku-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E45",
+            "E46"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E47",
+            "E48"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E13",
+            "E15",
+            "E17",
+            "E49",
+            "E50"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E51",
+            "E52",
+            "E53",
+            "E54",
+            "E55"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+            "https://kintone.dev/en/plugins/introduction-to-plug-ins/plug-in-development-specifications/",
+            "https://kintone.dev/en/developer-license-registration-form/",
+            "https://kintone-sol.cybozu.co.jp/integrate/guidelines.html"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E18",
+            "E56",
+            "E57",
+            "E58",
+            "E59"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E34",
+            "E35",
+            "E36",
+            "E37",
+            "E38",
+            "E39",
+            "E40",
+            "E60",
+            "E61",
+            "E62"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E14",
+            "E16",
+            "E19",
+            "E63",
+            "E64",
+            "E65",
+            "E66",
+            "E67",
+            "E68",
+            "E69",
+            "E70",
+            "E71"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "not_found",
+          "evidence": [
+            "E72",
+            "E73",
+            "E75"
+          ],
+          "tried": [
+            "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+            "https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+            "https://cybozu.dev/ja/common/docs/oauth-client/",
+            "https://kintone.dev/en/docs/common/authentication/",
+            "https://www.kintone.com/en-us/become-a-partner/",
+            "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+            "https://kintone.dev/en/plugins/introduction-to-plug-ins/plug-in-development-specifications/",
+            "https://kintone.dev/en/developer-license-registration-form/",
+            "https://kintone-sol.cybozu.co.jp/integrate/guidelines.html"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": []
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E20",
+            "E21",
+            "E22",
+            "E23",
+            "E24",
+            "E25",
+            "E26",
+            "E27",
+            "E28",
+            "E29",
+            "E30",
+            "E31",
+            "E32",
+            "E33",
+            "E41",
+            "E42",
+            "E43",
+            "E44"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "quote": "Scopes are an OAuth 2.0 mechanism that places limits on OAuth tokens and thus limiting an application's access to a user's account. They do not grant additional permissions beyond the user's access.",
+          "answer": "OAuth scopes limit an app's access to a user's account and do not grant permissions beyond the user's own access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:59.999Z",
+          "page_hash": "67d685c238aebff1",
+          "offsets": [
+            101,
+            299
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "quote": "k:app_record:read",
+          "answer": "The k:app_record:read scope covers reading records and comments (Get Record, Get Records, Get Comments).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:59.999Z",
+          "page_hash": "67d685c238aebff1",
+          "offsets": [
+            431,
+            448
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "quote": "k:app_record:write",
+          "answer": "The k:app_record:write scope covers adding, updating, deleting records and status/assignee changes, and adding or deleting comments.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:59.999Z",
+          "page_hash": "67d685c238aebff1",
+          "offsets": [
+            522,
+            540
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "quote": "k:app_settings:read",
+          "answer": "The k:app_settings:read scope covers reading app, form, view, notification, permission and action settings (for example Get App, Get Form Fields, Get App Permissions).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:59.999Z",
+          "page_hash": "67d685c238aebff1",
+          "offsets": [
+            772,
+            791
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "quote": "k:app_settings:write",
+          "answer": "The k:app_settings:write scope covers changing app, form, view, notification, permission and action settings (for example Add Preview App, Update Form Fields, Deploy App Settings).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:59.999Z",
+          "page_hash": "67d685c238aebff1",
+          "offsets": [
+            1260,
+            1280
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "quote": "k:file:read",
+          "answer": "The k:file:read scope covers downloading files (Download File).",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:59.999Z",
+          "page_hash": "67d685c238aebff1",
+          "offsets": [
+            1831,
+            1842
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "quote": "k:file:write",
+          "answer": "The k:file:write scope covers uploading files (Upload File).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:59.999Z",
+          "page_hash": "67d685c238aebff1",
+          "offsets": [
+            1886,
+            1898
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G4",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "quote": "k:app_record:read",
+          "answer": "For kintone, the scope k:app_record:read covers reading records: getting one record, multiple records, and record comments.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.007Z",
+          "page_hash": "66e60ab587f3cce0",
+          "offsets": [
+            346,
+            363
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G4",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "quote": "k:app_record:write",
+          "answer": "For kintone, the scope k:app_record:write covers registering, updating and deleting records, including comments, record status, and record worker updates.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.007Z",
+          "page_hash": "66e60ab587f3cce0",
+          "offsets": [
+            470,
+            488
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G4",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "quote": "k:app_settings:read",
+          "answer": "For kintone, the scope k:app_settings:read covers reading app settings such as form layout, fields, views, notifications, and access rights.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.007Z",
+          "page_hash": "66e60ab587f3cce0",
+          "offsets": [
+            750,
+            769
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G4",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "quote": "k:app_settings:write",
+          "answer": "For kintone, the scope k:app_settings:write covers changing app settings, including creating apps in the test environment, editing fields and layouts, and changing access rights.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.007Z",
+          "page_hash": "66e60ab587f3cce0",
+          "offsets": [
+            1201,
+            1221
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G4",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "quote": "k:file:read",
+          "answer": "For kintone, the scope k:file:read covers downloading files.",
+          "kind": "reported",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.007Z",
+          "page_hash": "66e60ab587f3cce0",
+          "offsets": [
+            1671,
+            1682
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G4",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "quote": "k:file:write",
+          "answer": "For kintone, the scope k:file:write covers uploading files.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.007Z",
+          "page_hash": "66e60ab587f3cce0",
+          "offsets": [
+            1749,
+            1761
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G10",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "quote": "cybozu.comのOAuthクライアントに指定できるkintoneのスコープ一覧です。",
+          "answer": "The kintone scopes listed on this page are the ones that can be specified for an OAuth client on cybozu.com.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.007Z",
+          "page_hash": "66e60ab587f3cce0",
+          "offsets": [
+            177,
+            222
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G4",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/",
+          "quote": "OAuthクライアントに指定できるkintoneのスコープです。",
+          "answer": "The page has a section listing the kintone scopes that can be specified for an OAuth client, but the list itself is not in the page text provided.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.603Z",
+          "page_hash": "7580213963d953db",
+          "offsets": [
+            201,
+            233
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G10",
+          "url": "https://cybozu.dev/ja/common/docs/oauth-client/",
+          "quote": "OAuthクライアントを追加する手順です。",
+          "answer": "The page has a section describing the steps to add an OAuth client, but the steps themselves are not in the page text provided.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.603Z",
+          "page_hash": "7580213963d953db",
+          "offsets": [
+            154,
+            175
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/",
+          "quote": "Access tokens can be scoped to limit what data the application can access",
+          "answer": "Kintone OAuth 2.0 access tokens can be scoped to limit what data the application can access. The page does not list specific scopes or say which trigger review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:56.489Z",
+          "page_hash": "63c7e1bf057ee014",
+          "offsets": [
+            4682,
+            4755
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G8",
+          "url": "https://kintone.dev/en/docs/common/authentication/",
+          "quote": "Enabling department access control will prevent everyone but Kintone Administrators from creating and viewing API Tokens.",
+          "answer": "If a Kintone environment enables department access control, only Kintone Administrators can create and view API tokens. This concerns API tokens, not OAuth apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:56.489Z",
+          "page_hash": "63c7e1bf057ee014",
+          "offsets": [
+            4009,
+            4130
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/",
+          "quote": "How to Add OAuth Clients",
+          "answer": "The page points to a separate article, 'How to Add OAuth Clients', for more information on OAuth. This page gives no console steps, client ID/secret handling, scope setup or redirect URI registration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:56.489Z",
+          "page_hash": "63c7e1bf057ee014",
+          "offsets": [
+            4834,
+            4858
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Kintone REST](/toolkits/kintone_rest.md) | `KINTONE_REST` |",
+          "answer": "The page lists Kintone REST (slug KINTONE_REST) under 'Bring your own OAuth app', so Composio does not supply a managed OAuth app for it and you must register your own.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            13792,
+            13854
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "For a toolkit whose OAuth method is not Composio-managed, you register your own OAuth app and supply its client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            825,
+            939
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "This list covers only toolkits that support OAuth. It does not include toolkits that use only API keys, bearer tokens, Basic auth, or no authentication.",
+          "answer": "The page's list covers only toolkits that support OAuth, so Kintone REST appears here as an OAuth-capable toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            391,
+            543
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "The page does not mention Kintone, so none of these facts are Kintone-specific; they are general statements about Composio managed apps for toolkits.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack, so the developer does not register their own (general, not Kintone-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "With a custom auth config, the developer supplies their own OAuth app or other credentials and tells Composio to use them for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available (general, not Kintone-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio requests sensible defaults for each toolkit.",
+          "answer": "Composio requests default scopes for each toolkit when using a managed app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            673,
+            726
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With the managed app, users see a Composio consent screen during OAuth rather than the developer's app name.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Composio's default scopes for a managed app may not include everything a developer needs, which is a reason to use a custom app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+          "answer": "Managed apps share their rate-limit quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1511
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for polling triggers; a developer's own app can use shorter intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.",
+          "answer": "Self-hosted or regional variants (such as a private subdomain) need their own OAuth app rather than a managed one.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1722,
+            1819
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Each toolkit gets its own auth config independently.",
+          "answer": "A developer can use their own credentials for some toolkits and managed auth for others, with each toolkit getting its own auth config.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            2302,
+            2354
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "When you proxy the redirect through your own domain, you set the authorized redirect URI in your OAuth app's settings to your own endpoint.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example redirect URI for the proxy setup is a path on your own domain, /api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "Your proxy endpoint receives the OAuth callback and immediately sends a 302 redirect to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy endpoint must return a 302 redirect; it must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3413
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "Without a proxy, the browser briefly redirects through Composio's backend domain during OAuth so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "You can proxy the redirect through your own domain if you need to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add a redirect proxy only when the browser must stay on your domain during the OAuth callback.",
+          "answer": "A redirect proxy is only needed when the browser must stay on your domain during the OAuth callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1342,
+            1436
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "The page is general across toolkits and does not mention Kintone or any Kintone-specific setup.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "With Composio's default setup, the provider consent screen shows 'Composio wants to access your account' on toolkits such as Google and GitHub; using your own OAuth app is the stated fix.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "The callback URL Composio uses is https://backend.composio.dev/api/v3/toolkits/auth/callback, which a proxy forwards the callback to; the page does not say this is the URL to register with a provider.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also display Composio's backend URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:31:40.522Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G1",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Log into Kintone, click the gear icon on the upper right menu of Kintone and navigate to the User & System Administration page.",
+          "answer": "The OAuth client is registered from the Kintone User & System Administration page, reached through the gear icon.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            992,
+            1119
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G1",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Your application must first be registered to Kintone through the Integration settings to generate the OAuth credentials.",
+          "answer": "The application must be registered with Kintone through the Integration settings to generate OAuth credentials.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            815,
+            935
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G2",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Click on the green Add OAuth Client button under Set up Advanced Services .",
+          "answer": "Client registration is a manual step: the developer clicks the Add OAuth Client button in the admin settings. The page does not describe automatic or dynamic client registration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1171,
+            1246
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G2",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Click on Configure users next to the added client, to set which users in your Kintone domain have permission to interact with the client.",
+          "answer": "Access to the OAuth client is limited to users in the developer's own Kintone domain, selected through Configure users.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            2128,
+            2265
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "As an example, k:app_record:read is specified in the scope.",
+          "answer": "The example scope on the page is k:app_record:read.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            3416,
+            3475
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G4",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Only the APIs defined in the scope can be used with this access token.",
+          "answer": "An access token can only call the APIs covered by the scope it was granted with.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            7687,
+            7757
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G5",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Up to 20 OAuth clients can be registered",
+          "answer": "Up to 20 OAuth clients can be registered.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            8442,
+            8482
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G5",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Up to 10 refresh tokens can be generated from 1 OAuth client for 1 user.",
+          "answer": "Up to 10 refresh tokens can be generated from one OAuth client for one user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            8486,
+            8558
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G5",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Authorization codes are valid for 10 minutes .",
+          "answer": "Authorization codes are valid for 10 minutes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            8663,
+            8709
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G5",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Access tokens are valid for 1 hour .",
+          "answer": "Access tokens are valid for 1 hour.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            8713,
+            8749
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G5",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Refresh tokens do not expire.",
+          "answer": "Refresh tokens do not expire.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            8392,
+            8421
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G8",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "When the client is initially registered to kintone.com, by default, no users are able to interact with the application until they are given permission through this setting.",
+          "answer": "When a client is first registered, no users can use it until a Kintone admin grants them permission through Configure users.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            2266,
+            2438
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G8",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "From the Configure Users settings screen, choose which users will be able to interact with the client to process the OAuth flow and click save.",
+          "answer": "The admin chooses which users can use the client on the Configure Users screen and then saves.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            2442,
+            2585
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G8",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Be aware that when a new user is created in Kintone, the check box for the new user is unchecked by default, and the OAuth client is disabled for the user.",
+          "answer": "A newly created Kintone user has the OAuth client disabled by default until the box is checked.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            2688,
+            2843
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G8",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "OAuth client features cannot be used from Kintone domains that use IP restrictions , unless the IP of the OAuth Client is white-listed on the IP restriction settings.",
+          "answer": "OAuth client features cannot be used from Kintone domains that use IP restrictions, unless the OAuth client's IP is whitelisted in the IP restriction settings.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            8100,
+            8266
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G9",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Redirect endpoint (required): The URL where kintone.com will redirect the user to after granting access to the application.",
+          "answer": "The redirect endpoint is the URL where kintone.com sends the user after they grant access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1573,
+            1696
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G9",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "The redirect endpoint. Make sure to encode the URL.",
+          "answer": "The redirect URI must be URL-encoded when used in the authorization request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            3811,
+            3862
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G9",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "The redirect endpoint, which must be the same value stated in Step 1. Make sure to encode the URL.",
+          "answer": "The redirect URI used in the token request must match the one used in the authorization request step.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            5584,
+            5682
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Click on OAuth under System Administration .",
+          "answer": "In the admin area, OAuth is found under System Administration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1123,
+            1167
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Client name (required): The name of the application. Users will view this name when they are asked to grant access to your application.",
+          "answer": "Client name is required and is shown to users when they are asked to grant access; the logo is optional.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1295,
+            1430
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Clicking Save will add the client, and the following information will be automatically generated:",
+          "answer": "Saving the client generates the client ID, client secret, authorization endpoint and token endpoint.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1700,
+            1797
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Client ID : A unique ID that is created when your application is registered to kintone.com.",
+          "answer": "The client ID is a unique ID created when the application is registered to kintone.com.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1801,
+            1892
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Client secret : A secret value that is created when your application is registered to kintone.com.",
+          "answer": "The client secret is a secret value created when the application is registered to kintone.com.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1896,
+            1994
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Authorization endpoint : The URL of the OAuth authorization endpoint.",
+          "answer": "The authorization endpoint is the URL of the OAuth authorization endpoint, and the token endpoint is the URL of the OAuth token endpoint.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            1998,
+            2067
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "Token endpoint : The URL of the OAuth token endpoint.",
+          "answer": "The token endpoint is the URL of the OAuth token endpoint.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            2071,
+            2124
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "A Base64 encoded Client ID and Client Secret, in the format of \"ClientID:ClientSecret\"",
+          "answer": "The token request authorization header is Basic followed by Base64 of ClientID:ClientSecret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            5234,
+            5320
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G10",
+          "url": "https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "quote": "When specifying multiple scopes, each scope must be separated by a space.",
+          "answer": "When requesting multiple scopes, they are separated by spaces.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:32:00.076Z",
+          "page_hash": "1e2ebc1d17b9e404",
+          "offsets": [
+            4173,
+            4246
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G11",
+          "url": "https://kintone-sol.cybozu.co.jp/integrate/guidelines.html",
+          "quote": "kintoneとの連携による導入実績が2件以上あること。（自社利用除く）",
+          "answer": "Kintone's partner-service certification (kintone 連携サービス認定基準) requires at least 2 existing customer deployments of the integration, excluding in-house use.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T11:32:45.915Z",
+          "page_hash": "c5cad307b7f6757d"
+        },
+        {
+          "id": "E73",
+          "question": "G11",
+          "url": "https://kintone-sol.cybozu.co.jp/integrate/guidelines.html",
+          "quote": "既に認定されているkintone連携サービス名と重複しないこと。",
+          "answer": "A certified integration service may not duplicate the name of an already-certified kintone integration service.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T11:32:45.915Z",
+          "page_hash": "c5cad307b7f6757d"
+        },
+        {
+          "id": "E74",
+          "question": "G11",
+          "url": "https://kintone-sol.cybozu.co.jp/integrate/guidelines.html",
+          "quote": "ユーザーに誤解を与えるサービス名称/ロゴではないこと。",
+          "answer": "The service name and logo must not mislead users, which is a naming/branding rule for certification.",
+          "kind": "reported",
+          "status": "not_on_page",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T11:32:45.915Z",
+          "page_hash": "c5cad307b7f6757d"
+        },
+        {
+          "id": "E75",
+          "question": "G11",
+          "url": "https://kintone-sol.cybozu.co.jp/integrate/guidelines.html",
+          "quote": "cybozu developer network で公開しているAPIのみを使用していること。",
+          "answer": "Certified integration services may use only APIs published on cybozu developer network.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T11:32:45.915Z",
+          "page_hash": "c5cad307b7f6757d"
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 16222
+        },
+        {
+          "name": "extract https://kintone.dev/en/docs/common/authentication/oauth-permission-scope/",
+          "stop": "ok (6 facts)",
+          "ms": 6907
+        },
+        {
+          "name": "extract https://cybozu.dev/ja/common/docs/oauth-client/scope-kintone/",
+          "stop": "ok (6 facts)",
+          "ms": 7838
+        },
+        {
+          "name": "extract https://us.kddi.com/en/company/news/2022/kintone-partnership-pluginmarketplace/",
+          "stop": "ok (0 facts)",
+          "ms": 3413
+        },
+        {
+          "name": "extract https://cybozu.dev/ja/common/docs/oauth-client/",
+          "stop": "ok (2 facts)",
+          "ms": 5900
+        },
+        {
+          "name": "extract https://kintone.dev/en/docs/common/authentication/",
+          "stop": "ok (3 facts)",
+          "ms": 12825
+        },
+        {
+          "name": "extract https://www.kintone.com/en-us/become-a-partner/",
+          "stop": "ok (0 facts)",
+          "ms": 3273
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (3 facts)",
+          "ms": 6016
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (11 facts)",
+          "ms": 10106
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (11 facts)",
+          "ms": 14560
+        },
+        {
+          "name": "extract https://kintone.dev/en/docs/common/authentication/how-to-add-oauth-clients/",
+          "stop": "ok (27 facts)",
+          "ms": 28461
+        },
+        {
+          "name": "gap: official docs",
+          "stop": "finished",
+          "ms": 5638
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "no_tool_call",
+          "ms": 11389
+        },
+        {
+          "name": "gap: important details",
+          "stop": "finished",
+          "ms": 33804
+        }
+      ],
+      "judge": {
+        "checked": 16,
+        "supported": 14,
+        "partial": 2,
+        "unsupported": 0,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "Quote states the developer clicks the green Add OAuth Client button, i.e. manual registration in admin settings."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "Quote says Configure users sets which users in the Kintone domain may interact with the client, limiting access to the domain's users."
+          },
+          {
+            "id": "c3",
+            "verdict": "supported",
+            "reason": "Quote says scopes limit token access and do not grant permissions beyond the user's access."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "Quote says by default no users can interact with the client until given permission through Configure users."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote describes choosing users on the Configure Users screen and clicking save."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Quote says OAuth client features cannot be used from IP-restricted domains unless the client IP is whitelisted."
+          },
+          {
+            "id": "c12",
+            "verdict": "supported",
+            "reason": "Quote says a new user's checkbox is unchecked by default and the OAuth client is disabled for them."
+          },
+          {
+            "id": "c15",
+            "verdict": "supported",
+            "reason": "Quote states up to 20 OAuth clients can be registered."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "Quote states up to 10 refresh tokens can be generated from 1 client for 1 user."
+          },
+          {
+            "id": "c17",
+            "verdict": "supported",
+            "reason": "Quote states access tokens are valid for 1 hour."
+          },
+          {
+            "id": "c18",
+            "verdict": "supported",
+            "reason": "Quote states refresh tokens do not expire."
+          },
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "Quotes cover registration and admin user configuration, but say nothing explicitly about provider review being unnecessary; the no-review conclusion is only implied."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "supported",
+            "reason": "Quotes describe the two steps in order: add OAuth client in admin settings, then Configure users to enable users."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "supported",
+            "reason": "Quotes state no users can interact by default and the admin must choose users on Configure Users and save."
+          },
+          {
+            "id": "s1.mod1",
+            "verdict": "supported",
+            "reason": "Quote states IP-restricted domains need the client IP whitelisted before OAuth client features work."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "Quotes support the single-domain setup steps but contain no timing (1-2 hours) and nothing about wider multi-customer setups; the time estimate is unsupported and the 'not documented' conclusion is only implied."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 16222,
+        "discover_read": 4345,
+        "extract": 28467,
+        "gapfill": 33814,
+        "write": 22279,
+        "verify": 5722
+      }
+    }
+  }
+}

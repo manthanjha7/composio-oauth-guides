@@ -1,0 +1,3714 @@
+{
+  "slug": "box",
+  "guide": {
+    "app": {
+      "name": "Box",
+      "website": "https://www.box.com",
+      "developer_docs_url": "https://developer.box.com"
+    },
+    "oauth_supported": "yes",
+    "summary": "Multi-customer app, basic scopes (self-serve (no review step found in the docs)); Special scopes (legal holds, retention) (approval path unconfirmed); Listing in Box Integrations (app review). Where the path is unconfirmed, the agent did not find it in the provider's docs.",
+    "verdict": "Multi-customer app, basic scopes (self-serve (no review step found in the docs)).",
+    "default_scenario": "s1",
+    "composio": {
+      "toolkit_slug": "box",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio manages OAuth for Box (OAUTH2), good for prototypes. A separate Box MCP toolkit (BOX_MCP) requires your own app."
+    },
+    "need_own_app": {
+      "answer": "Not for prototypes, since Composio provides a managed Box app. For production, use your own app so users see your brand, get dedicated quota, and can use scopes beyond Composio's defaults.",
+      "reasons": [
+        "Consent screen shows your app name instead of 'Composio'",
+        "Managed apps share quota across all Composio users; your own app gets dedicated quota",
+        "Managed apps use Composio's default scopes, which may not cover your needs",
+        "Managed auth enforces a 15-minute minimum trigger polling interval",
+        "The Box MCP toolkit requires your own app"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Multi-customer app, basic scopes",
+        "when_this_applies": "Your OAuth 2.0 user-authentication app is used by customers' enterprises with standard scopes, not listed in Box Integrations.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No timing found for customer admin approval; R1 not found.",
+          "max_days": null
+        },
+        "approval": "No provider review is described for this setup. Customer enterprise admins may need to enable the app or approve it.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Inactive-by-default unpublished apps may need admin enablement",
+          "Scope or access changes require re-authorization"
+        ],
+        "trigger": "none",
+        "modifiers": [
+          {
+            "kind": "customer_admin",
+            "qualifier": "optional",
+            "note": "Inactive-by-default unpublished apps may need admin enablement",
+            "claim_ids": [
+              "c5"
+            ]
+          },
+          {
+            "kind": "recurring",
+            "qualifier": null,
+            "note": "Scope or access changes require re-authorization",
+            "claim_ids": [
+              "c6",
+              "c7",
+              "c8"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c1",
+          "c2",
+          "c3"
+        ],
+        "path_basis": "inferred"
+      },
+      {
+        "id": "s2",
+        "label": "Special scopes (legal holds, retention)",
+        "when_this_applies": "Your app needs restricted scopes such as manage_legal_holds, manage_data_retention or enterprise_content.",
+        "difficulty": "unknown",
+        "hands_on": {
+          "estimate": "2-4 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "Support reviews requests individually; no timing found.",
+          "max_days": null
+        },
+        "approval": "Box support reviews each scope request individually and approves only if the use case requires it.",
+        "claim_ids": [
+          "c9",
+          "c10",
+          "c11",
+          "c12"
+        ],
+        "shortcut": null,
+        "extras": [
+          "Paid enterprise account needed before requesting scopes",
+          "enterprise_content blocks access to other enterprises' content"
+        ],
+        "modifiers": [
+          {
+            "kind": "builder_prerequisite",
+            "qualifier": "required",
+            "note": "Paid enterprise account needed before requesting scopes",
+            "claim_ids": [
+              "c13",
+              "c14"
+            ]
+          },
+          {
+            "kind": "use_restrictions",
+            "qualifier": null,
+            "note": "enterprise_content blocks access to other enterprises' content",
+            "claim_ids": [
+              "c15"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c9",
+          "c10"
+        ]
+      },
+      {
+        "id": "s3",
+        "label": "Listing in Box Integrations",
+        "when_this_applies": "You want your app listed in Box's integrations directory to reach other enterprises.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "2-4 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "Partner review process is on a separate page not in the dossier.",
+          "max_days": null
+        },
+        "approval": "Submitting for approval in the Developer Console triggers a partner review; checklist and assets are on a separate Box Integrations page.",
+        "claim_ids": [
+          "c16",
+          "c17",
+          "c18",
+          "c19"
+        ],
+        "path": "app_review",
+        "shortcut": null,
+        "extras": [],
+        "modifiers": [],
+        "path_claim_ids": [
+          "c16",
+          "c17"
+        ],
+        "path_basis": "stated"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Box developer or enterprise account",
+        "detail": "A free developer account is enough to create an OAuth 2.0 app in the Developer Console.",
+        "claim_ids": [
+          "c20"
+        ],
+        "scenario_ids": [
+          "s1",
+          "s3"
+        ]
+      },
+      {
+        "title": "Paid enterprise account for extra scopes",
+        "detail": "Extra scopes cannot be requested on a free trial; log in to a paid enterprise account or upgrade first.",
+        "claim_ids": [
+          "c13",
+          "c14"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create the Box OAuth 2.0 app",
+        "owner": "you",
+        "detail": "Log into the Developer Console, select New App, choose User as app type, then Create.",
+        "inputs": [
+          "Box developer or enterprise login"
+        ],
+        "done_when": "The app exists with a Client ID and secret.",
+        "scenario_ids": [],
+        "link": "https://account.box.com/developers/console",
+        "claim_ids": [
+          "c21",
+          "c22"
+        ]
+      },
+      {
+        "title": "Choose scopes for the app",
+        "owner": "agent",
+        "detail": "Draft the minimal scope list and select it in the Application Scopes section of the Configuration tab.",
+        "inputs": [
+          "Feature list of your agent"
+        ],
+        "done_when": "Scopes are saved in Configuration.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c23"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the Composio auth config with your own client ID and secret, then copy the redirect URI from the Composio dashboard.",
+        "inputs": [
+          "Client ID",
+          "Client secret"
+        ],
+        "done_when": "Auth config exists and Composio redirect URI is copied.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c24"
+        ]
+      },
+      {
+        "title": "Register redirect URI in Box",
+        "owner": "you",
+        "detail": "Add the Composio redirect URI under OAuth 2.0 Redirect URI on the Configuration page. It must be HTTPS and match exactly.",
+        "inputs": [
+          "Composio redirect URI"
+        ],
+        "done_when": "The URI is saved in Box.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c25",
+          "c26",
+          "c27"
+        ]
+      },
+      {
+        "title": "Get customer admin enablement",
+        "owner": "waiting",
+        "detail": "Enterprise customers' admins may need to enable the app; the developer can submit an approval request from the Enablement tab, which emails the Primary Admin.",
+        "inputs": [
+          "Client ID to give admin"
+        ],
+        "done_when": "Admin approval email received.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c5",
+          "c28",
+          "c29"
+        ]
+      },
+      {
+        "title": "Open support ticket for special scopes",
+        "owner": "you",
+        "detail": "Open a ticket via Box support naming the scope and use case. Agent can draft the justification.",
+        "inputs": [
+          "Paid enterprise account",
+          "Use case justification"
+        ],
+        "done_when": "Box support approves the scope.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c10",
+          "c12"
+        ]
+      },
+      {
+        "title": "Submit app for Box Integrations listing",
+        "owner": "you",
+        "detail": "In Developer Console choose Apps, Submit for Approval, fill out the form and Submit.",
+        "inputs": [
+          "Production-ready OAuth 2.0 app",
+          "Listing assets"
+        ],
+        "done_when": "Submission accepted for review.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c17",
+          "c30",
+          "c31"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "A newly created enterprise can authorize up to 10,000",
+        "detail": "A newly created enterprise can authorize up to 10,000 custom apps.",
+        "claim_ids": [
+          "c41x"
+        ]
+      },
+      {
+        "title": "Box uses user-based rate limits that generally trigger when",
+        "detail": "Box uses user-based rate limits that generally trigger when a user exceeds about 1000 API calls per minute, though certain endpoints may have different limits. The page does not say these limits differ for unreviewed apps.",
+        "claim_ids": [
+          "c42x"
+        ]
+      },
+      {
+        "title": "The upload limit is 240 file upload requests per",
+        "detail": "The upload limit is 240 file upload requests per minute per user.",
+        "claim_ids": [
+          "c43x"
+        ]
+      },
+      {
+        "title": "Box Sign limits are 100 create-and-resend sign request calls",
+        "detail": "Box Sign limits are 100 create-and-resend sign request calls per minute per user, and 1000 get-sign-request calls per minute per user.",
+        "claim_ids": [
+          "c44x"
+        ]
+      },
+      {
+        "title": "Scope changes need re-authorization",
+        "detail": "After changing scopes or access level, enterprise apps must be re-authorized by a Box Admin before changes take effect.",
+        "claim_ids": [
+          "c6",
+          "c8"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "Server apps need authorization",
+        "detail": "JWT and Client Credentials apps must be authorized before use, and an enterprise's Box Admin must approve them. An OAuth 2.0 app cannot be switched to Server type later.",
+        "claim_ids": [
+          "c32",
+          "c33",
+          "c34"
+        ]
+      },
+      {
+        "title": "Missing redirect_uri parameter",
+        "detail": "If several redirect URIs are configured and the request omits redirect_uri, users see a redirect_uri_missing error.",
+        "claim_ids": [
+          "c35"
+        ]
+      },
+      {
+        "title": "Composio callback domain cannot be verified by you",
+        "detail": "Box redirect URIs are an exact-match check, and Composio's callback domain is not yours. To use your own domain, proxy the callback through it with a 302 redirect.",
+        "claim_ids": [
+          "c36",
+          "c37",
+          "c38",
+          "c39"
+        ]
+      },
+      {
+        "title": "Customer API allocation",
+        "detail": "Calls from custom apps count toward each customer enterprise's monthly API allocation, unlike partner integrations.",
+        "claim_ids": [
+          "c40"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Users cannot authorize the app; it appears inactive",
+        "what_it_means": "The enterprise has the unpublished app inactive by default and needs an admin to enable it.",
+        "what_to_do": "Give the customer's admin your Client ID, or submit an approval request from the Enablement tab.",
+        "agent_can_help": "Draft the admin instructions and message.",
+        "claim_ids": [
+          "c5",
+          "c28",
+          "c29"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "symptom": "Extra scope unavailable in the console",
+        "what_it_means": "Scopes such as manage_legal_holds are available only through a support ticket.",
+        "what_to_do": "Upgrade to a paid enterprise account and open a Box support ticket.",
+        "agent_can_help": "Draft the use-case justification.",
+        "claim_ids": [
+          "c10",
+          "c11",
+          "c13"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "open_questions": [
+      "How long does Box support take to approve special scope requests? Ask Box support or test with a ticket.",
+      "How long does the Box Integrations partner review take, and what does it check? See the Box Integrations page referenced by the docs.",
+      "How quickly do customer admins usually approve apps? Not documented; ask pilot customers.",
+      "Do unreviewed apps have lower rate limits? The docs do not say so; confirm with Box support."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Apps created by free developer (Individual) accounts are authorized automatically.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "Apps created by free developer (Individual) accounts are authorized automatically.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "A free developer account gives access to the Developer Console, where an OAuth 2.0 application can be created.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2",
+        "quote": "A free developer account gives you access to the Developer Console, where you can create an OAuth 2.0 application and start authenticating users in minutes.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Listing a Platform App in Box Integrations is optional, not a stated prerequisite for connecting.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "quote": "Platform Apps are a good fit when you need to access your own files and others' files, upload and download content, and optionally list the app in Box Integrations.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "The end user logs in to Box and approves the scopes the application asks for.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2",
+        "quote": "The user logs in to Box and approves the scopes your application asks for.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Unpublished OAuth 2.0 apps may need enablement by a Box Admin or Co-Admin if they are inactive by default.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "Unpublished applications using OAuth 2.0 authentication may require enablement by a Box Admin or Co-Admin if they are inactive by default.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "An app must be re-authorized when its scopes or access level change, for the changes to take effect.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "When an application's scopes or access level change, the application must be re-authorized for the changes to take effect.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "For free developer accounts, saving changes automatically re-authorizes the app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "When you save changes, the app is automatically re-authorized.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote says saving changes auto-re-authorizes the app, but does not restrict this to free developer accounts."
+      },
+      {
+        "id": "c8",
+        "text": "For enterprise developers, after saving changes the app must be submitted for re-authorization by a Box Admin.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "After saving changes, submit the app for re-authorization by your Box Admin.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote says to submit the app for re-authorization by the Box Admin after saving, but does not say this applies to enterprise developers."
+      },
+      {
+        "id": "c9",
+        "text": "Scopes listed as available on request (such as manage_legal_holds and enterprise_content) are reviewed individually by Box support.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "They will review these requests on an individual basis and only provide approval if the use case requires the scope.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "The manage_legal_holds scope can be requested only by opening a support ticket.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "This scope can be requested by opening a ticket via our support channels.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote says the scope can be requested by opening a ticket, but does not say this is the only way."
+      },
+      {
+        "id": "c11",
+        "text": "The manage_data_retention scope is available only through a support ticket, not self-serve in the console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "These scopes can be requested by opening a ticket via our support channels.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote says these scopes can be requested by ticket, but does not say ticket-only or 'not self-serve in the console'."
+      },
+      {
+        "id": "c12",
+        "text": "Extra scopes available on request are approved only if the use case requires the scope.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "They will review these requests on an individual basis and only provide approval if the use case requires the scope.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "Before requesting activation of the extra scopes, the developer must log in to a paid enterprise account or upgrade the free developer account to an enterprise account tier.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "log in to your paid enterprise account or",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote is truncated to 'log in to your paid enterprise account or'; it does not state the upgrade path for free developer accounts."
+      },
+      {
+        "id": "c14",
+        "text": "Extra scopes cannot be requested while the account is a free trial account.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "It is not possible to request extra scopes if your account is a free trial",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "Enabling enterprise_content disables accessing content owned by users in another enterprise.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "scope disables accessing content that is owned by users in another enterprise.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "Publishing to Box Integrations requires submitting the app for approval in the Developer Console, and the app must be production-ready and use OAuth 2.0.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "quote": "To publish, make sure your app is production-ready and uses OAuth 2.0. Submit it for approval in the Developer Console:",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "Submitting an app for approval involves filling out a form in the Developer Console and selecting Submit.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "quote": "Fill out the form and select **Submit**.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "The submission checklist, required assets, and partner review process are described on the separate Box Integrations page, not on this page.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "quote": "For the submission checklist, required assets, and partner review process, see Box Integrations.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "Approved apps may appear in featured, most popular, or recently added sections of Box Integrations.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "quote": "Approved apps can appear in featured, most popular, or recently added sections.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "A free developer account gives access to the Developer Console, where OAuth 2.0 apps can be created and configured.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "A free developer account gives you access to the Developer Console, where you can create and configure OAuth 2.0 applications.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21",
+        "text": "In the Developer Console, select New App, then select User as the app type, then select Create.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "Select **User** as the app type.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "To create the app, log into Box and go to the Developer Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "Log into Box and go to the [Developer Console][devconsole].",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "Scopes are selected in the Application Scopes section of the Configuration tab in the Developer Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "quote": "Navigate to the **Application Scopes** section of the",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "The app exchanges the authorization code plus its client secret for an access token and a refresh token.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2",
+        "quote": "Your application exchanges that code, along with its client secret, for an access token and a refresh token.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "Redirect URIs are configured under the OAuth 2.0 Redirect URI section on the Configuration page of the Developer Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "You can configure these under the OAuth 2.0 Redirect URI section on the",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "Configured redirect URIs must be valid URIs that use HTTPS, or plain HTTP only for localhost or loopback addresses.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "HTTPS, or a less secure HTTP for localhost or loopback address.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c27",
+        "text": "The redirect_uri in the authorization request must exactly match one of the redirect URIs configured for the app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "This will be an exact match check, meaning",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c28",
+        "text": "For user authentication apps, submitting for approval emails the enterprise's Primary Admin to approve the app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "Submitting the application for approval sends an email to your\nenterprise's Primary Admin to approve the application.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c29",
+        "text": "For user authentication apps, the approval submission is made from the Enablement tab of the app in the Developer Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "Navigate to the **Enablement** tab for your application in the [Developer Console][devconsole].",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c30",
+        "text": "To submit an app for publishing, select Apps in the Developer Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "quote": "Select **Apps**.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c31",
+        "text": "In the Developer Console, after selecting Apps, choose Submit for Approval to start the publishing submission.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "quote": "Select **Submit for Approval**.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c32",
+        "text": "Server apps using JWT or Client Credentials Grant must be authorized before use.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "Server authentication applications using JWT or\nClient Credentials Grant must be authorized before use.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c33",
+        "text": "For enterprise accounts, a Box Admin must approve the server application.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "For enterprise accounts, a Box Admin must approve the application.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c34",
+        "text": "An OAuth 2.0 app cannot later be changed to Server Authentication (or the reverse); a new app must be created for Server Authentication.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "create a new app and select **Server** instead.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote says to create a new app and select Server, which implies a new app is needed, but does not state that an OAuth app cannot be changed or address the reverse direction."
+      },
+      {
+        "id": "c35",
+        "text": "If multiple redirect URIs are configured, the authorization URL must include a redirect_uri parameter matching one of them; if omitted, the user sees a redirect_uri_missing error and is not redirected back to the app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "If the parameter is not specified, the user will see a `redirect_uri_missing`",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c36",
+        "text": "During OAuth, the browser briefly redirects through backend.composio.dev so Composio can capture the auth token.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c37",
+        "text": "To hide Composio's domain, you can proxy the redirect through your own domain instead.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c38",
+        "text": "The proxy endpoint must return a 302 redirect; it must not follow the redirect server-side or make a fetch call to Composio.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c39",
+        "text": "Box's redirect check is an exact match against configured redirect URIs.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "quote": "This will be an exact match check, meaning",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c40",
+        "text": "Calls from custom applications, scripts, and integrations count toward the enterprise's monthly allocation, including authentication requests.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+        "quote": "Calls from custom applications, scripts, and integrations count toward your enterprise's monthly allocation, including authentication requests.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c41x",
+        "text": "A newly created enterprise can authorize up to 10,000 custom apps.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "quote": "When a new enterprise is created, it can authorize up to 10,000 custom apps.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c42x",
+        "text": "Box uses user-based rate limits that generally trigger when a user exceeds about 1000 API calls per minute, though certain endpoints may have different limits. The page does not say these limits differ for unreviewed apps.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+        "quote": "user exceeds approximately 1000 API calls/minute, but certain API endpoints may",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c43x",
+        "text": "The upload limit is 240 file upload requests per minute per user.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+        "quote": "240 file upload requests per minute, per user",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c44x",
+        "text": "Box Sign limits are 100 create-and-resend sign request calls per minute per user, and 1000 get-sign-request calls per minute per user.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+        "quote": "Create and resend sign request: 100 requests per minute, per user",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T11:48:21.193Z",
+    "generated_by": "agent v2 (v2.7-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-haiku-5-5 · composio_search",
+    "duration_ms": 124337,
+    "query": "Box",
+    "partial": false,
+    "warnings": [
+      "The writer produced 41 claims; the 40 the guide uses most were kept.",
+      "\"Special scopes (legal holds, retention)\": the path (\"app_review\") is not backed by a verified source, so it is shown as unconfirmed.",
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups.",
+      "4 limits from the sources were missing from the written guide and were added under \"Watch out\"."
+    ],
+    "verification": {
+      "claims_total": 40,
+      "quotes_checked": 40,
+      "quotes_verified": 40,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 73173,
+      "output_tokens": 49285,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T11:46:18.051Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T11:46:18.051Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T11:46:18.051Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/box",
+        "title": null,
+        "fetched_at": "2026-10-21T11:46:18.051Z",
+        "via": "direct",
+        "chars": 303
+      },
+      {
+        "url": "https://www.box.com/",
+        "title": "Box | AI-Powered Content Management, Workflow & Collaboration",
+        "fetched_at": "2026-10-21T11:46:26.102Z",
+        "via": "direct",
+        "chars": 4380
+      },
+      {
+        "url": "https://developer.box.com/",
+        "title": "Home - Box Dev Docs",
+        "fetched_at": "2026-10-21T11:46:26.235Z",
+        "via": "direct",
+        "chars": 3010
+      },
+      {
+        "url": "https://developer.box.com/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T11:46:26.790Z",
+        "via": "direct",
+        "chars": 30367
+      },
+      {
+        "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+        "title": null,
+        "fetched_at": "2026-10-21T11:46:29.430Z",
+        "via": "direct",
+        "chars": 4056
+      },
+      {
+        "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+        "title": "Platform app approval - Box Dev Docs",
+        "fetched_at": "2026-10-21T11:46:29.516Z",
+        "via": "direct",
+        "chars": 6105
+      },
+      {
+        "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "title": "Setup with OAuth 2.0 - Box Dev Docs",
+        "fetched_at": "2026-10-21T11:46:29.555Z",
+        "via": "direct",
+        "chars": 4707
+      },
+      {
+        "url": "https://developer.box.com/guides/authentication/oauth2",
+        "title": "OAuth 2.0 authentication - Box Dev Docs",
+        "fetched_at": "2026-10-21T11:46:29.563Z",
+        "via": "direct",
+        "chars": 2172
+      },
+      {
+        "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+        "title": "Box API scopes - Box Dev Docs",
+        "fetched_at": "2026-10-21T11:46:29.577Z",
+        "via": "direct",
+        "chars": 14784
+      },
+      {
+        "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+        "title": "Plan your integration - Box Dev Docs",
+        "fetched_at": "2026-10-21T11:46:29.660Z",
+        "via": "direct",
+        "chars": 6152
+      },
+      {
+        "url": "https://www.box.com/partners",
+        "title": "Box partners | Integrations, resellers & AI-ready technology ecosystem",
+        "fetched_at": "2026-10-21T11:46:29.811Z",
+        "via": "composio_fetch",
+        "chars": 3066
+      },
+      {
+        "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+        "title": "Box API rate limits - Box Dev Docs",
+        "fetched_at": "2026-10-21T11:46:29.933Z",
+        "via": "direct",
+        "chars": 5810
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.7-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-haiku-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E9",
+            "E10",
+            "E11",
+            "E50",
+            "E51",
+            "E109"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E27",
+            "E28",
+            "E29",
+            "E30",
+            "E31",
+            "E32",
+            "E33",
+            "E34",
+            "E35",
+            "E36",
+            "E37",
+            "E76",
+            "E77",
+            "E78",
+            "E79"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E80"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E12",
+            "E52",
+            "E53",
+            "E54",
+            "E55",
+            "E56",
+            "E57",
+            "E58",
+            "E59",
+            "E60",
+            "E61",
+            "E62",
+            "E94",
+            "E95",
+            "E96",
+            "E97",
+            "E98",
+            "E99"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E38",
+            "E39",
+            "E63",
+            "E110",
+            "E111",
+            "E112",
+            "E113",
+            "E114",
+            "E115",
+            "E116",
+            "E117",
+            "E118"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E40",
+            "E41",
+            "E42",
+            "E43"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "found",
+          "evidence": [
+            "E3",
+            "E64",
+            "E81",
+            "E82",
+            "E119",
+            "E120",
+            "E121",
+            "E122",
+            "E123"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E4",
+            "E65",
+            "E66",
+            "E67",
+            "E68"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E5",
+            "E6",
+            "E13",
+            "E14",
+            "E15",
+            "E16",
+            "E17",
+            "E18",
+            "E19",
+            "E20",
+            "E21",
+            "E100",
+            "E101",
+            "E102",
+            "E103",
+            "E104",
+            "E105"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E7",
+            "E8",
+            "E22",
+            "E23",
+            "E24",
+            "E25",
+            "E26",
+            "E44",
+            "E45",
+            "E46",
+            "E47",
+            "E48",
+            "E49",
+            "E69",
+            "E70",
+            "E71",
+            "E72",
+            "E83",
+            "E84"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E73",
+            "E74",
+            "E75",
+            "E85",
+            "E86",
+            "E87"
+          ],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+            "https://developer.box.com/guides/authorization/platform-app-approval",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+            "https://www.box.com/partners",
+            "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": []
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E89",
+            "E90",
+            "E91",
+            "E92",
+            "E93",
+            "E106",
+            "E107",
+            "E108",
+            "E124",
+            "E125",
+            "E126",
+            "E127",
+            "E128",
+            "E129",
+            "E130",
+            "E131",
+            "E132",
+            "E133"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "A free developer account gives you access to the Developer Console, where you can create an OAuth 2.0 application and start authenticating users in minutes.",
+          "answer": "A free developer account gives access to the Developer Console, where an OAuth 2.0 application can be created.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1784,
+            1940
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "The user logs in to Box and approves the scopes your application asks for.",
+          "answer": "The app's requested scopes are approved by the signed-in user at login.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1230,
+            1304
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "A free developer account gives you access to the Developer Console, where you can create an OAuth 2.0 application and start authenticating users in minutes.",
+          "answer": "The page says a free developer account is enough to create an OAuth 2.0 application; it mentions no paid plan, credits or fees.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1784,
+            1940
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "The user logs in to Box and approves the scopes your application asks for.",
+          "answer": "The page describes the end user, not an admin, logging in and approving the app's scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1230,
+            1304
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "Your application builds an authorization URL from its client ID and a registered redirect URI, and sends the user to it.",
+          "answer": "The authorization URL is built from the app's client ID and a registered redirect URI.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            0,
+            120
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "Box redirects the user back to your redirect URI with a short-lived authorization code.",
+          "answer": "Box sends the user back to the app's redirect URI with a short-lived authorization code.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            0,
+            87
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "Your application exchanges that code, along with its client secret, for an access token and a refresh token.",
+          "answer": "The app exchanges the authorization code plus its client secret for an access token and a refresh token.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            0,
+            108
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "A free developer account gives you access to the Developer Console, where you can create an OAuth 2.0 application and start authenticating users in minutes.",
+          "answer": "OAuth 2.0 apps are created in the Developer Console, which is reached after a free developer account is available.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.563Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1784,
+            1940
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "Alternatively, you may sign up for a [developer account][devaccount].",
+          "answer": "The Developer Console is reached with a Box enterprise account, or alternatively with a Box developer account.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            654,
+            723
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "A free developer account gives you access to the Developer Console, where you can create and configure OAuth 2.0 applications.",
+          "answer": "A free developer account gives access to the Developer Console, where OAuth 2.0 apps can be created and configured.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            755,
+            881
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "A Platform App can be set up to use client-side OAuth 2.0 authentication.",
+          "answer": "This page covers setting up a Platform App that uses client-side OAuth 2.0 authentication.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            343,
+            416
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "Scopes define what permissions your application has in order to access data. See",
+          "answer": "Scopes define what permissions the application has to access data; the page refers to a separate scopes guide for each option.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            3445,
+            3525
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "This will be an exact match check, meaning",
+          "answer": "The redirect_uri in the authorization request must exactly match one of the redirect URIs configured for the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            1916,
+            1958
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "will be permitted to redirect to any port, but the scheme, domain, path and query",
+          "answer": "Localhost and loopback redirect URIs may use any port, but scheme, domain, path and query parameters must still match a configured URI.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            2039,
+            2120
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "HTTPS, or a less secure HTTP for localhost or loopback address.",
+          "answer": "Configured redirect URIs must be valid URIs that use HTTPS, or plain HTTP only for localhost or loopback addresses.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            2323,
+            2386
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "permit duplicate URIs to be saved.",
+          "answer": "Duplicate redirect URIs cannot be saved.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            2397,
+            2431
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "You can configure these under the OAuth 2.0 Redirect URI section on the",
+          "answer": "Redirect URIs are configured under the OAuth 2.0 Redirect URI section on the Configuration page of the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            2172,
+            2243
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "existing applications will gain the ability to add multiple redirect URIs.",
+          "answer": "Starting November 29, 2021, new OAuth 2.0 apps must have their configured redirect URIs strictly match the one used during redirect; both new and existing apps can add multiple redirect URIs.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            2667,
+            2741
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "If the parameter is not specified, the user will see a `redirect_uri_missing`",
+          "answer": "If multiple redirect URIs are configured, the authorization URL must include a redirect_uri parameter matching one of them; if omitted, the user sees a redirect_uri_missing error and is not redirected back to the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            2940,
+            3017
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "If all requests will be made from server-side code,",
+          "answer": "Front-end JavaScript apps must have the calling domain added to a CORS allow-list; server-side-only apps may skip this.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            4016,
+            4067
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "To add the full URI(s) to the allow-list, navigate to the **CORS Domain**",
+          "answer": "Full URIs for the CORS allow-list are added in the CORS Domain section at the bottom of the Configuration tab.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            4096,
+            4169
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "Log into Box and go to the [Developer Console][devconsole].",
+          "answer": "To create the app, log into Box and go to the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            1113,
+            1172
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "Select **User** as the app type.",
+          "answer": "In the Developer Console, select New App, then select User as the app type, then select Create.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            1199,
+            1231
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "create a new app and select **Server** instead.",
+          "answer": "An OAuth 2.0 app cannot later be changed to Server Authentication (or the reverse); a new app must be created for Server Authentication.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            1418,
+            1465
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "Scopes define what permissions your application has in order to access data. See",
+          "answer": "Scopes are configured in the app's Application scopes section.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            3445,
+            3525
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "quote": "Configuration page in the developer console. These must be valid URIs that are",
+          "answer": "Redirect URI is configured on the Configuration page of the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.555Z",
+          "page_hash": "9f28be9734a11f6a",
+          "offsets": [
+            2244,
+            2322
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Server authentication applications using JWT or\nClient Credentials Grant must be authorized before use.",
+          "answer": "Server apps using JWT or Client Credentials Grant must be authorized before use.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            353,
+            456
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "For free developer accounts, authorization happens automatically when the app is created.",
+          "answer": "For free developer accounts, server app authorization happens automatically when the app is created.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            457,
+            546
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "For enterprise accounts, a Box Admin must approve the application.",
+          "answer": "For enterprise accounts, a Box Admin must approve the server application.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            547,
+            613
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Unpublished applications using OAuth 2.0 authentication may require enablement by a Box Admin or Co-Admin if they are inactive by default.",
+          "answer": "Unpublished OAuth 2.0 apps may need enablement by a Box Admin or Co-Admin if they are inactive by default.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            0,
+            138
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Apps created by free developer (Individual) accounts are authorized automatically.",
+          "answer": "Apps created by free developer (Individual) accounts are authorized automatically.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            0,
+            82
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "A semi-automated process to submit an app approval is available in the Developer\nConsole for user authentication applications.",
+          "answer": "For user authentication apps, a semi-automated approval submission is available in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            2213,
+            2339
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Submitting the application for approval sends an email to your\nenterprise's Primary Admin to approve the application.",
+          "answer": "For user authentication apps, submitting for approval emails the enterprise's Primary Admin to approve the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            2629,
+            2746
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "When a Box Admin or Co-Admin approves or declines your request,\nyou receive an email with the decision.",
+          "answer": "A Box Admin or Co-Admin's approval or decline of a user authentication app request is sent to the developer by email.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            2747,
+            2850
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "**Enterprise developers**: After you create the app, the **Configuration** tab prompts you to submit for admin approval.",
+          "answer": "Enterprise developers are prompted by the Configuration tab to submit the app for admin approval after creating it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            1588,
+            1708
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "**Enterprise admins and co-admins**: After you create the app, the **Configuration** tab lets you authorize the app directly.",
+          "answer": "Enterprise admins and co-admins can authorize the app directly from the Configuration tab after creating it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            1710,
+            1835
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Select **Submit** to send the request. Your admin or co-admin receives an email\nnotification, and you receive an email when the request is approved or\ndenied.",
+          "answer": "A developer who is not a Box Admin or Co-Admin submits an authorization request, and the admin receives an email notification.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            0,
+            158
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "When a new enterprise is created, it can authorize up to 10,000 custom apps.",
+          "answer": "A newly created enterprise can authorize up to 10,000 custom apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            4329,
+            4405
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "If your enterprise needs to authorize more than 10,000 custom apps, contact\n> [Box Support](https://support.box.com/hc/en-us/requests/new?\\&referrerPageUrl=) to request an increase.",
+          "answer": "Enterprises needing more than 10,000 authorized custom apps must contact Box Support to request an increase.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            4421,
+            4602
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G6",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "When an application's scopes or access level change, the application must be re-authorized for the changes to take effect.",
+          "answer": "An app must be re-authorized when its scopes or access level change, for the changes to take effect.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            4636,
+            4758
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "G6",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "When you save changes, the app is automatically re-authorized.",
+          "answer": "For free developer accounts, saving changes automatically re-authorizes the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            4789,
+            4851
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "G6",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "After saving changes, submit the app for re-authorization by your Box Admin.",
+          "answer": "For enterprise developers, after saving changes the app must be submitted for re-authorization by a Box Admin.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            4987,
+            5063
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "G6",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "After saving changes, the **Configuration** tab prompts you to re-authorize the app directly.",
+          "answer": "Enterprise admins and co-admins are prompted in the Configuration tab to re-authorize the app directly after saving changes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            5210,
+            5303
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Scroll down to the **OAuth 2.0 Credentials** section and copy the **Client ID** value to provide to a Box Admin or Co-Admin.",
+          "answer": "Developers find the Client ID in the Configuration tab under the OAuth 2.0 Credentials section, to give to a Box Admin or Co-Admin.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            3186,
+            3310
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Navigate to the **Configuration** tab for your application in the [Developer Console][devconsole].",
+          "answer": "The app's settings are found in the Configuration tab of the app in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            3084,
+            3182
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Navigate to the **Enablement** tab for your application in the [Developer Console][devconsole].",
+          "answer": "For user authentication apps, the approval submission is made from the Enablement tab of the app in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            2341,
+            2436
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "JWT and CCG authentication apps can be authorized directly from the\n**Configuration** tab in the [Developer Console][devconsole].",
+          "answer": "JWT and CCG apps can be authorized directly from the Configuration tab in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            1109,
+            1238
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "In the dialog box that displays, enter the Client ID for the application that the\ndeveloper collected from the **Configuration** tab of the\n[Developer Console][devconsole].",
+          "answer": "An admin enters the app's Client ID in the Admin Console dialog to authorize the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            4130,
+            4302
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authorization/platform-app-approval",
+          "quote": "Admins can also re-authorize applications by opening the **Platform Apps** tab under **Platform** in the Admin Console sidebar, then selecting **...** in the application's row and selecting **Reauthorize**.",
+          "answer": "Admins can re-authorize an app from the Platform Apps tab in the Admin Console by selecting Reauthorize from the app's row menu.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.516Z",
+          "page_hash": "aa253bd08a367546",
+          "offsets": [
+            5305,
+            5511
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "A free developer account gives you access to the Developer Console, where you can configure application scopes and start making API calls.",
+          "answer": "A free developer account gives access to the Developer Console, where scopes can be configured and API calls started.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            1581,
+            1719
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "When an application is created in the Developer Console, the user must configure",
+          "answer": "Scopes are configured when an application is created in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            313,
+            393
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "Gives an application the ability to read all the files/folders for the authenticated user.",
+          "answer": "The root_readonly (Read all files and folders) scope lets an app read all files and folders for the authenticated user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            0,
+            90
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "Gives an application write access for the authenticated user.",
+          "answer": "The root_readwrite (Read and write all files and folders) scope gives an app write access for the authenticated user, including upload, download and folder creation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            3725,
+            3786
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "Gives an application permission to send requests to",
+          "answer": "The ai.readwrite (Manage Box AI API) scope lets an app send requests to the Box AI API.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            8004,
+            8055
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "Additionally, for JWT applications, the application must be configured with",
+          "answer": "The manage_managed_users scope for JWT applications requires the app to be configured with App Access + Enterprise Access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            4788,
+            4863
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "This scope requires the application to also have read/write scopes, which are",
+          "answer": "The sign_requests.readwrite (Manage signature requests) scope requires the app to also have read/write scopes, which are automatically selected when enabled.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            7722,
+            7799
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "This scope requires the application to also have read/write scopes.",
+          "answer": "The manage_triggers (Manage Box Relay) scope requires the app to also have read/write scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            8312,
+            8379
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "This scope also requires the `enterprise_content` scope to function properly.",
+          "answer": "The manage_data_retention scope (Governance retention policies) also requires the enterprise_content scope to function properly.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            7332,
+            7409
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "These scopes can be requested by opening a ticket via our support channels.",
+          "answer": "The manage_data_retention scope is available only through a support ticket, not self-serve in the console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            7412,
+            7487
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "They will review these requests on an individual basis and only provide approval if the use case requires the scope.",
+          "answer": "Scopes listed as available on request (such as manage_legal_holds and enterprise_content) are reviewed individually by Box support.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            0,
+            116
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "This scope can be requested by opening a ticket via our support channels.",
+          "answer": "The manage_legal_holds scope can be requested only by opening a support ticket.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            9392,
+            9465
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "This scope is required to manage the retention policies and legal holds.",
+          "answer": "The enterprise_content (Global Content Manager) scope is required to manage retention policies and legal holds.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            10006,
+            10078
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "It is not possible to request extra scopes if your account is a free trial",
+          "answer": "Extra scopes cannot be requested while the account is a free trial account.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            8675,
+            8749
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "log in to your paid enterprise account or",
+          "answer": "Before requesting activation of the extra scopes, the developer must log in to a paid enterprise account or upgrade the free developer account to an enterprise account tier.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            8835,
+            8876
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "the Access Token used must be associated with an Admin or Co-Admin with the",
+          "answer": "For client-side apps, the access token managing users must be associated with an Admin or Co-Admin with the correct permissions.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            4685,
+            4760
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "automatically selected when enabled. In addition, an enterprise must have Sign",
+          "answer": "The sign_requests.readwrite scope requires that an enterprise has Sign enabled.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            7800,
+            7878
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "For use with the Governance add-on.",
+          "answer": "The manage_legal_holds scope is for use with the Governance add-on.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            9264,
+            9299
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "This requires the enterprise to have purchased",
+          "answer": "The manage_data_retention scope requires the enterprise to have purchased Box Governance.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            7237,
+            7283
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "Navigate to the **Application Scopes** section of the",
+          "answer": "Scopes are selected in the Application Scopes section of the Configuration tab in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            2686,
+            2739
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "[https://account.box.com/developers/console](https://account.box.com/developers/console)",
+          "answer": "The Developer Console is at the listed developers/console URL.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            1806,
+            1894
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "**Configuration** tab and select one or more of the following scopes.",
+          "answer": "Scopes are chosen by selecting one or more scopes in the Configuration tab.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            2740,
+            2809
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "When the scope parameter is omitted the application will use the scopes that",
+          "answer": "A scope parameter can be appended to the OAuth authorization URL to restrict the user's token; if omitted, the scopes set at app creation are used.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            2451,
+            2527
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G11",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "They will review these requests on an individual basis and only provide approval if the use case requires the scope.",
+          "answer": "Extra scopes available on request are approved only if the use case requires the scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            0,
+            116
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G11",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "For this reason, this scope will not be provisioned unless absolutely necessary.",
+          "answer": "The enterprise_content scope is not provisioned unless absolutely necessary.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            10440,
+            10520
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G11",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "quote": "scope disables accessing content that is owned by users in another enterprise.",
+          "answer": "Enabling enterprise_content disables accessing content owned by users in another enterprise.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.577Z",
+          "page_hash": "94e83a1a4b7c2eb5",
+          "offsets": [
+            10357,
+            10435
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "To publish, make sure your app is production-ready and uses OAuth 2.0. Submit it for approval in the Developer Console:",
+          "answer": "Publishing to Box Integrations requires submitting the app for approval in the Developer Console, and the app must be production-ready and use OAuth 2.0.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5270,
+            5389
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Platform Apps are a good fit when you need to access your own files and others' files, upload and download content, and optionally list the app in Box Integrations.",
+          "answer": "Listing a Platform App in Box Integrations is optional, not a stated prerequisite for connecting.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            4648,
+            4812
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Listing your app is an effective way to reach new users, especially for apps meant for other enterprises.",
+          "answer": "Box Integrations is the place where Box users discover apps, and listing is described as an effective way to reach new users, especially for apps meant for other enterprises.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5163,
+            5268
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G2",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "For the submission checklist, required assets, and partner review process, see Box Integrations.",
+          "answer": "The page says the submission checklist, required assets, and partner review process are described on the separate Box Integrations page, not on this page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5572,
+            5668
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G3",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Fill out the form and select **Submit**.",
+          "answer": "Submitting an app for approval involves filling out a form in the Developer Console and selecting Submit.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5449,
+            5489
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Product availability depends on your Box plan and enterprise entitlements.",
+          "answer": "Product availability depends on the Box plan and enterprise entitlements, so a paid plan may be needed for some products; the free developer plan does not include every product.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            3836,
+            3910
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Not every product is included on the free developer plan.",
+          "answer": "Not every Box product is included on the free developer plan; paid tiers and add-on products are covered on a separate plan-selection page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            3911,
+            3968
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Select **Apps**.",
+          "answer": "To submit an app for publishing, select Apps in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5394,
+            5410
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Select **Submit for Approval**.",
+          "answer": "In the Developer Console, after selecting Apps, choose Submit for Approval to start the publishing submission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5414,
+            5445
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "G11",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "To publish, make sure your app is production-ready and uses OAuth 2.0. Submit it for approval in the Developer Console:",
+          "answer": "Apps must be production-ready and use OAuth 2.0 to be published to Box Integrations.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5270,
+            5389
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "G11",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Non-OAuth integrations cannot use that listing flow as-is; the guide describes using an OAuth listing as a marketing redirect when needed.",
+          "answer": "Non-OAuth integrations cannot use the standard Box Integrations listing flow as-is; an OAuth listing may be used as a marketing redirect when needed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5687,
+            5825
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G11",
+          "url": "https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "quote": "Approved apps can appear in featured, most popular, or recently added sections.",
+          "answer": "Approved apps may appear in featured, most popular, or recently added sections of Box Integrations.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.660Z",
+          "page_hash": "c529d5cf6996c7c2",
+          "offsets": [
+            5491,
+            5570
+          ]
+        },
+        {
+          "id": "E88",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Box](/toolkits/box.md) | `BOX` |",
+          "answer": "Box (slug BOX) is listed under Composio-managed OAuth available, so Composio can supply the OAuth app for it. This page lists Box only in that table and gives no Box-specific details.",
+          "kind": "composio_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1787,
+            1822
+          ]
+        },
+        {
+          "id": "E89",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "For toolkits Composio manages, the developer does not need to register an OAuth app or supply a client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E90",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app.",
+          "answer": "To check whether Composio provides the OAuth app, read the composio_managed_auth_schemes field from the toolkit endpoint; if it contains the toolkit's OAuth method, Composio provides the app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            824
+          ]
+        },
+        {
+          "id": "E91",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "If the field does not contain the OAuth method, the developer must register their own OAuth app and supply its client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            825,
+            939
+          ]
+        },
+        {
+          "id": "E92",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "A toolkit with several authentication methods appears under Composio-managed OAuth available when Composio manages at least one OAuth method, so each method must be checked on the toolkit page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            941,
+            1153
+          ]
+        },
+        {
+          "id": "E93",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Box MCP](/toolkits/box_mcp.md) | `BOX_MCP` |",
+          "answer": "A separate toolkit, Box MCP (slug BOX_MCP), is listed under Bring your own OAuth app, so the developer must supply their own app for that toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            8966,
+            9013
+          ]
+        },
+        {
+          "id": "E94",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "set of permissions that are necessary for the UI Element to functionally work.",
+          "answer": "For Box UI Elements (not AI agent apps generally), every UI Element has a base scope that gives the least set of permissions needed for that element to function.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.430Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            2726,
+            2804
+          ]
+        },
+        {
+          "id": "E95",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "For this reason, this \"base scope\" must always be present in the token exchange",
+          "answer": "For Box UI Elements, the base scope must always be included in the token exchange request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.430Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            2805,
+            2884
+          ]
+        },
+        {
+          "id": "E96",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "feature-level scopes. Upon pairing with base scopes, feature scopes enable",
+          "answer": "For Box UI Elements, feature scopes sit on top of the base scope and enable extra capabilities when paired with it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.430Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            3196,
+            3270
+          ]
+        },
+        {
+          "id": "E97",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "So a developer can combine multiple scopes in a token exchange request to generate a token with the desired set of functionality.",
+          "answer": "For Box UI Elements, scopes are modular and strictly additive, so a developer can combine several scopes in one token exchange request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.430Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            1519,
+            1648
+          ]
+        },
+        {
+          "id": "E98",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "So adding this scope to the token enables the specific action.",
+          "answer": "For Box UI Elements, each scope is meant to map to one specific action in the UI Element, and adding it to the token enables that action.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.430Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            1797,
+            1859
+          ]
+        },
+        {
+          "id": "E99",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "So even if some end-user of your application uses the token directly against the API, they can't gain access beyond what you intended them to provide through the UI Element.",
+          "answer": "For Box UI Elements, each scope should contain only the minimum permissions needed for its action, so a token holder cannot gain access beyond what the developer intended through the UI Element.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.430Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            2100,
+            2273
+          ]
+        },
+        {
+          "id": "E100",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "During OAuth, the browser briefly redirects through backend.composio.dev so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E101",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also display the Composio callback URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E102",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "To hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E103",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "In your OAuth app's settings, you set the authorized redirect URI to your own endpoint, given as an example as https://yourdomain.com/api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E104",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "Your proxy endpoint receives the OAuth callback and immediately sends a 302 redirect to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E105",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.",
+          "answer": "The proxy endpoint must return a 302 redirect; it must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3494
+          ]
+        },
+        {
+          "id": "E106",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "The page says to add your own OAuth app only for toolkits where the provider consent screen must show your brand; it does not mention Box specifically.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E107",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, users see 'Composio wants to access your account' on the consent screen of providers such as Google and GitHub.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E108",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Use your own OAuth app",
+          "answer": "The page's fix for the Composio-branded consent screen is to use your own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            725,
+            747
+          ]
+        },
+        {
+          "id": "E109",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "A free developer account lets you start making API calls and test your integration's rate limit handling with real requests.",
+          "answer": "A free Box developer account lets you start making API calls and test rate limit handling with real requests.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            510,
+            634
+          ]
+        },
+        {
+          "id": "E110",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "user exceeds approximately 1000 API calls/minute, but certain API endpoints may",
+          "answer": "Box uses user-based rate limits that generally trigger when a user exceeds about 1000 API calls per minute, though certain endpoints may have different limits. The page does not say these limits differ for unreviewed apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            1132,
+            1211
+          ]
+        },
+        {
+          "id": "E111",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "1000 API requests per minute, per user",
+          "answer": "The general API limit is 1000 API requests per minute per user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            3734,
+            3772
+          ]
+        },
+        {
+          "id": "E112",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "240 file upload requests per minute, per user",
+          "answer": "The upload limit is 240 file upload requests per minute per user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            3787,
+            3832
+          ]
+        },
+        {
+          "id": "E113",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "6 searches per second, per user, to the search endpoint",
+          "answer": "Search is limited to 6 searches per second per user on the search endpoint.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            3846,
+            3901
+          ]
+        },
+        {
+          "id": "E114",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "60 searches per minute, per user",
+          "answer": "Search has an additional limit of 60 searches per minute per user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            3977,
+            4009
+          ]
+        },
+        {
+          "id": "E115",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "12 searches per second, per enterprise",
+          "answer": "Search has an additional limit of 12 searches per second per enterprise.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            4016,
+            4054
+          ]
+        },
+        {
+          "id": "E116",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "Create and resend sign request: 100 requests per minute, per user",
+          "answer": "Box Sign limits are 100 create-and-resend sign request calls per minute per user, and 1000 get-sign-request calls per minute per user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            4070,
+            4135
+          ]
+        },
+        {
+          "id": "E117",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "temporary rate-limits when load spikes and adjust them as the system recovers.",
+          "answer": "Box may impose temporary rate limits during load spikes from shared infrastructure resource contention, adjusting them as the system recovers.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            1712,
+            1790
+          ]
+        },
+        {
+          "id": "E118",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "controls, additional selective rate-limiting may be imposed.",
+          "answer": "Licensing-based rate limiting may be imposed when a tool exceeds the customer's API license allocation or tries to circumvent network controls.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            2189,
+            2249
+          ]
+        },
+        {
+          "id": "E119",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "All Box Business Plans come with a licensed number of permitted API calls per enterprise per month.",
+          "answer": "All Box Business Plans include a licensed number of permitted API calls per enterprise per month.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            0,
+            99
+          ]
+        },
+        {
+          "id": "E120",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "Calls from custom applications, scripts, and integrations count toward your enterprise's monthly allocation, including authentication requests.",
+          "answer": "Calls from custom applications, scripts, and integrations count toward the enterprise's monthly allocation, including authentication requests.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            0,
+            143
+          ]
+        },
+        {
+          "id": "E121",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "Calls from Box partner integrations and native Box applications don't.",
+          "answer": "Calls from Box partner integrations and native Box applications do not count toward the monthly allocation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            0,
+            70
+          ]
+        },
+        {
+          "id": "E122",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "some customers purchase Platform API Pricing plans that increase their allocation.",
+          "answer": "Some customers buy Platform API Pricing plans that increase their API allocation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            0,
+            82
+          ]
+        },
+        {
+          "id": "E123",
+          "question": "G7",
+          "url": "https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "quote": "Box AI API calls consume AI Units, which are tracked separately from API calls.",
+          "answer": "Box AI API calls consume AI Units, which are tracked separately from regular API calls.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:29.933Z",
+          "page_hash": "a741d7e64d873c5f",
+          "offsets": [
+            0,
+            79
+          ]
+        },
+        {
+          "id": "E124",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack, so the developer does not register their own app for those toolkits. The page does not name Box.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E125",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "With a custom auth config, the developer supplies their own OAuth app, API key, bearer token, or other credentials for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E126",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E127",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "To check whether Composio provides the OAuth app for a given toolkit, the page points to the Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E128",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "During OAuth with a managed app, users see the consent message \"Composio wants to access your account.\"",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E129",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Managed apps request Composio's default scopes, which may not include everything a developer needs (for example, write access to a specific Google API).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E130",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+          "answer": "Managed apps share their rate-limit quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1511
+          ]
+        },
+        {
+          "id": "E131",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for triggers; the developer's own app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E132",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "In production, users should see your app name, not \"Composio.\"",
+          "answer": "In production, users should see the developer's app name on OAuth consent screens rather than \"Composio.\"",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            1145,
+            1207
+          ]
+        },
+        {
+          "id": "E133",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Use your own credentials for toolkits where users see consent screens (GitHub, Google, Slack) and Composio managed auth for the rest.",
+          "answer": "A developer can mix approaches: use their own credentials for toolkits with user-facing consent screens (GitHub, Google, Slack) and Composio managed auth for the rest.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:46:18.051Z",
+          "page_hash": "",
+          "offsets": [
+            2168,
+            2301
+          ]
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 9168
+        },
+        {
+          "name": "extract https://developer.box.com/guides/authentication/oauth2",
+          "stop": "ok (8 facts)",
+          "ms": 10788
+        },
+        {
+          "name": "extract https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+          "stop": "ok (18 facts)",
+          "ms": 20624
+        },
+        {
+          "name": "extract https://developer.box.com/guides/authorization/platform-app-approval",
+          "stop": "ok (23 facts)",
+          "ms": 20623
+        },
+        {
+          "name": "extract https://developer.box.com/guides/api-calls/permissions-and-errors/scopes",
+          "stop": "ok (26 facts)",
+          "ms": 23077
+        },
+        {
+          "name": "extract https://www.box.com/partners",
+          "stop": "ok (0 facts)",
+          "ms": 3987
+        },
+        {
+          "name": "extract https://developer.box.com/guides/getting-started/plan-your-integration#publish-your-app",
+          "stop": "ok (12 facts)",
+          "ms": 15003
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (5 facts)",
+          "ms": 7533
+        },
+        {
+          "name": "extract https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "stop": "ok (6 facts)",
+          "ms": 9449
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (9 facts)",
+          "ms": 11859
+        },
+        {
+          "name": "extract https://developer.box.com/guides/api-calls/permissions-and-errors/rate-limits",
+          "stop": "ok (15 facts)",
+          "ms": 17272
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (10 facts)",
+          "ms": 10402
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 18984
+        }
+      ],
+      "judge": {
+        "checked": 38,
+        "supported": 24,
+        "partial": 13,
+        "unsupported": 1,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "The quote states that apps from free developer (Individual) accounts are authorized automatically."
+          },
+          {
+            "id": "c3",
+            "verdict": "supported",
+            "reason": "The quote describes listing in Box Integrations as optional ('optionally list the app'), so it is not a prerequisite."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "The quote says the user logs in and approves the scopes the application asks for."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "The quote says unpublished OAuth 2.0 apps may require enablement by a Box Admin or Co-Admin if inactive by default."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "The quote says the app must be re-authorized for scope or access-level changes to take effect."
+          },
+          {
+            "id": "c7",
+            "verdict": "partial",
+            "reason": "The quote says saving changes auto-re-authorizes the app, but does not restrict this to free developer accounts."
+          },
+          {
+            "id": "c8",
+            "verdict": "partial",
+            "reason": "The quote says to submit the app for re-authorization by the Box Admin after saving, but does not say this applies to enterprise developers."
+          },
+          {
+            "id": "c9",
+            "verdict": "supported",
+            "reason": "The quote says requests are reviewed individually by Box and approved only if the use case requires the scope."
+          },
+          {
+            "id": "c10",
+            "verdict": "partial",
+            "reason": "The quote says the scope can be requested by opening a ticket, but does not say this is the only way."
+          },
+          {
+            "id": "c11",
+            "verdict": "partial",
+            "reason": "The quote says these scopes can be requested by ticket, but does not say ticket-only or 'not self-serve in the console'."
+          },
+          {
+            "id": "c12",
+            "verdict": "supported",
+            "reason": "The quote says requests are approved only if the use case requires the scope."
+          },
+          {
+            "id": "c13",
+            "verdict": "partial",
+            "reason": "The quote is truncated to 'log in to your paid enterprise account or'; it does not state the upgrade path for free developer accounts."
+          },
+          {
+            "id": "c14",
+            "verdict": "supported",
+            "reason": "The quote says it is not possible to request extra scopes if the account is a free trial."
+          },
+          {
+            "id": "c15",
+            "verdict": "supported",
+            "reason": "The quote says enabling the scope disables accessing content owned by users in another enterprise."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "The quote says to make the app production-ready, use OAuth 2.0, and submit it for approval in the Developer Console."
+          },
+          {
+            "id": "c17",
+            "verdict": "supported",
+            "reason": "The quote says to fill out the form and select Submit."
+          },
+          {
+            "id": "c18",
+            "verdict": "supported",
+            "reason": "The quote directs readers to the Box Integrations page for the checklist, required assets, and partner review process."
+          },
+          {
+            "id": "c19",
+            "verdict": "supported",
+            "reason": "The quote says approved apps can appear in featured, most popular, or recently added sections."
+          },
+          {
+            "id": "c28",
+            "verdict": "supported",
+            "reason": "The quote says submitting for approval sends an email to the enterprise's Primary Admin to approve the application."
+          },
+          {
+            "id": "c32",
+            "verdict": "supported",
+            "reason": "The quote says server authentication applications using JWT or Client Credentials Grant must be authorized before use."
+          },
+          {
+            "id": "c33",
+            "verdict": "supported",
+            "reason": "The quote says a Box Admin must approve the application for enterprise accounts."
+          },
+          {
+            "id": "c34",
+            "verdict": "partial",
+            "reason": "The quote says to create a new app and select Server, which implies a new app is needed, but does not state that an OAuth app cannot be changed or address the reverse direction."
+          },
+          {
+            "id": "c40",
+            "verdict": "supported",
+            "reason": "The quote says calls from custom applications, scripts, and integrations count toward the monthly allocation, including authentication requests."
+          },
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "The quotes show free-developer apps are auto-authorized and describe the Developer Console, but auto-authorization is not the same as no provider review for customers using a multi-customer app."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "partial",
+            "reason": "The quotes mention creating an OAuth app and Platform Apps, but do not state the ordered steps (configure scopes and redirect URI, then customer admin enablement)."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "supported",
+            "reason": "The quote says unpublished OAuth 2.0 apps may require Box Admin or Co-Admin enablement if inactive by default."
+          },
+          {
+            "id": "s1.mod1",
+            "verdict": "supported",
+            "reason": "The quotes say scope or access changes require re-authorization, with automatic or admin-submitted re-authorization as described."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "supported",
+            "reason": "The quotes say Box reviews special-scope requests individually and approves only when justified."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "partial",
+            "reason": "The quotes show review for these scopes, but do not say review is required only for sensitive scopes."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "The quotes cover the support ticket and review, but do not give the ordered steps including the enterprise upgrade."
+          },
+          {
+            "id": "s2.checks",
+            "verdict": "supported",
+            "reason": "The quotes say approval depends on whether the use case requires the scope, which is the reason for the data need."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "The quotes say extra scopes require a paid enterprise account and cannot be requested on a free trial."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "The quote says enterprise_content disables access to content owned by users in another enterprise."
+          },
+          {
+            "id": "s3.path",
+            "verdict": "supported",
+            "reason": "The quotes say publishing requires submitting the app for approval in the Developer Console."
+          },
+          {
+            "id": "s3.trigger",
+            "verdict": "partial",
+            "reason": "The quotes say to submit for approval to publish, but do not say the review is always required."
+          },
+          {
+            "id": "s3.gates",
+            "verdict": "partial",
+            "reason": "The quotes cover production-readiness and form submission, but not the ordered steps or the partner review step."
+          },
+          {
+            "id": "s3.checks",
+            "verdict": "unsupported",
+            "reason": "The quotes say the app is submitted for approval but do not describe what the review checks."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "The quotes support automatic authorization and minutes-level setup for free developer apps and the ticket and review requirements, but do not state 'within hours' timing, enterprise admin approval, or the absence of documented timing."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 9168,
+        "discover_read": 3910,
+        "extract": 42555,
+        "gapfill": 18987,
+        "write": 33237,
+        "verify": 16479
+      }
+    }
+  }
+}
