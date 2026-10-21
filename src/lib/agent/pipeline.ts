@@ -44,6 +44,8 @@ export interface RunOptionsV2 {
   signal?: AbortSignal;
   /** Swap the model transport (tests and the Claude Code test mirror). Production leaves this unset. */
   llm?: Llm;
+  /** Multiplies the per-stage model time caps (the mirror's headless calls are slower). Production: 1. */
+  timeScale?: number;
 }
 
 const Identity = z.object({
@@ -174,6 +176,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   const started = Date.now();
   const emit = opts.emit;
   const models = resolveModels(opts.models);
+  const k = opts.timeScale ?? 1; // stage caps for model work; network caps (lookup, fetches) don't scale
   const llm = opts.llm ?? createLlm(opts.client ?? new Anthropic(), { signal: opts.signal, onWarning: (m) => emit({ type: "warning", message: m }) });
   const runDeadline = started + (opts.totalBudgetMs ?? 270_000);
   // Plan backwards: save, then the judge, then the writer (the slowest step) get their time first.
@@ -259,7 +262,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     const sBudget = { left: 2 };
     const fBudget = { left: 2 };
     const counter = serverSearchCounter();
-    const deadline = Math.min(Date.now() + 25_000, researchDeadline);
+    const deadline = Math.min(Date.now() + 25_000 * k, researchDeadline);
     const composioSummary = lookup
       ? JSON.stringify({
           managed_oauth: lookup.managed_oauth,
@@ -360,7 +363,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   const providerPages = dedupePages(read).filter((p) => !/composio\.dev/.test(p.url) && !/\/llms\.txt$/.test(p.url));
   const composioPages = [...store.pages.values()].filter((p) => /composio\.dev/.test(p.url)).slice(0, 3);
   emit({ type: "stage", stage: "research", message: `Extracting facts from ${providerPages.length + composioPages.length} pages` });
-  const extractDeadline = Math.min(Date.now() + 45_000, researchDeadline - 15_000);
+  const extractDeadline = Math.min(Date.now() + 45_000 * k, researchDeadline - 15_000);
   const jobs: { page: Page; ids: QuestionId[] }[] = [
     ...providerPages.map((page) => ({ page, ids: PROVIDER_QUESTIONS })),
     ...composioPages.map((page) => ({ page, ids: COMPOSIO_QUESTIONS })),

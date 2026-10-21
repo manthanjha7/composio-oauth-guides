@@ -41,7 +41,7 @@ for (const app of apps) {
   const result = await runAgentV2({
     query: app,
     // The mirror's headless calls are slower and have no 300 s function limit, so it gets more time by default.
-    ...(mirror ? { llm: createMirrorLlm(), totalBudgetMs: budgetMs || 900_000 } : budgetMs ? { totalBudgetMs: budgetMs } : {}),
+    ...(mirror ? { llm: createMirrorLlm(), totalBudgetMs: budgetMs || 1_200_000, timeScale: 5 } : budgetMs ? { totalBudgetMs: budgetMs } : {}),
     emit: (e) => {
       const line = `[${((Date.now() - t0) / 1000).toFixed(0).padStart(3)}s] ${e.type}: ${JSON.stringify(e).slice(0, 300)}`;
       log.push(line);
