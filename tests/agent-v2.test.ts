@@ -537,6 +537,17 @@ describe("anchorOfficial", () => {
     await anchorOfficial(store, { name: "Acme", oauth: "yes", website: "https://best-oauth-tips.example" }, null, Date.now() + 5_000);
     expect(store.official.size).toBe(0);
   });
+  it("with no catalog entry and no readable website, accepts docs whose domain is exactly the name", async () => {
+    const store = new ResearchStore(null);
+    store.pages.set("https://docs.x.com/overview", page("https://docs.x.com/overview", [], "X Developer Platform. Build with the X API."));
+    store.pages.set("https://docs.xtips.example/x", page("https://docs.xtips.example/x", [], "X API tips"));
+    await anchorOfficial(store, { name: "X", oauth: "yes", website: null, developer_docs_url: "https://docs.x.com/overview" } as never, null, Date.now() + 5_000);
+    expect(store.official.has("x.com")).toBe(true);
+    const other = new ResearchStore(null);
+    other.pages.set("https://docs.xtips.example/x", page("https://docs.xtips.example/x", [], "X API tips"));
+    await anchorOfficial(other, { name: "X", oauth: "yes", website: null, developer_docs_url: "https://docs.xtips.example/x" } as never, null, Date.now() + 5_000);
+    expect(other.official.size).toBe(0);
+  });
 });
 
 describe("self-serve inference", () => {
@@ -553,6 +564,26 @@ describe("self-serve inference", () => {
     if (r.outcome !== "ok") throw new Error(r.outcome);
     // Acme's docs say public apps must pass a review, so self-serve can't be inferred for s1.
     expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.path).toBeUndefined();
+  });
+});
+
+describe("partner fallback", () => {
+  const partnerWriter = (d: string) => {
+    const g = writerGuide({}, d);
+    Object.assign(g.scenarios[1], { path: "partner", gate_sequence: undefined, review_checks: undefined, trigger: undefined });
+    return g;
+  };
+  it("shows app review when partner acceptance is not confirmed but a provider review is", async () => {
+    const c = fakeClient({ writer: partnerWriter, judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "s2.path" ? "partial" : "supported" })) });
+    const r = await runAgentV2({ query: "Acme", client: c.client, search: null, emit: () => {} });
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s2")!.path).toBe("app_review");
+  });
+  it("keeps partner when it is confirmed", async () => {
+    const c = fakeClient({ writer: partnerWriter });
+    const r = await runAgentV2({ query: "Acme", client: c.client, search: null, emit: () => {} });
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s2")!.path).toBe("partner");
   });
 });
 

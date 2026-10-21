@@ -13,7 +13,7 @@
  * Treat mirror results as a proxy; confirm final changes with a few real API runs.
  */
 import { spawn } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { appendFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BetaMessage, BetaMessageParam, BetaToolUnion } from "@anthropic-ai/sdk/resources/beta/messages/messages";
@@ -124,7 +124,7 @@ function toolProtocol(tools: BetaToolUnion[]): string {
     ? `- When you are done, call ${terminal.map((n) => `"${n}"`).join(" or ")} through "tool_calls". Never put your answer only in "final": it is ignored.`
     : `- When you are done and need no more tools: leave "tool_calls" empty and put your final answer in "final".`;
   return `# Tools
-You request tool calls through your structured reply; you cannot run them yourself.
+The tools below are available. They are not native tools in your session: you call them by listing them in the "tool_calls" field of your structured reply (StructuredOutput), and code runs them and sends back the results. Never say a tool is unavailable; request it this way.
 - To call tools: put them in "tool_calls" ([{"name": "<tool name>", "input": { ... }}]); several are allowed. Their results come back as <tool_result> blocks in the next message.
 ${done}
 
@@ -237,7 +237,7 @@ The quote must be copied exactly from the document; it is checked. Return an emp
       // in production can't do this).
       const terminal = p.tools.some((t) => "name" in t && TERMINAL.includes(t.name));
       if (!reply.tool_calls?.length && terminal && deadlineAt - Date.now() > 15_000) {
-        ({ r, reply } = await ask(`\n\n[system] Your last reply had no tool calls. Reply with "tool_calls" only; to finish, call the finishing tool (${TERMINAL.join(" / ")}).`));
+        ({ r, reply } = await ask(`\n\n[system] Your last reply had no tool calls. The tools listed in the system prompt are available through the "tool_calls" field of your structured reply. Reply with "tool_calls" only; to finish, call the finishing tool (${TERMINAL.join(" / ")}).`));
       }
       if (reply.tool_calls?.length) {
         return message(
@@ -246,6 +246,7 @@ The quote must be copied exactly from the document; it is checked. Return an emp
           r.usage,
         );
       }
+      if (process.env.MIRROR_DEBUG) appendFileSync(process.env.MIRROR_DEBUG, `${JSON.stringify({ at: new Date().toISOString(), system: p.system.slice(0, 80), turns: p.messages.length, reply })}\n`);
       return message([{ type: "text", text: reply.final ?? r.result, citations: null }], "end_turn", r.usage);
     }
 

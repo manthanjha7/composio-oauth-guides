@@ -100,18 +100,24 @@ export async function discover(opts: {
     const page = await store.fetch(`${o}/llms.txt`, opts.deadlineAt);
     if (!page) return;
     const links = parseLlmsTxt(page.text, o);
+    const addLinks = (ls: { url: string; label: string }[]) => {
+      for (const l of ls) {
+        if (/llms\.txt$/.test(l.url)) continue;
+        const s = scoreText(l.url, l.label);
+        if (s >= 1) add({ url: l.url, label: l.label, score: s + (officialish(l.url) ? 4 : -5), from: "llms" });
+      }
+    };
+    // The top-level links count straight away, so a slow nested index can't cost the whole index.
+    addLinks(links);
     // Large docs sites split the index: follow up to two nested llms.txt files on official hosts, most relevant first.
     const nested = links
       .filter((l) => /llms\.txt$/.test(l.url) && officialish(l.url) && l.url !== `${o}/llms.txt`)
       .sort((a, b) => scoreText(b.url, b.label) + (/\bapi\b/i.test(b.label) ? 2 : 0) - (scoreText(a.url, a.label) + (/\bapi\b/i.test(a.label) ? 2 : 0)))
       .slice(0, 2);
-    const more = await Promise.all(nested.map((n) => store.fetch(n.url, opts.deadlineAt)));
-    more.forEach((p, i) => p && links.push(...parseLlmsTxt(p.text, nested[i].url)));
-    for (const l of links) {
-      if (/llms\.txt$/.test(l.url)) continue;
-      const s = scoreText(l.url, l.label);
-      if (s >= 1) add({ url: l.url, label: l.label, score: s + (officialish(l.url) ? 4 : -5), from: "llms" });
-    }
+    await Promise.all(nested.map(async (n) => {
+      const p = await store.fetch(n.url, opts.deadlineAt);
+      if (p) addLinks(parseLlmsTxt(p.text, n.url));
+    }));
   });
 
   // Templated searches, run by code in parallel (only when a search provider is available to code).

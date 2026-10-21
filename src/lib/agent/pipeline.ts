@@ -716,8 +716,13 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
 export async function anchorOfficial(store: ResearchStore, ident: IdentityT, lookup: ComposioLookup | null, deadlineAt: number) {
   const name = ident.name.toLowerCase();
   const letters = name.replace(/[^a-z0-9]/g, "");
-  const mentions = (p: Page) => `${p.title ?? ""} ${p.text.slice(0, 3000)}`.toLowerCase().includes(name);
-  const nameInDomain = (p: Page) => letters.length >= 3 && baseDomain(p.url).split(".")[0].replace(/[^a-z0-9]/g, "").includes(letters);
+  const nameRe = new RegExp(`(?:^|[^a-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`);
+  const mentions = (p: Page) => nameRe.test(`${p.title ?? ""} ${p.text.slice(0, 3000)}`.toLowerCase());
+  // The domain names the app: contains it (names of 3+ letters), or is exactly it ("x.com" for X).
+  const nameInDomain = (p: Page) => {
+    const label = baseDomain(p.url).split(".")[0].replace(/[^a-z0-9]/g, "");
+    return letters.length > 0 && (label === letters || (letters.length >= 3 && label.includes(letters)));
+  };
   const [catalog, site, docs] = await Promise.all([
     lookup?.app_url ? store.fetch(lookup.app_url, deadlineAt) : Promise.resolve(null),
     ident.website ? store.fetch(ident.website, deadlineAt) : Promise.resolve(null),
@@ -730,7 +735,9 @@ export async function anchorOfficial(store: ResearchStore, ident: IdentityT, loo
   const siteOk = !!site && (sameOwner(site) || linksTo(catalog, site) || (!lookup?.app_url && nameInDomain(site) && mentions(site)));
   if (siteOk) store.addOfficial(site!.url);
   // Docs count only when an already-trusted page vouches for them (an untrusted site can't).
-  if (docs && (sameOwner(docs) || linksTo(catalog, docs) || (siteOk && linksTo(site, docs)))) store.addOfficial(docs.url);
+  // With no catalog entry and no readable website, the docs may stand on their own under the same name rule.
+  const noVoucher = !lookup?.app_url && !siteOk;
+  if (docs && (sameOwner(docs) || linksTo(catalog, docs) || (siteOk && linksTo(site, docs)) || (noVoucher && nameInDomain(docs) && mentions(docs)))) store.addOfficial(docs.url);
   store.expandOfficialFromLinks();
 }
 
@@ -895,9 +902,9 @@ function fallbackGuide(ident: IdentityT, lookup: ComposioLookup | null, store: R
 const SweepAdditions = z.array(
   z.object({ scenario_id: z.string(), kind: ModifierKind, qualifier: z.enum(["required", "optional"]).nullable().optional(), note: z.string(), claim_ids: z.array(z.string()) }),
 );
-// Questions whose facts become factors: who can build (G1), limits (G5), repeat reviews (G6), pricing (G7),
+// Questions whose facts become factors: who can build (G1), review checks that repeat (G3), limits (G5), repeat reviews (G6), pricing (G7),
 // customer side (G8), thresholds and use rules (G11).
-const FACTOR_QUESTIONS = new Set(["G1", "G5", "G6", "G7", "G8", "G11"]);
+const FACTOR_QUESTIONS = new Set(["G1", "G3", "G5", "G6", "G7", "G8", "G11"]);
 
 /** Ask once for factors the writer left out; code keeps only well-formed additions of a new kind, citing listed facts. */
 export async function sweepModifiers(
@@ -955,6 +962,8 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
     if (s.path) {
       const quotes = gather(s.path_claim_ids);
       items.push({ id: `${s.id}.path`, statement: `${who}: ${PATH_STATEMENT[s.path]}`, quotes });
+      // Partner acceptance is the hardest to quote; a confirmed provider review is the fallback if it fails.
+      if (s.path === "partner") items.push({ id: `${s.id}.path_review`, statement: `${who}: ${PATH_STATEMENT.app_review}`, quotes });
       if (s.trigger && s.trigger !== "none") items.push({ id: `${s.id}.trigger`, statement: `${who}: ${TRIGGER_STATEMENT[s.trigger]}.`, quotes });
       if (s.gate_sequence?.length) items.push({ id: `${s.id}.gates`, statement: `${who}: the steps before customers can connect are, in order: ${s.gate_sequence.join("; ")}.`, quotes });
       if (s.review_checks?.length) items.push({ id: `${s.id}.checks`, statement: `${who}: the review checks ${s.review_checks.map((c) => CHECK_INFO[c].toLowerCase()).join(", ")}.`, quotes });
@@ -1018,7 +1027,13 @@ export function applyInvariants(
   const GATE_QUESTIONS = ["G2", "G3", "G5", "G6", "G11", "R1"];
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };
-    let pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
+    const g2Backed = (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"]));
+    let pathOk = !!out.path && g2Backed && c.fieldOk(`${s.id}.path`);
+    if (!pathOk && out.path === "partner" && g2Backed && c.fieldOk(`${s.id}.path_review`)) {
+      warnings.push(`"${s.label}": partner acceptance could not be confirmed from the sources; a provider review is, so the path is shown as app review.`);
+      out.path = "app_review";
+      pathOk = true;
+    }
     out.path_basis = pathOk ? "stated" : undefined;
     // Also when the writer left the path blank: the same labelled inference, under the same conditions.
     if (!pathOk && (out.path === "self_serve" || !out.path) && setupFound && c.fieldVerdict?.(`${s.id}.path`) !== "contradicted") {
