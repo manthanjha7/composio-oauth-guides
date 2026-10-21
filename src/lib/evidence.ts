@@ -165,12 +165,14 @@ export function wordsToDigits(text: string): string {
       const g = groups.at(-1);
       const last = g?.ws.at(-1);
       // A new number starts when two values can't combine: "two three", "twenty thirty", "fifteen four".
-      const joins =
-        !!last &&
-        (t.w === "hundred" ||
-          t.w === "thousand" ||
-          (last in TENS && t.w in SMALL && SMALL[t.w] < 10) ||
-          ((last === "hundred" || last === "thousand") && (t.w in SMALL || t.w in TENS)));
+      const hyphen = t.sep === "-";
+      const and = /and/.test(t.sep);
+      const tensCompound = !!last && last in TENS && t.w in SMALL && SMALL[t.w] < 10 && !and; // twenty-one, twenty one
+      const scale = (t.w === "hundred" || t.w === "thousand") && !hyphen && !and; // two hundred
+      const afterScale = (last === "hundred" || last === "thousand") && (t.w in SMALL || t.w in TENS) && !hyphen; // one hundred (and) five
+      // A hyphen only joins a tens compound; otherwise it marks a range ("one hundred-two hundred" = 100-200).
+      // "and" only joins after hundred/thousand ("twenty and one" stays two numbers).
+      const joins = !!last && (tensCompound || scale || afterScale);
       if (g && joins) g.ws.push(t.w);
       else groups.push({ sep: t.sep, ws: [t.w] });
     }

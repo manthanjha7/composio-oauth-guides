@@ -104,3 +104,7 @@ Resolved: difficulty after path removal, G6 vs Composio, fallback after cancella
 ### Codex confirmation pass (commit 2960f57)
 
 Zero-setup summaries and compound words confirmed fixed. Two remaining, fixed next: the no-wait exemption matched a prefix ("0.5 days", "0-2 weeks", "None for testing; ten weeks for production" were exempt), now an exact match; "two-three days" was parsed as 5, now kept as the range 2-3. 97 tests pass; still zero correct claims wrongly downgraded.
+
+### Codex confirmation pass (commit bb75f3f)
+
+Both previous items confirmed fixed. One parser edge remained ("one hundred-two hundred" read as 10200; "twenty and one" as 21): a hyphen now joins only a tens compound and otherwise marks a range; "and" joins only after hundred/thousand. Nine number-word cases added as tests (106 total).
