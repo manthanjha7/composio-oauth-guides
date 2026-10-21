@@ -231,6 +231,11 @@ const UNIT: [RegExp, string][] = [
   [/^(?:requests?|calls?)$/, "request"],
   [/^(?:installs?|installations?)$/, "install"],
   [/^(?:connections?)$/, "connection"],
+  [/^(?:tokens?|access tokens?)$/, "token"],
+  [/^(?:accounts?)$/, "account"],
+  [/^(?:apps?|applications?|clients?)$/, "app"],
+  [/^(?:seats?|licen[cs]es?)$/, "seat"],
+  [/^(?:authori[sz]ations?)$/, "authorization"],
   [/^(?:messages?)$/, "message"],
 ];
 const TIME_UNITS = new Set(["second", "minute", "hour", "day", "week", "month", "year"]);
@@ -259,6 +264,8 @@ function numberUnits(text: string): Set<string> {
     const n = tok.replace(/,/g, "");
     if (!/^\d+$/.test(n)) return;
     for (let j = i + 1; j <= i + 3 && j < w.length; j++) {
+      // "100 per account": what follows "per"/"each" is the rate's denominator, not what is counted.
+      if (w[j] === "per" || w[j] === "each" || w[j] === "every") break;
       const u = unitOf(w[j]);
       if (u) {
         out.add(`${n} ${u}`);

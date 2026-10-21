@@ -1,0 +1,2930 @@
+{
+  "slug": "ynab",
+  "guide": {
+    "app": {
+      "name": "YNAB",
+      "website": "https://www.ynab.com",
+      "developer_docs_url": "https://api.ynab.com/"
+    },
+    "oauth_supported": "yes",
+    "summary": "Public agent app, own OAuth app, over 25 users (app review, wait 2-4 weeks); Prototype or small pilot, up to 25 users (self-serve (no review step found in the docs), wait none).",
+    "verdict": "Easiest: Prototype or small pilot, up to 25 users (self-serve (no review step found in the docs), wait none). Hardest: Public agent app, own OAuth app, over 25 users (app review, wait 2-4 weeks).",
+    "default_scenario": "s1",
+    "composio": {
+      "toolkit_slug": "ynab",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio manages OAuth for YNAB. Users see Composio's name on the consent screen unless you bring your own app."
+    },
+    "need_own_app": {
+      "answer": "Not for prototypes, since Composio provides a managed YNAB app. For launch, use your own app if you want your brand on the consent screen or a dedicated quota. Your own app also needs YNAB review to pass 25 outside users.",
+      "reasons": [
+        "Consent screen shows your brand instead of Composio's",
+        "Dedicated quota instead of quota shared across Composio users",
+        "Managed apps are the default when available, so own app is optional"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Public agent app, own OAuth app, over 25 users",
+        "when_this_applies": "You serve more than 25 outside YNAB users with your own OAuth app.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "2-4 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "2-4 weeks",
+          "basis": "c6 (YNAB states the review takes 2-4 weeks)",
+          "max_days": 28
+        },
+        "approval": "YNAB reviews the app against its API Terms and OAuth Application Requirements before removing Restricted Mode.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c4",
+          "c5",
+          "c6",
+          "c7",
+          "c8"
+        ],
+        "path": "app_review",
+        "shortcut": null,
+        "extras": [
+          "No copying YNAB products; naming rules; no under-13"
+        ],
+        "modifiers": [
+          {
+            "kind": "use_restrictions",
+            "qualifier": null,
+            "note": "No copying YNAB products; naming rules; no under-13 apps",
+            "claim_ids": [
+              "c14",
+              "c15",
+              "c16"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c1",
+          "c4",
+          "c5"
+        ],
+        "shortcut_claim_ids": [],
+        "path_basis": "stated"
+      },
+      {
+        "id": "s2",
+        "label": "Prototype or small pilot, up to 25 users",
+        "when_this_applies": "You stay within the Restricted Mode cap of 25 outside users, or use Composio's managed app.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "30-90 min",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No review is needed to start under Restricted Mode (c2).",
+          "max_days": null
+        },
+        "approval": "No review while staying within the 25-token cap.",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c9"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [],
+        "trigger": "none",
+        "modifiers": [],
+        "path_claim_ids": [
+          "c2",
+          "c9"
+        ],
+        "shortcut_claim_ids": [],
+        "path_basis": "inferred"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "A YNAB account",
+        "detail": "Any signed-in YNAB account can create an OAuth app in Developer Settings. No developer program, plan or region requirement is named.",
+        "claim_ids": [
+          "c9"
+        ]
+      },
+      {
+        "title": "Published privacy policy",
+        "detail": "It must be shown to users, include a way to delete data on request (an email is fine), and its URL must be in the OAuth client configuration and in your app interface.",
+        "claim_ids": [
+          "c10",
+          "c11",
+          "c12"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "End users need an active YNAB subscription",
+        "detail": "API calls return 403 errors when the account's subscription has lapsed or trial expired.",
+        "claim_ids": [
+          "c17",
+          "c18"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create the OAuth app in YNAB",
+        "owner": "you",
+        "detail": "Sign in, open Account Settings, then Developer Settings, and create the app with your redirect URI. Copy the Client ID and Client Secret shown after saving.",
+        "inputs": [
+          "YNAB login",
+          "Redirect URI from Composio dashboard"
+        ],
+        "done_when": "You have a Client ID and Client Secret.",
+        "scenario_ids": [],
+        "link": "https://api.ynab.com/",
+        "claim_ids": [
+          "c9",
+          "c19"
+        ]
+      },
+      {
+        "title": "Create the Composio auth config",
+        "owner": "agent",
+        "detail": "Create a custom OAuth2 auth config for the ynab toolkit with your client ID and secret, using the redirect URI copied from the Composio dashboard. Request the read-only scope unless writes are needed.",
+        "inputs": [
+          "Client ID",
+          "Client Secret"
+        ],
+        "done_when": "Auth config exists and a test connection succeeds.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c13",
+          "c20"
+        ]
+      },
+      {
+        "title": "Draft and publish privacy policy",
+        "owner": "agent",
+        "detail": "Agent drafts the policy with the required items; you publish it and add the URL to the OAuth app and your interface. YNAB does not check its legal compliance.",
+        "inputs": [
+          "Business contact details"
+        ],
+        "done_when": "Policy URL is live and set in the OAuth app.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c10",
+          "c11",
+          "c12",
+          "c21"
+        ]
+      },
+      {
+        "title": "Check naming and terms compliance",
+        "owner": "agent",
+        "detail": "Review the app name and domain against the 'for YNAB' naming rule and the API Terms.",
+        "inputs": [
+          "App name",
+          "Domain"
+        ],
+        "done_when": "Name and domain follow the rules.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c14",
+          "c15",
+          "c16"
+        ]
+      },
+      {
+        "title": "Submit the review request form",
+        "owner": "you",
+        "detail": "Submit YNAB's review request form for your app.",
+        "inputs": [
+          "App details",
+          "Privacy policy URL"
+        ],
+        "done_when": "Form is submitted.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": "https://api.ynab.com/",
+        "claim_ids": [
+          "c4"
+        ]
+      },
+      {
+        "title": "Wait for YNAB review",
+        "owner": "waiting",
+        "detail": "YNAB states 2-4 weeks. It emails you when Restricted Mode is removed.",
+        "inputs": [],
+        "done_when": "You get the confirmation email.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c5",
+          "c6"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Hard stop at 25 outside users",
+        "detail": "Once the cap is reached, the authorization screen shows a message and new authorizations are blocked. Request review well before you approach it.",
+        "claim_ids": [
+          "c2",
+          "c3"
+        ],
+        "scenario_ids": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "title": "Implicit grant tokens expire after 2 hours",
+        "detail": "The implicit grant has no refresh tokens, so users must re-authorize. The authorization code grant supports refresh tokens.",
+        "claim_ids": [
+          "c22",
+          "c23"
+        ]
+      },
+      {
+        "title": "Terms violations disable the app",
+        "detail": "Failing the API Terms or OAuth Application Requirements results in the app being disabled.",
+        "claim_ids": [
+          "c24"
+        ]
+      },
+      {
+        "title": "Rate limit of 200 requests per hour",
+        "detail": "An access token can make up to 200 requests per hour, reset each clock hour. Plan agent call volume accordingly.",
+        "claim_ids": [
+          "c25"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Authorization screen shows a message and new users cannot authorize",
+        "what_it_means": "The Restricted Mode cap of 25 outside-user tokens has been reached.",
+        "what_to_do": "Submit the review request form and wait for approval.",
+        "agent_can_help": "Prepare the review submission details and check compliance.",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "scenario_ids": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "symptom": "403 unauthorized_scope or 403 Forbidden on a write call",
+        "what_it_means": "The token was issued with the read-only scope.",
+        "what_to_do": "Re-authorize without read-only if writes are needed.",
+        "agent_can_help": "Check which scope the auth config requests.",
+        "claim_ids": [
+          "c26",
+          "c27"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Which review criteria beyond the Terms and Requirements does YNAB apply? Ask YNAB API support or read the OAuth Application Requirements.",
+      "Is there a customer-side admin requirement? None found; YNAB is per-user consent, so confirm with YNAB.",
+      "Does Composio's managed app count toward a shared token cap? Not found; ask Composio support."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Only reviewed, OAuth-enabled applications are included on the Works with YNAB community list.",
+        "label": "provider_docs",
+        "source_url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+        "quote": "Currently, we only include reviewed, OAuth-enabled applications on our Works with YNAB list of community integrations.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "A newly created OAuth application is placed in Restricted Mode initially.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "When an OAuth application is created, it will be placed in Restricted Mode initially.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "In Restricted Mode the app is limited to 25 access tokens for users other than the owner; once reached, new authorizations are prohibited.",
+        "label": "unknown",
+        "source_url": "https://api.ynab.com/",
+        "quote": "Once this limit is reached, a message will be placed on the Authorization screen and new authorizations will be prohibited.",
+        "probe_id": null,
+        "note": "The claim states 25, which the quote does not contain."
+      },
+      {
+        "id": "c4",
+        "text": "To have Restricted Mode removed, you must request a review via a form.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "To have Restricted Mode removed, you must request a review via this form .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "After YNAB reviews the app and confirms adherence to its policies, it removes Restricted Mode and sends an email confirmation.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "Once we review the application and confirm adherence to our policies, we will remove Restricted Mode and send you an email confirmation.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "The Restricted Mode removal review takes 2-4 weeks.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "This process takes 2-4 weeks.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Listed community apps were reviewed by YNAB's team for basic functionality and security.",
+        "label": "provider_docs",
+        "source_url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+        "quote": "They've also been reviewed by our team for basic functionality and security.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "The OAuth app must abide by the API Terms of Service and the OAuth Application Requirements.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "Your OAuth application will need to abide by the API Terms of Service and the OAuth Application Requirements .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "Any signed-in YNAB account can create an OAuth application from Developer Settings; no developer program, plan or region requirement is named.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "To create an OAuth Application, sign in to your account , go to \"Account Settings\", scroll down and navigate to \"Developer Settings\" section.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote gives the navigation path to create an OAuth app but does not say any signed-in account qualifies; the absence of other requirements is not stated."
+      },
+      {
+        "id": "c10",
+        "text": "You must publish a privacy policy that is displayed to users.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "You must publish a privacy policy that is displayed to users.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "The privacy policy must give users a method to delete their data on request, which can be a contact email.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "A method for users to delete their data if they request it (can be a contact email).",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "When publicly available, the privacy policy URL must be shown in the OAuth client configuration and prominently in the app interface.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "Display the privacy policy URL in your OAuth client configuration when your application is publicly available and ensure that it is prominently displayed in your application interface so that users can find this information easily.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "Composio can provide the OAuth app so you need not supply a client ID and secret for managed toolkits; a custom auth config lets you supply your own.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "The app name and web address must not include 'YNAB' or 'You Need A Budget' unless preceded by the word 'for'.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "The application and the web address (DNS name) must not include \"YNAB\" or \"You Need A Budget\" unless preceded by the word \"for\".",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "Apps may not copy or duplicate products or services offered by YNAB.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "You may not use the YNAB API to copy or duplicate products or services offered by YNAB.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote restricts copying or duplicating YNAB products only when done using the YNAB API; the statement drops that condition."
+      },
+      {
+        "id": "c16",
+        "text": "The application may not be directed at or for children under 13.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "Your application may not be directed or for children under 13.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "API calls return a 403 subscription_lapsed error when the account's subscription has lapsed.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "The subscription for this account has lapsed",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote gives the lapsed-subscription message text only; it does not mention a 403 status or the subscription_lapsed error code."
+      },
+      {
+        "id": "c18",
+        "text": "API calls return a 403 trial_expired error when the account's trial has expired.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "The trial for this account has expired",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote gives the expired-trial message text only; it does not mention a 403 status or the trial_expired error code."
+      },
+      {
+        "id": "c19",
+        "text": "After saving the new application, its details show the Client ID and Client Secret.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "After saving, you will see the details of the new application, including the Client ID and the Client Secret which are referenced in the instructions below.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "The page documents only one scope, read-only, which requests read-only access to a plan.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "When an OAuth application is requesting authorization, a scope parameter with a value of read-only can be passed to request read-only access to a plan.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote documents the read-only scope but does not state that it is the only scope."
+      },
+      {
+        "id": "c21",
+        "text": "YNAB states it is not responsible for reviewing your privacy policy for legal compliance.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "YNAB is not responsible for reviewing your Privacy Policy and determining whether it is compliant with all applicable privacy laws.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "With the implicit grant there are no refresh tokens; the access token expires 2 hours after being granted and the user must re-authorize.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "This grant type does not support refresh tokens so once the access token expires 2 hours after it was granted, the user must be prompted again to authorize your application.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "With the authorization code grant, the access token expires after 2 hours but a refresh token gets a new one without re-prompting the user.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "This grant type supports refresh tokens so once the access token expires 2 hours after it was granted, the application can request a new access token without having to prompt the user to authorize again.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "Failure to follow the terms and requirements results in disabling of the application.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "Failure to do so will result in disabling of the application.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "An access token may be used for up to 200 requests per hour.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "An access token may be used for up to 200 requests per hour .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "A read-only token calling a write endpoint (POST, PATCH, etc.) receives a 403 Forbidden response.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "If an access token issued with the read-only scope is used when requesting an endpoint that modifies the plan (POST, PATCH, etc.) a 403 Forbidden response will be issued.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c27",
+        "text": "An API error is returned when a token's scope does not allow the requested access.",
+        "label": "provider_docs",
+        "source_url": "https://api.ynab.com/",
+        "quote": "The supplied access token has a scope which does not allow access.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T11:15:35.257Z",
+    "generated_by": "agent v2 (v2.7-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-haiku-5-5 · composio_search",
+    "duration_ms": 123804,
+    "query": "YNAB",
+    "partial": false,
+    "warnings": [
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 27,
+      "quotes_checked": 27,
+      "quotes_verified": 26,
+      "downgraded": 1
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 82676,
+      "output_tokens": 44134,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T11:13:31.690Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T11:13:31.690Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T11:13:31.690Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/ynab",
+        "title": null,
+        "fetched_at": "2026-10-21T11:13:31.690Z",
+        "via": "direct",
+        "chars": 316
+      },
+      {
+        "url": "https://api.ynab.com/",
+        "title": "YNAB API",
+        "fetched_at": "2026-10-21T11:13:37.817Z",
+        "via": "direct",
+        "chars": 57003
+      },
+      {
+        "url": "https://www.ynab.com/",
+        "title": "YNAB",
+        "fetched_at": "2026-10-21T11:13:37.844Z",
+        "via": "direct",
+        "chars": 3576
+      },
+      {
+        "url": "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+        "title": "ynab_cli::auth::oauth - Rust",
+        "fetched_at": "2026-10-21T11:13:41.062Z",
+        "via": "direct",
+        "chars": 1564
+      },
+      {
+        "url": "https://www.ynab.com/press/partnerships",
+        "title": "Influencers and Partnerships | YNAB",
+        "fetched_at": "2026-10-21T11:13:41.064Z",
+        "via": "direct",
+        "chars": 1792
+      },
+      {
+        "url": "https://www.ynab.com/security",
+        "title": "Security | YNAB",
+        "fetched_at": "2026-10-21T11:13:41.084Z",
+        "via": "direct",
+        "chars": 7056
+      },
+      {
+        "url": "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+        "title": "oauth.rs - source",
+        "fetched_at": "2026-10-21T11:13:41.229Z",
+        "via": "direct",
+        "chars": 21757
+      },
+      {
+        "url": "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+        "title": "ynab.go/api/ratelimit.go at v1.8.6 · geshas/ynab.go · GitHub",
+        "fetched_at": "2026-10-21T11:13:41.348Z",
+        "via": "direct",
+        "chars": 5483
+      },
+      {
+        "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+        "title": "ynab-mcp-server/docs/hosted-oauth-connector.md at main · oliverames/ynab-mcp-server · GitHub",
+        "fetched_at": "2026-10-21T11:13:41.390Z",
+        "via": "direct",
+        "chars": 13268
+      },
+      {
+        "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+        "title": "The YNAB API",
+        "fetched_at": "2026-10-21T11:13:42.353Z",
+        "via": "composio_fetch",
+        "chars": 5454
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.7-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-haiku-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E22",
+            "E58",
+            "E59"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E23",
+            "E24",
+            "E25",
+            "E60",
+            "E61",
+            "E62",
+            "E63",
+            "E64",
+            "E65",
+            "E66",
+            "E67"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E26",
+            "E27",
+            "E68",
+            "E69",
+            "E70",
+            "E71",
+            "E72",
+            "E73"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E2",
+            "E3",
+            "E16",
+            "E74",
+            "E75",
+            "E76",
+            "E77"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E28",
+            "E29",
+            "E78",
+            "E79",
+            "E80",
+            "E81",
+            "E82",
+            "E83"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E30",
+            "E84"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "found",
+          "evidence": [
+            "E85",
+            "E86"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E87",
+            "E88",
+            "E89"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E4",
+            "E5",
+            "E6",
+            "E17",
+            "E18",
+            "E19",
+            "E37",
+            "E38",
+            "E39",
+            "E40",
+            "E41",
+            "E42",
+            "E43",
+            "E90",
+            "E91",
+            "E92"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E20",
+            "E21",
+            "E93",
+            "E94",
+            "E95"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E14",
+            "E15",
+            "E31",
+            "E32",
+            "E96",
+            "E97",
+            "E98",
+            "E99",
+            "E100",
+            "E101",
+            "E102",
+            "E103",
+            "E104"
+          ],
+          "tried": [
+            "https://www.ynab.com/security",
+            "https://www.ynab.com/press/partnerships",
+            "https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+            "https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+            "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+            "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+            "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+            "https://api.ynab.com/"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": []
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E34",
+            "E35",
+            "E36",
+            "E44",
+            "E45",
+            "E46",
+            "E47",
+            "E48",
+            "E49",
+            "E50",
+            "E51",
+            "E52",
+            "E53",
+            "E54",
+            "E55",
+            "E56",
+            "E57"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G4",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Scope: use the minimum viable scope. Prefer read-only unless the hosted connector explicitly offers write tools.",
+          "answer": "This repository's connector guidance says to use the minimum viable YNAB scope and prefer read-only unless the hosted connector explicitly offers write tools.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            2023,
+            2135
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G4",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Decide whether the hosted connector offers read-only only, read/write, or separate read-only and write-enabled variants.",
+          "answer": "The page says the connector operator should decide whether the hosted connector is read-only, read/write, or has separate read-only and write-enabled variants.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            8476,
+            8596
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G4",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Because writes are gated at consent time, a connection authorized without the\nwrite box checked receives a read-only YNAB token and never registers write\ntools",
+          "answer": "Per this page, a connection authorized without the write box checked receives a read-only YNAB token and never registers write tools.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            12225,
+            12384
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G9",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Create and verify a YNAB OAuth application with the production redirect URI.",
+          "answer": "The page's checklist says to create and verify the YNAB OAuth application with the production redirect URI.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            8396,
+            8472
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G9",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Public connector origin used to build the exact callback URI.",
+          "answer": "The connector's CONNECTOR_BASE_URL setting is the public connector origin used to build the exact callback URI.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            2572,
+            2633
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G9",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Receives the YNAB authorization code and completes the connector authorization.",
+          "answer": "The connector's /callback route receives the YNAB authorization code.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            1076,
+            1155
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G10",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Authorization URL: https://app.ynab.com/oauth/authorize",
+          "answer": "The YNAB OAuth authorization URL used by the connector is https://app.ynab.com/oauth/authorize.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            1852,
+            1907
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G10",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Token URL: https://app.ynab.com/oauth/token",
+          "answer": "The YNAB OAuth token URL used by the connector is https://app.ynab.com/oauth/token.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            1911,
+            1954
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G10",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Response type: code",
+          "answer": "The connector uses the OAuth response type code with PKCE using S256 code challenge and verifier.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            1958,
+            1977
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G10",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "PKCE: S256 code challenge and verifier",
+          "answer": "The connector uses PKCE with an S256 code challenge and verifier.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            1981,
+            2019
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G10",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "YNAB OAuth application client ID (Worker secret).",
+          "answer": "The connector stores the YNAB OAuth application client ID as a Worker secret named YNAB_CLIENT_ID.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            2201,
+            2250
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G10",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "YNAB OAuth application secret (Worker secret).",
+          "answer": "The connector stores the YNAB OAuth application secret as a Worker secret named YNAB_CLIENT_SECRET.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            2275,
+            2321
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G10",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Configure the OAuth app with a privacy policy URL and display that URL clearly in the connector interface.",
+          "answer": "The checklist says to configure the OAuth app with a privacy policy URL and show that URL clearly in the connector interface.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            8759,
+            8865
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G11",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Use public names and DNS names that follow the \"for YNAB\" pattern and do not imply sponsorship, endorsement, or official YNAB support.",
+          "answer": "The page's deployment checklist (for this unofficial connector) says to use public names and DNS names following the \"for YNAB\" pattern without implying sponsorship, endorsement, or official YNAB support.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            8869,
+            9003
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G11",
+          "url": "https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "quote": "Add non-affiliation language; this connector is not an official YNAB product.",
+          "answer": "The page's checklist says to add non-affiliation language stating the connector is not an official YNAB product.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.390Z",
+          "page_hash": "47f61ab7f11de173",
+          "offsets": [
+            9007,
+            9084
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G4",
+          "url": "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+          "quote": ".add_scope(Scope::new( \"read-only\" .to_string()))",
+          "answer": "The CLI's login request asks only for the single scope \"read-only\".",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.229Z",
+          "page_hash": "18697bff689e0cc4",
+          "offsets": [
+            11577,
+            11626
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G9",
+          "url": "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+          "quote": "format! ( \"http://localhost:{port}/callback\" )",
+          "answer": "The CLI's OAuth redirect URI is a localhost HTTP URL with the path /callback, using the port it listens on.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.229Z",
+          "page_hash": "18697bff689e0cc4",
+          "offsets": [
+            6976,
+            7022
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G9",
+          "url": "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+          "quote": "const DEFAULT_PORT: u16 = 53682 ;",
+          "answer": "The CLI's default port for the localhost redirect listener is 53682.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.229Z",
+          "page_hash": "18697bff689e0cc4",
+          "offsets": [
+            955,
+            988
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G9",
+          "url": "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+          "quote": "const DEFAULT_OAUTH_BASE_URL: & str = \"https://app.ynab.com\" ;",
+          "answer": "The CLI's default OAuth base URL is https://app.ynab.com, and its authorize and token endpoints sit under it.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.229Z",
+          "page_hash": "18697bff689e0cc4",
+          "offsets": [
+            889,
+            951
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G10",
+          "url": "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+          "quote": "Keychain first; prompts for and stores fresh credentials when missing or",
+          "answer": "The CLI obtains the OAuth client ID and client secret by prompting the user when they are missing from the keychain or a reset is requested, and then stores them.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.229Z",
+          "page_hash": "18697bff689e0cc4",
+          "offsets": [
+            9158,
+            9230
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G10",
+          "url": "https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+          "quote": "rpassword::prompt_password( \"YNAB OAuth client secret: \" )",
+          "answer": "When run interactively, the CLI asks for the client secret with a hidden prompt.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:41.229Z",
+          "page_hash": "18697bff689e0cc4",
+          "offsets": [
+            8755,
+            8813
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G1",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "If you're a developer, you can build fun and useful tools to interact with YNAB, or even build an app that other YNABers can use.",
+          "answer": "Any developer can build an app that other YNAB users can use. The page names no developer account, plan, or region requirement.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            0,
+            129
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G2",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "Currently, we only include reviewed, OAuth-enabled applications on our Works with YNAB list of community integrations.",
+          "answer": "A developer's OAuth app must be reviewed by YNAB before it is removed from Restricted Mode and listed on the Works with YNAB community list.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            3848,
+            3966
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G2",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "First, you must request a review via this form.",
+          "answer": "To get review, the developer must first submit a review request through a form.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            4071,
+            4118
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G2",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "Once we review the application and confirm adherence to our policies, we will remove Restricted Mode and send you an email confirmation.",
+          "answer": "Restricted Mode is removed only after YNAB reviews the app and confirms it follows its policies.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            4229,
+            4365
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G3",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "Your OAuth application will need to abide by the API Terms of Service and the OAuth Application Requirements.",
+          "answer": "The OAuth app must abide by the API Terms of Service and the OAuth Application Requirements to pass review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            4119,
+            4228
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G3",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "They've also been reviewed by our team for basic functionality and security.",
+          "answer": "Community apps listed by YNAB were reviewed by YNAB's team for basic functionality and security.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            1928,
+            2004
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G5",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "Once we review the application and confirm adherence to our policies, we will remove Restricted Mode and send you an email confirmation.",
+          "answer": "Apps start in Restricted Mode, and the mode is removed only after the developer's app is reviewed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            4229,
+            4365
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G5",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "You can run up to 200 requests per hour, and that limit is reset every clock hour.",
+          "answer": "The API allows up to 200 requests per hour, and the count resets every clock hour. The page does not say this limit differs for unreviewed apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            3071,
+            3153
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G6",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "This process takes 2-4 weeks.",
+          "answer": "Review to remove Restricted Mode and list the app takes 2-4 weeks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            4366,
+            4395
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G11",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "Currently, we only include reviewed, OAuth-enabled applications on our Works with YNAB list of community integrations.",
+          "answer": "Only reviewed, OAuth-enabled applications are eligible for the Works with YNAB community list.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            3848,
+            3966
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G11",
+          "url": "https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "quote": "Your OAuth application will need to abide by the API Terms of Service and the OAuth Application Requirements.",
+          "answer": "The OAuth app must follow the API Terms of Service and the OAuth Application Requirements.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:42.353Z",
+          "page_hash": "4aaf4509bf6a13c9",
+          "offsets": [
+            4119,
+            4228
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [YNAB](/toolkits/ynab.md) | `YNAB` |",
+          "answer": "YNAB is listed in the table of toolkits with Composio-managed OAuth available, so Composio supplies the OAuth app for it (at least one OAuth method is managed).",
+          "kind": "composio_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            7143,
+            7181
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "A toolkit appears in the Composio-managed OAuth list when Composio manages at least one OAuth method, and each method must be checked on the toolkit page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1000,
+            1153
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "Composio can provide the OAuth app that users authorize, so the developer does not need to register an OAuth app or supply a client ID and client secret for managed toolkits.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "The check for whether Composio provides the OAuth app is the toolkit's composio_managed_auth_schemes field returned by the toolkit endpoint; if the OAuth method is not in that field, you must register your own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            939
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "When you proxy the redirect, you set the authorized redirect URI in your OAuth app's settings to your own endpoint.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example redirect URI for the proxy is an HTTPS endpoint on your own domain, /api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "During OAuth, the browser briefly redirects through backend.composio.dev so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also display the Composio callback URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "Your own endpoint receives the OAuth callback and immediately 302-redirects it to Composio's callback URL, backend.composio.dev/api/v3/toolkits/auth/callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy endpoint must return a 302 redirect, and must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            3341,
+            3413
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "The user's browser needs to be redirected so the OAuth flow completes correctly.",
+          "answer": "The browser must be redirected for the OAuth flow to complete correctly.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            3414,
+            3494
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, the provider consent screen shows Composio's name (\"Composio wants to access your account\") on services such as Google and GitHub.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "You should add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "Hiding Composio's domain is done by proxying the redirect through your own domain, which is an option instead of using Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack (general statement; the page does not mention YNAB), so the developer does not need to register their own OAuth app for those.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "A custom auth config lets the developer supply their own OAuth app, API key, bearer token, or other credentials for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With a managed app, users see a consent screen saying Composio wants to access their account, not the developer's app name.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+          "answer": "Managed apps share quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1511
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for polling triggers.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Composio's managed default scopes may not include everything an app needs, for example write access to a specific Google API.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio requests sensible defaults for each toolkit.",
+          "answer": "Composio requests sensible default scopes for each toolkit under managed apps.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            673,
+            726
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.",
+          "answer": "Self-hosted or regional variants of a toolkit (e.g., a private Salesforce subdomain) need their own OAuth app rather than the managed one.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1722,
+            1819
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "To check whether Composio provides the OAuth app for a given toolkit, the developer should consult the Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You don't have to pick one approach for all toolkits.",
+          "answer": "A developer can mix approaches, using their own credentials for some toolkits and managed auth for others, with each toolkit getting its own auth config.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:31.690Z",
+          "page_hash": "",
+          "offsets": [
+            2114,
+            2167
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G1",
+          "url": "https://api.ynab.com/",
+          "quote": "To create an OAuth Application, sign in to your account , go to \"Account Settings\", scroll down and navigate to \"Developer Settings\" section.",
+          "answer": "Any signed-in YNAB account can create an OAuth application from the Developer Settings page; the page names no developer program, plan, or region requirement.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4659,
+            4800
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G1",
+          "url": "https://api.ynab.com/",
+          "quote": "While existing applications using https://api.youneedabudget.com/v1 will continue to function, all API consumers should be updated to use https://api.ynab.com/v1 .",
+          "answer": "The current API is v1 at api.ynab.com; the older youneedabudget.com address still works but consumers should move to api.ynab.com.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            16667,
+            16830
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "When an OAuth application is created, it will be placed in Restricted Mode initially.",
+          "answer": "A newly created OAuth application starts in Restricted Mode.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            3935,
+            4020
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "This means the application will be limited to obtaining 25 access tokens for users other than the OAuth application owner.",
+          "answer": "In Restricted Mode, the app can authorize only 25 access tokens for users other than its owner.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4021,
+            4143
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "To have Restricted Mode removed, you must request a review via this form .",
+          "answer": "Restricted Mode is removed only after the developer submits a review request through a form, which YNAB reviews.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4269,
+            4343
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "Once we review the application and confirm adherence to our policies, we will remove Restricted Mode and send you an email confirmation.",
+          "answer": "After YNAB reviews the app and confirms policy adherence, it removes Restricted Mode and emails the developer.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4455,
+            4591
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "If you are developing an application that uses the API and want other users to be able to use your application, OAuth is the only option for obtaining access tokens for other users .",
+          "answer": "The page says OAuth is the only way to get tokens for other users, meaning customer use requires an OAuth app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            3551,
+            3733
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "You can use it to build a personal application to interact with your own plan or build an application that any other YNABer can authorize and use.",
+          "answer": "The page says developers can build an application that any other YNABer can authorize and use; it does not describe any sharing-link mechanism.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            269,
+            415
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "If you are an individual developer and want to simply access your own account through the API, Personal Access Tokens are the best choice.",
+          "answer": "For an individual developer using only their own account, a Personal Access Token is recommended instead of an OAuth app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            2457,
+            2595
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G2",
+          "url": "https://api.ynab.com/",
+          "quote": "If you have built an OAuth application you'd like shared here, see OAuth Applications .",
+          "answer": "Community OAuth apps can be shared in the Works with YNAB section, and the page directs developers there.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            27059,
+            27146
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G3",
+          "url": "https://api.ynab.com/",
+          "quote": "Your OAuth application will need to abide by the API Terms of Service and the OAuth Application Requirements .",
+          "answer": "The OAuth app must abide by the API Terms of Service and the OAuth Application Requirements, which YNAB checks when reviewing it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4344,
+            4454
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G3",
+          "url": "https://api.ynab.com/",
+          "quote": "You must publish a privacy policy that is displayed to users.",
+          "answer": "The developer must publish a privacy policy that is displayed to users.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            47095,
+            47156
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G3",
+          "url": "https://api.ynab.com/",
+          "quote": "Your privacy policy must include, but is not limited to, the following:",
+          "answer": "The privacy policy must include the listed items, such as how data is handled and stored, how long it is kept, and a last-updated date.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            47671,
+            47742
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G3",
+          "url": "https://api.ynab.com/",
+          "quote": "A method for users to delete their data if they request it (can be a contact email).",
+          "answer": "The privacy policy must give users a method to delete their data on request, which can be a contact email.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            48407,
+            48491
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G3",
+          "url": "https://api.ynab.com/",
+          "quote": "Display the privacy policy URL in your OAuth client configuration when your application is publicly available and ensure that it is prominently displayed in your application interface so that users can find this information easily.",
+          "answer": "When publicly available, the privacy policy URL must be shown in the OAuth client configuration and prominently in the app interface.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            48869,
+            49100
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G3",
+          "url": "https://api.ynab.com/",
+          "quote": "YNAB is not responsible for reviewing your Privacy Policy and determining whether it is compliant with all applicable privacy laws.",
+          "answer": "YNAB states it does not review the developer's privacy policy for compliance with privacy laws.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            47470,
+            47601
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G4",
+          "url": "https://api.ynab.com/",
+          "quote": "When an OAuth application is requesting authorization, a scope parameter with a value of read-only can be passed to request read-only access to a plan.",
+          "answer": "The page documents only one scope: read-only, which requests read-only access to a plan.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            11257,
+            11408
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G4",
+          "url": "https://api.ynab.com/",
+          "quote": "If an access token issued with the read-only scope is used when requesting an endpoint that modifies the plan (POST, PATCH, etc.) a 403 Forbidden response will be issued.",
+          "answer": "A read-only token that calls a write endpoint (POST, PATCH, etc.) receives a 403 Forbidden response.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            11547,
+            11717
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G4",
+          "url": "https://api.ynab.com/",
+          "quote": "If you do not need write access to a plan, please use the read-only scope.",
+          "answer": "The page advises using the read-only scope when write access is not needed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            11718,
+            11792
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G4",
+          "url": "https://api.ynab.com/",
+          "quote": "The supplied access token has a scope which does not allow access.",
+          "answer": "An API error (403 unauthorized_scope) is returned when a token's scope does not allow the requested access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            18988,
+            19054
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G5",
+          "url": "https://api.ynab.com/",
+          "quote": "This means the application will be limited to obtaining 25 access tokens for users other than the OAuth application owner.",
+          "answer": "Unreviewed apps are capped at 25 access tokens for users other than the owner.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4021,
+            4143
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G5",
+          "url": "https://api.ynab.com/",
+          "quote": "Once this limit is reached, a message will be placed on the Authorization screen and new authorizations will be prohibited.",
+          "answer": "Once the 25-token cap is reached, the Authorization screen shows a message and new authorizations are prohibited.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4144,
+            4267
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G5",
+          "url": "https://api.ynab.com/",
+          "quote": "This grant type does not support refresh tokens so once the access token expires 2 hours after it was granted, the user must be prompted again to authorize your application.",
+          "answer": "With the implicit grant, an access token expires 2 hours after being granted and there are no refresh tokens, so the user must re-authorize.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            5736,
+            5909
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G5",
+          "url": "https://api.ynab.com/",
+          "quote": "This grant type supports refresh tokens so once the access token expires 2 hours after it was granted, the application can request a new access token without having to prompt the user to authorize again.",
+          "answer": "With the authorization code grant, an access token expires 2 hours after being granted, but a refresh token allows a new one without re-prompting the user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            7336,
+            7539
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G5",
+          "url": "https://api.ynab.com/",
+          "quote": "This new token will not expire but can be revoked at any time from this same screen.",
+          "answer": "A Personal Access Token does not expire but can be revoked at any time.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            3045,
+            3129
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G5",
+          "url": "https://api.ynab.com/",
+          "quote": "An access token may be used for up to 200 requests per hour .",
+          "answer": "An access token may be used for up to 200 requests per hour; the page states this as a general limit, not one specific to unreviewed apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            23216,
+            23277
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G6",
+          "url": "https://api.ynab.com/",
+          "quote": "This process takes 2-4 weeks.",
+          "answer": "The Restricted Mode removal review takes 2-4 weeks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4592,
+            4621
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "G7",
+          "url": "https://api.ynab.com/",
+          "quote": "The subscription for this account has lapsed",
+          "answer": "API calls return a 403 subscription_lapsed error when the YNAB account's subscription has lapsed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            18839,
+            18883
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "G7",
+          "url": "https://api.ynab.com/",
+          "quote": "The trial for this account has expired",
+          "answer": "API calls return a 403 trial_expired error when the YNAB account's trial has expired.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            18914,
+            18952
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G8",
+          "url": "https://api.ynab.com/",
+          "quote": "The user will be given the option to approve your request for access:",
+          "answer": "When an end user authorizes the app, they are given the option to approve the request for access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            6405,
+            6474
+          ]
+        },
+        {
+          "id": "E88",
+          "question": "G8",
+          "url": "https://api.ynab.com/",
+          "quote": "When default plan selection is enabled, a user will be asked to select a default plan when authorizing your application:",
+          "answer": "If default plan selection is enabled, the user is asked to choose a default plan when authorizing the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            13666,
+            13786
+          ]
+        },
+        {
+          "id": "E89",
+          "question": "G8",
+          "url": "https://api.ynab.com/",
+          "quote": "An OAuth application can optionally have 'default plan selection' enabled.",
+          "answer": "Default plan selection is an optional setting on an OAuth application.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            13590,
+            13664
+          ]
+        },
+        {
+          "id": "E90",
+          "question": "G9",
+          "url": "https://api.ynab.com/",
+          "quote": "replacing [CLIENT_ID] and [REDIRECT_URI] with the values configured when creating the OAuth Application.",
+          "answer": "The client ID and redirect URI are set when the OAuth application is created, and the authorization request must use those values.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            6300,
+            6404
+          ]
+        },
+        {
+          "id": "E91",
+          "question": "G9",
+          "url": "https://api.ynab.com/",
+          "quote": "redirect_uri - The same [REDIRECT_URI] sent with the original authorization code request in Step 1 above and specified when setting up the OAuth Application.",
+          "answer": "The redirect_uri in the token request must match the one sent in the authorization request and specified in the app setup.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            9104,
+            9261
+          ]
+        },
+        {
+          "id": "E92",
+          "question": "G9",
+          "url": "https://api.ynab.com/",
+          "quote": "the user's browser will be redirected to the [REDIRECT_URI] with a new authorization code sent as a query parameter named code .",
+          "answer": "After approval, the browser is redirected to the redirect URI with the authorization code as a query parameter named code.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            8285,
+            8413
+          ]
+        },
+        {
+          "id": "E93",
+          "question": "G10",
+          "url": "https://api.ynab.com/",
+          "quote": "After saving, you will see the details of the new application, including the Client ID and the Client Secret which are referenced in the instructions below.",
+          "answer": "After saving the new application, its details show the Client ID and Client Secret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4960,
+            5116
+          ]
+        },
+        {
+          "id": "E94",
+          "question": "G10",
+          "url": "https://api.ynab.com/",
+          "quote": "client_secret - The client secret provided when setting up the OAuth Application.",
+          "answer": "The client secret is supplied in the token request as the value provided when the OAuth application was set up.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            9019,
+            9100
+          ]
+        },
+        {
+          "id": "E95",
+          "question": "G10",
+          "url": "https://api.ynab.com/",
+          "quote": "These include scope , state , and code_challenge (PKCE).",
+          "answer": "The authorization request can include the scope, state, and code_challenge (PKCE) security parameters.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            8088,
+            8144
+          ]
+        },
+        {
+          "id": "E96",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "This means the application will be limited to obtaining 25 access tokens for users other than the OAuth application owner.",
+          "answer": "Restricted Mode caps the app at 25 access tokens for users other than the owner until it is removed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            4021,
+            4143
+          ]
+        },
+        {
+          "id": "E97",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "All OAuth Application integrations must abide by the API Terms of Service and the OAuth Application Requirements .",
+          "answer": "All OAuth integrations must follow the API Terms of Service and OAuth Application Requirements, and failure to do so results in the app being disabled.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            3735,
+            3849
+          ]
+        },
+        {
+          "id": "E98",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "Failure to do so will result in disabling of the application.",
+          "answer": "Failure to follow the terms and requirements results in disabling of the application.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            3850,
+            3911
+          ]
+        },
+        {
+          "id": "E99",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "The application and the web address (DNS name) must not include \"YNAB\" or \"You Need A Budget\" unless preceded by the word \"for\".",
+          "answer": "The application and its web address must not include 'YNAB' or 'You Need A Budget' unless preceded by the word 'for'.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            50180,
+            50308
+          ]
+        },
+        {
+          "id": "E100",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "You may not use the YNAB API to copy or duplicate products or services offered by YNAB.",
+          "answer": "Apps may not copy or duplicate products or services offered by YNAB using the API.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            44479,
+            44566
+          ]
+        },
+        {
+          "id": "E101",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "To use the YNAB API and accept the Terms you must be of a legal age to form a binding contract with YNAB.",
+          "answer": "Users must be of legal age to form a binding contract with YNAB to use the API.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            41308,
+            41413
+          ]
+        },
+        {
+          "id": "E102",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "Your application may not be directed or for children under 13.",
+          "answer": "The application may not be directed at or for children under 13.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            45212,
+            45274
+          ]
+        },
+        {
+          "id": "E103",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "The application must not directly request, handle or store any financial account credentials other than an access token obtained directly from a financial institution using OAuth.",
+          "answer": "The application may not store financial account credentials other than an access token obtained through OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            49854,
+            50033
+          ]
+        },
+        {
+          "id": "E104",
+          "question": "G11",
+          "url": "https://api.ynab.com/",
+          "quote": "The YNAB API may only be used when permission is explicitly given by a YNAB account owner through the Authentication processes described in the documentation above.",
+          "answer": "The API may be used only when a YNAB account owner has explicitly given permission through the documented authentication processes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:13:37.817Z",
+          "page_hash": "e57659d8d8375b17",
+          "offsets": [
+            41414,
+            41578
+          ]
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 6289
+        },
+        {
+          "name": "extract https://www.ynab.com/security",
+          "stop": "ok (0 facts)",
+          "ms": 3588
+        },
+        {
+          "name": "extract https://www.ynab.com/press/partnerships",
+          "stop": "ok (0 facts)",
+          "ms": 3818
+        },
+        {
+          "name": "extract https://github.com/geshas/ynab.go/blob/v1.8.6/api/ratelimit.go",
+          "stop": "ok (0 facts)",
+          "ms": 4397
+        },
+        {
+          "name": "extract https://docs.rs/ynab-cli/latest/ynab_cli/auth/oauth/index.html",
+          "stop": "ok (0 facts)",
+          "ms": 4825
+        },
+        {
+          "name": "extract https://github.com/oliverames/ynab-mcp-server/blob/main/docs/hosted-oauth-connector.md",
+          "stop": "ok (15 facts)",
+          "ms": 16563
+        },
+        {
+          "name": "extract https://docs.rs/ynab-cli/latest/src/ynab_cli/auth/oauth.rs.html",
+          "stop": "ok (6 facts)",
+          "ms": 16543
+        },
+        {
+          "name": "extract https://support.ynab.com/en_us/the-ynab-api-an-overview-BJMgQ3zAq",
+          "stop": "ok (11 facts)",
+          "ms": 14080
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (3 facts)",
+          "ms": 6200
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (10 facts)",
+          "ms": 11278
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (11 facts)",
+          "ms": 9665
+        },
+        {
+          "name": "extract https://api.ynab.com/",
+          "stop": "ok (47 facts)",
+          "ms": 56770
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 10759
+        }
+      ],
+      "judge": {
+        "checked": 35,
+        "supported": 22,
+        "partial": 12,
+        "unsupported": 0,
+        "contradicted": 1,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "Quote states that only reviewed, OAuth-enabled applications are included on the Works with YNAB list."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "Quote states a newly created OAuth application is placed in Restricted Mode initially."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "Quote states that removing Restricted Mode requires requesting a review via a form."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote states YNAB removes Restricted Mode and sends an email confirmation after reviewing and confirming policy adherence."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Quote states the process takes 2-4 weeks."
+          },
+          {
+            "id": "c7",
+            "verdict": "supported",
+            "reason": "Quote states listed apps were reviewed by the team for basic functionality and security."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "Quote states the OAuth app must abide by the API Terms of Service and OAuth Application Requirements."
+          },
+          {
+            "id": "c9",
+            "verdict": "partial",
+            "reason": "Quote gives the navigation path to create an OAuth app but does not say any signed-in account qualifies; the absence of other requirements is not stated."
+          },
+          {
+            "id": "c10",
+            "verdict": "supported",
+            "reason": "Quote states a privacy policy must be published and displayed to users."
+          },
+          {
+            "id": "c11",
+            "verdict": "supported",
+            "reason": "Quote states users must be able to delete their data on request, which can be a contact email."
+          },
+          {
+            "id": "c12",
+            "verdict": "supported",
+            "reason": "Quote states the privacy policy URL must be displayed in the OAuth client configuration when public and prominently in the interface."
+          },
+          {
+            "id": "c14",
+            "verdict": "supported",
+            "reason": "Quote states the app name and DNS name must not include YNAB or You Need A Budget unless preceded by 'for'."
+          },
+          {
+            "id": "c15",
+            "verdict": "partial",
+            "reason": "Quote restricts copying or duplicating YNAB products only when done using the YNAB API; the statement drops that condition."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "Quote states the application may not be directed or for children under 13."
+          },
+          {
+            "id": "c17",
+            "verdict": "partial",
+            "reason": "Quote gives the lapsed-subscription message text only; it does not mention a 403 status or the subscription_lapsed error code."
+          },
+          {
+            "id": "c18",
+            "verdict": "partial",
+            "reason": "Quote gives the expired-trial message text only; it does not mention a 403 status or the trial_expired error code."
+          },
+          {
+            "id": "c20",
+            "verdict": "partial",
+            "reason": "Quote documents the read-only scope but does not state that it is the only scope."
+          },
+          {
+            "id": "c21",
+            "verdict": "supported",
+            "reason": "Quote states YNAB is not responsible for reviewing the privacy policy for legal compliance."
+          },
+          {
+            "id": "c22",
+            "verdict": "supported",
+            "reason": "Quote states the implicit grant does not support refresh tokens, the access token expires after 2 hours, and the user must re-authorize."
+          },
+          {
+            "id": "c23",
+            "verdict": "supported",
+            "reason": "Quote states the authorization code grant supports refresh tokens to get a new access token without re-prompting the user."
+          },
+          {
+            "id": "c24",
+            "verdict": "supported",
+            "reason": "Quote states failure to do so will result in disabling of the application."
+          },
+          {
+            "id": "c25",
+            "verdict": "supported",
+            "reason": "Quote states an access token may be used for up to 200 requests per hour."
+          },
+          {
+            "id": "c26",
+            "verdict": "supported",
+            "reason": "Quote states a read-only token used on a modifying endpoint (POST, PATCH, etc.) receives a 403 Forbidden response."
+          },
+          {
+            "id": "c27",
+            "verdict": "supported",
+            "reason": "Quote states the token's scope does not allow access, which produces the error."
+          },
+          {
+            "id": "s1.path",
+            "verdict": "supported",
+            "reason": "Quotes state that public listing requires review and Restricted Mode removal requires a review by YNAB before the app is fully usable."
+          },
+          {
+            "id": "s1.trigger",
+            "verdict": "contradicted",
+            "reason": "Quotes say apps start in Restricted Mode and removal requires review, with no user-count threshold; the review is not limited to apps above a number of users."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "partial",
+            "reason": "Quotes support the review request and email confirmation steps but do not state the full ordered sequence, including publishing the privacy policy before submission."
+          },
+          {
+            "id": "s1.checks",
+            "verdict": "partial",
+            "reason": "Quotes mention review for security, functionality and policy adherence, but not checks on why data is needed or on the listing."
+          },
+          {
+            "id": "s1.wait",
+            "verdict": "supported",
+            "reason": "Quote states the process takes 2-4 weeks."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "partial",
+            "reason": "Quotes say new authorizations are prohibited once a limit is reached, but do not state the 25-token limit for non-owner users."
+          },
+          {
+            "id": "s1.mod1",
+            "verdict": "supported",
+            "reason": "Quotes state the naming rule, the prohibition on copying YNAB products, and the under-13 restriction."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "partial",
+            "reason": "Quotes describe Restricted Mode and app creation but do not explicitly state that no provider review is needed for this setup."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "Quotes support creating the OAuth app in Developer Settings but do not state it is the only step before customers can connect."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "partial",
+            "reason": "Quotes say new authorizations are prohibited once the limit is reached, but do not state the 25 outside-user number."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "Quotes support the 2-4 week review for public launch and the Restricted Mode and Developer Settings steps, but do not mention Composio's managed app or a 'in minutes' timeframe."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 6289,
+        "discover_read": 4612,
+        "extract": 56776,
+        "gapfill": 10760,
+        "write": 29194,
+        "verify": 16173
+      }
+    }
+  }
+}

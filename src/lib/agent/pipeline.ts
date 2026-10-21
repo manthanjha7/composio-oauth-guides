@@ -963,15 +963,18 @@ export function applyInvariants(
   // labelled as such, when setup steps were found, none of that setup's own evidence mentions the app being
   // reviewed, and the judge did not find its path statement contradicted.
   const REVIEW_WORDS =
-    /\b(?:app|application|integration|listing)s?\s+(?:review|approval|verification|certification)|review (?:process|team|period)|submit(?:ted)?(?:\s+(?:it|your app|the app|your application))?\s+(?:for|to)\s+(?:review|approval|verification)|security (?:review|assessment)|partner program|must be (?:approved|reviewed|verified)\b/i;
+    /\b(?:app|application|integration|listing)s?\s+(?:review|approval|verification|certification)|review (?:process|team|period)|submit(?:ted)?(?:\s+(?:it|your app|the app|your application))?\s+(?:for|to)\s+(?:review|approval|verification)|security (?:review|assessment)|partner program|must be (?:approved|reviewed|verified)\b|elevated access|apply for (?:access|approval)|request (?:access|approval)|access (?:request|application)/i;
   const setupFound = store.status("G10") === "found";
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };
     let pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
     out.path_basis = pathOk ? "stated" : undefined;
-    if (!pathOk && out.path === "self_serve" && setupFound && c.fieldVerdict?.(`${s.id}.path`) !== "contradicted") {
+    // Also when the writer left the path blank: the same labelled inference, under the same conditions.
+    if (!pathOk && (out.path === "self_serve" || !out.path) && setupFound && c.fieldVerdict?.(`${s.id}.path`) !== "contradicted") {
       const own = [...s.claim_ids, ...(s.path_claim_ids ?? [])].map((id) => claimById.get(id)).filter((x) => x && x.label !== "unknown");
       if (own.length > 0 && !own.some((x) => REVIEW_WORDS.test(`${x!.text} ${x!.quote ?? ""}`))) {
+        if (!out.path) warnings.push(`"${s.label}": no path was given; self-serve inferred because none of this setup's evidence mentions a review or an access request.`);
+        out.path = "self_serve";
         pathOk = true;
         out.path_basis = "inferred";
       }

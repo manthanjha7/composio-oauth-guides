@@ -1,0 +1,2783 @@
+{
+  "slug": "zendesk",
+  "guide": {
+    "app": {
+      "name": "Zendesk",
+      "website": "https://www.zendesk.com/",
+      "developer_docs_url": null
+    },
+    "oauth_supported": "yes",
+    "summary": "Internal use, one Zendesk account (approval path unconfirmed); Public agent serving many Zendesk customers (app review). Where the path is unconfirmed, the agent did not find it in the provider's docs.",
+    "verdict": "Public agent serving many Zendesk customers (app review).",
+    "default_scenario": "s2",
+    "composio": {
+      "toolkit_slug": "zendesk",
+      "managed_oauth": "yes",
+      "credential_guide_url": "https://composio.dev/auth/zendesk",
+      "note": "Composio manages OAuth for Zendesk, so prototypes need no own app. Use your own client for your branding on the consent screen."
+    },
+    "need_own_app": {
+      "answer": "Not for prototypes, since Composio supplies a managed Zendesk app. For production you should bring your own app so users see your name, and you get dedicated quota and your own scopes.",
+      "reasons": [
+        "Users see your app name instead of Composio on the consent screen",
+        "Managed apps share quota across all Composio users",
+        "Managed apps use Composio's default scopes, which may not cover your needs",
+        "Distribution to multiple Zendesk customers requires your own app to be reviewed by Zendesk"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Internal use, one Zendesk account",
+        "when_this_applies": "Your agent only connects users of a single Zendesk account that you control.",
+        "difficulty": "unknown",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No verified source confirms \"None\".",
+          "max_days": null
+        },
+        "approval": "No Zendesk review for internal apps; an admin registers the OAuth client in Admin Center.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c4",
+          "c5"
+        ],
+        "shortcut": null,
+        "extras": [],
+        "modifiers": [],
+        "path_claim_ids": [
+          "c4",
+          "c5",
+          "c3"
+        ]
+      },
+      {
+        "id": "s2",
+        "label": "Public agent serving many Zendesk customers",
+        "when_this_applies": "Your product connects the Zendesk accounts of multiple outside customers.",
+        "difficulty": "hard",
+        "hands_on": {
+          "estimate": "4-8 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "Zendesk says global OAuth request duration is hard to predict (c9); no review timeline found.",
+          "max_days": null
+        },
+        "approval": "Zendesk requires review and approval of apps distributed to multiple customers, plus a request for a global OAuth client.",
+        "claim_ids": [
+          "c6",
+          "c7",
+          "c8",
+          "c9",
+          "c10",
+          "c11",
+          "c12",
+          "c13",
+          "c14"
+        ],
+        "path": "app_review",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "API-token customers must approve global OAuth",
+          "Customer data handling rules; press wording rules"
+        ],
+        "trigger": "always",
+        "modifiers": [
+          {
+            "kind": "customer_admin",
+            "qualifier": "required",
+            "note": "API-token customers must approve global OAuth",
+            "claim_ids": [
+              "c12"
+            ]
+          },
+          {
+            "kind": "use_restrictions",
+            "qualifier": null,
+            "note": "Customer data handling rules; press wording rules",
+            "claim_ids": [
+              "c13",
+              "c14"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c6",
+          "c7",
+          "c8"
+        ],
+        "path_basis": "stated"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Zendesk account on a plan with OAuth",
+        "detail": "OAuth use is listed for Team, Growth, Professional, Enterprise or Enterprise Plus (All Suites), and Team, Professional or Enterprise (Support). A Zendesk account is needed to get a client ID.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Admin permissions",
+        "detail": "Creating and managing OAuth clients needs specific admin permissions in Admin Center.",
+        "claim_ids": [
+          "c15"
+        ],
+        "scenario_ids": []
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create Zendesk OAuth client",
+        "owner": "you",
+        "detail": "In Admin Center go to Apps and integrations > APIs > OAuth clients and add a client with name, identifier, client kind, redirect URLs and scopes. Copy the secret immediately; it is shown in full only once.",
+        "inputs": [
+          "Admin access",
+          "Logo (JPG, GIF or PNG, optional)",
+          "Redirect URI from Composio dashboard"
+        ],
+        "done_when": "You hold the client ID and the full client secret.",
+        "scenario_ids": [],
+        "link": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "claim_ids": [
+          "c16",
+          "c17",
+          "c18",
+          "c19",
+          "c20"
+        ]
+      },
+      {
+        "title": "Choose scopes",
+        "owner": "agent",
+        "detail": "Draft the narrowest scopes, for example tickets:read instead of full read or write. Leaving scopes empty allows all of them.",
+        "inputs": [
+          "List of agent actions"
+        ],
+        "done_when": "Scope list is ready to enter in the client form.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c21",
+          "c22"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the auth config through Composio's API with your client ID and secret. Use the redirect URI copied from the Composio dashboard in the Zendesk client.",
+        "inputs": [
+          "Client ID",
+          "Client secret"
+        ],
+        "done_when": "Auth config exists and a test connection succeeds.",
+        "scenario_ids": [],
+        "link": "https://composio.dev/auth/zendesk",
+        "claim_ids": [
+          "c23",
+          "c24"
+        ]
+      },
+      {
+        "title": "Submit app for Zendesk review",
+        "owner": "you",
+        "detail": "Submit the app for Zendesk review and approval. A Marketplace profile is optional, and a first submission has its profile reviewed together with the app.",
+        "inputs": [
+          "App description",
+          "Security and data handling details"
+        ],
+        "done_when": "Submission is accepted by Zendesk.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c6",
+          "c7",
+          "c25",
+          "c26"
+        ]
+      },
+      {
+        "title": "Request global OAuth client",
+        "owner": "you",
+        "detail": "Request a global OAuth client so one app works across many Zendesk accounts. If it takes too long, email platformteam@zendesk.com.",
+        "inputs": [
+          "Registered OAuth client"
+        ],
+        "done_when": "Zendesk grants the global OAuth client.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c10",
+          "c9",
+          "c27"
+        ]
+      },
+      {
+        "title": "Wait for Zendesk approval",
+        "owner": "waiting",
+        "detail": "No fixed timeline is documented for the review or the global OAuth request.",
+        "inputs": [],
+        "done_when": "Zendesk confirms approval.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c9"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Tokens expire and the user must re-authorize",
+        "detail": "Access tokens last 30 minutes by default (5 minutes to 48 hours). If a refresh token expires or is invalid, the user must go through the full authorization flow again.",
+        "claim_ids": [
+          "c28",
+          "c29"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Authorization code lives only 120 seconds",
+        "detail": "Exchange the code for tokens quickly after redirect.",
+        "claim_ids": [
+          "c30"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Client secret shown only once",
+        "detail": "After saving, only the first nine characters remain visible, so store it right away.",
+        "claim_ids": [
+          "c20"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Expire tokens setting is permanent",
+        "detail": "Once enabled it cannot be turned off. Clients created after April 30, 2026 already have expirations by default.",
+        "claim_ids": [
+          "c31",
+          "c32"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Use core subdomain and https redirects",
+        "detail": "The authorization URL needs the Zendesk core subdomain, not a host-mapped one. Redirect URLs must be https unless localhost or 127.0.0.1.",
+        "claim_ids": [
+          "c33",
+          "c34"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Public clients require PKCE",
+        "detail": "Client kind must be Public or Confidential. Public clients must use PKCE; confidential clients can use PKCE, a secret, or both.",
+        "claim_ids": [
+          "c35",
+          "c36",
+          "c37"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Managed app limits",
+        "detail": "Managed apps show Composio's name, share quota across all Composio users, and use a 15-minute minimum polling interval.",
+        "claim_ids": [
+          "c38",
+          "c39",
+          "c40"
+        ],
+        "scenario_ids": []
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Customers on API tokens cannot use your OAuth app",
+        "what_it_means": "Customers using API-token apps must approve global OAuth once you make it available.",
+        "what_to_do": "Ask each such customer's admin to approve global OAuth.",
+        "agent_can_help": "Draft the customer-facing instructions.",
+        "claim_ids": [
+          "c12"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "symptom": "Global OAuth request pending for a long time",
+        "what_it_means": "Duration depends on pending requests and time of week.",
+        "what_to_do": "Email platformteam@zendesk.com if it takes longer than expected.",
+        "agent_can_help": "Draft the follow-up email.",
+        "claim_ids": [
+          "c9",
+          "c27"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "open_questions": [
+      "What does Zendesk's app review check, and how long does it take? Ask platformteam@zendesk.com or submit and check the Marketplace documentation.",
+      "Is the review always required, or only above some scale? The sources say all multi-customer apps; confirm with Zendesk.",
+      "What scopes are considered sensitive? Not found; ask Zendesk.",
+      "Does Zendesk verify redirect-URI domains? Not found; test with a staging client.",
+      "Is a paid Zendesk plan required for the developer account? Only plan tiers that include OAuth were found.",
+      "Not found: limits before approval. Checked developer.zendesk.com, community.zendesk.com.",
+      "Not found: scope or permission tiers. Checked developer.zendesk.com, community.zendesk.com."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A third-party app needs a Zendesk account to get a client ID for OAuth authentication.",
+        "label": "reported",
+        "source_url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+        "quote": "For OAuth authentication a third party app needs a Zendesk account to get a client id.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "The plan list on the page for All Suites includes Team, Growth, Professional, Enterprise, and Enterprise Plus.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "Team, Growth, Professional, Enterprise, or Enterprise Plus",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "The plan list on the page for Support includes Team, Professional, and Enterprise.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "Team, Professional, or Enterprise",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "Customers building internal applications for their own use will not be impacted by these changes, however third-party developers will need to meet the new standards.",
+        "label": "provider_docs",
+        "source_url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "quote": "Customers building internal applications for their own use will not be impacted by these changes, however third-party developers will need to meet the new standards.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "The standard OAuth client setup described on the page is for users of one Zendesk account.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "This section describes how to set up an OAuth client for users of one Zendesk account.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "All applications built for distribution to Zendesk customers, whether listed in the official marketplace or otherwise, must be submitted for review and approval.",
+        "label": "provider_docs",
+        "source_url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "quote": "All applications built for distribution to Zendesk customers—whether listed in our official marketplace or otherwise—must be submitted for review and approval, giving customers added confidence that third-party applications are safe and following security guidelines.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "All public integrations (those made available to multiple Zendesk customers) must go through Marketplace review.",
+        "label": "provider_docs",
+        "source_url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "quote": "All public integrations (those made available to multiple Zendesk customers) will be required to go through Marketplace review to ensure they conform to the new standards.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "Zendesk requires third-party developers to complete enhanced Zendesk security reviews.",
+        "label": "provider_docs",
+        "source_url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "quote": "And now, to take a step forward and further protect our customers, Zendesk is requiring third-party developers to begin using application-specific authorization credentials; to practice improved hygiene and transparency in API calls; to complete enhanced Zendesk security reviews; and to comply with customer protective data handling principles.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "A Zendesk employee says global OAuth request duration is hard to predict because it depends on pending requests and time of week; no fixed timeline is given.",
+        "label": "reported",
+        "source_url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+        "quote": "It's difficult to say exactly how long a request will take, as it depends on the number of pending requests, time of week, etc.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "Apps that interact with many Zendesk accounts can request a global OAuth client instead.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "you can request a global OAuth client.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "Zendesk states its app ecosystem goes through a review to ensure third-party marketplace apps can be trusted, but the specific checks are not listed.",
+        "label": "provider_docs",
+        "source_url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "quote": "Additionally, Zendesk’s app ecosystem goes through a review ensuring third-party apps in our marketplace can be trusted.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "Customers using third-party apps that authenticate with API tokens will need to approve a new authentication method (global OAuth) when the developer makes it available.",
+        "label": "provider_docs",
+        "source_url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "quote": "However, for customers using third-party applications that authenticate into your account using API tokens, you will need to approve a new authentication method (global OAuth) when the app’s developer makes that available to you.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "App developers serving Zendesk customers must follow rules on handling customer data so it is not misused or exposed to unauthorized access.",
+        "label": "provider_docs",
+        "source_url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "quote": "New guidelines on usage and storage: App developers will be required to conform to rules about handling customer data, ensuring it is not misused or exposed to unauthorized access.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "In press and external materials, Zendesk must not be referenced as announcing the news of an app, partnership, or integration.",
+        "label": "reported",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+        "quote": "Zendesk must not be referenced as announcing the news of an app, partnership, or integration.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "Creating and managing OAuth clients requires specific admin permissions; an admin who loses them can no longer manage the client, but the client stays active.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "permissions required to create and manage OAuth clients, the OAuth client remains",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "OAuth clients are registered in Zendesk Admin Center under Apps and integrations > APIs > OAuth clients.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "Location: Admin Center > Apps and integrations > APIs > Oauth",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "Required setup fields include Name, Identifier, Client kind, Redirect URLs, and Scopes, plus optional Description, Company, and Logo.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "Name - Enter a name for your app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "Setting the client kind is mandatory for new OAuth clients created in Admin Center.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "Setting the kind property is mandatory for all new OAuth clients created",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "The logo image can be a JPG, GIF, or PNG file.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "The image can be a JPG, GIF, or PNG.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "The full secret is displayed only once; after saving, only the first nine characters are visible.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "only once. After clicking Save , you'll only have access to the first nine",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21",
+        "text": "Scopes can be narrowed to specific resources, such as tickets:read to only read tickets.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "For example, the following parameter restricts an app to only reading tickets:",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "When registering the client, the admin selects the scopes the client can request; leaving the field empty allows all scopes.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "Select the scopes this client can request.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote says to select the scopes the client can request, but does not say an empty field allows all scopes."
+      },
+      {
+        "id": "c23",
+        "text": "With a custom auth config, the developer supplies their own OAuth app or other credentials and tells Composio to use them for a toolkit.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "The redirect URI to register in your own OAuth app is your own proxy endpoint, not Composio's domain.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "A Zendesk Marketplace profile is optional, so it is not a required step before customers can use the app.",
+        "label": "reported",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+        "quote": "A profile is optional and is only published once your app or theme has been approved and published on the Zendesk Marketplace.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "For a developer's first app or theme submission, Zendesk reviews the profile together with the app or theme.",
+        "label": "reported",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+        "quote": "If you’re submitting an app or theme for the first time, we’ll review your profile in conjunction with your app or theme.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c27",
+        "text": "If a global OAuth request takes longer than expected, the developer can email platformteam@zendesk.com.",
+        "label": "reported",
+        "source_url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+        "quote": "If a request is taking longer than you would expect, you can email platformteam@zendesk.com .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c28",
+        "text": "Access tokens have a default lifetime of 30 minutes, a minimum of 5 minutes, and a maximum of 48 hours.",
+        "label": "unknown",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "The default, minimum, and maximum expiration times are:",
+        "probe_id": null,
+        "note": "The quote does not support this claim: Quote only introduces a table of default, minimum and maximum expiration times; the values themselves are not in the quotes."
+      },
+      {
+        "id": "c29",
+        "text": "If a refresh token expires or is invalid, the user must go through the full authorization flow again.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "If a refresh token expires or is invalid, your app must send the user through the",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote is truncated at 'send the user through the', so it is cut off before stating the full authorization flow requirement."
+      },
+      {
+        "id": "c30",
+        "text": "Authorization codes are valid for only 120 seconds.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "The authorization code is only valid for 120 seconds.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c31",
+        "text": "The Expire tokens setting cannot be turned off once enabled.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "This setting is permanent and cannot be turned off once enabled.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c32",
+        "text": "For OAuth clients created after April 30, 2026, the Expire tokens checkbox is disabled because those clients already have expirations set by default.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "clients already have expirations set by default.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote says clients already have expirations set by default, but the April 30, 2026 date and disabled checkbox are not in the quotes."
+      },
+      {
+        "id": "c33",
+        "text": "The authorization URL uses the Zendesk core subdomain, not a host-mapped subdomain.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "where {subdomain} is your Zendesk core subdomain, not a host-mapped",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c34",
+        "text": "The redirect URI must be secure (https) unless the app uses localhost or 127.0.0.1.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "It also has to be secure (https) unless you're using localhost or",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c35",
+        "text": "The client kind must be set to Public or Confidential.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "Client kind - Public or Confidential.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c36",
+        "text": "Public clients are required to use PKCE.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "These clients are required to use PKCE.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c37",
+        "text": "Confidential clients can use PKCE, a client secret, or both.",
+        "label": "reported",
+        "source_url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "quote": "These clients can use PKCE, client secret, or both.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c38",
+        "text": "Managed-app OAuth consent screens show Composio's name, so users see 'Composio wants to access your account'.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c39",
+        "text": "Managed apps share their rate-limit quota across all Composio users, while a developer's own app gets a dedicated quota.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Managed apps share quota across all Composio users.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c40",
+        "text": "Managed auth enforces a 15-minute minimum polling interval for triggers, whereas a developer's own app can use shorter polling intervals where supported.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T11:13:31.452Z",
+    "generated_by": "agent v2 (v2.7-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-haiku-5-5 · composio_search",
+    "duration_ms": 147172,
+    "query": "Zendesk",
+    "partial": true,
+    "warnings": [
+      "\"Internal use, one Zendesk account\": the path (\"self_serve\") is not backed by a verified source, so it is shown as unconfirmed.",
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 40,
+      "quotes_checked": 12,
+      "quotes_verified": 12,
+      "downgraded": 1
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 109565,
+      "output_tokens": 49502,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T11:11:05.137Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T11:11:05.137Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T11:11:05.137Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/zendesk",
+        "title": null,
+        "fetched_at": "2026-10-21T11:11:05.137Z",
+        "via": "direct",
+        "chars": 620
+      },
+      {
+        "url": "https://www.zendesk.com/",
+        "title": "AI-Powered Customer Service Platform | Zendesk",
+        "fetched_at": "2026-10-21T11:11:14.737Z",
+        "via": "direct",
+        "chars": 13059
+      },
+      {
+        "url": "https://www.zendesk.com/in/partner/",
+        "title": "Partner with Zendesk | Sell, deploy and build customised solutions | Zendesk India",
+        "fetched_at": "2026-10-21T11:11:17.742Z",
+        "via": "direct",
+        "chars": 3172
+      },
+      {
+        "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+        "title": "Using OAuth authentication with your application – Zendesk help",
+        "fetched_at": "2026-10-21T11:11:17.754Z",
+        "via": "direct",
+        "chars": 23568
+      },
+      {
+        "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+        "title": "Elevating API security to keep pace with AI innovation",
+        "fetched_at": "2026-10-21T11:11:17.769Z",
+        "via": "direct",
+        "chars": 13344
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+        "title": "Create a Zendesk Marketplace profile | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T11:11:17.801Z",
+        "via": "direct",
+        "chars": 3204
+      },
+      {
+        "url": "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+        "title": "Announcing support for OAuth refresh token grant type and OAuth access and refresh token expirations – Zendesk help",
+        "fetched_at": "2026-10-21T11:11:17.804Z",
+        "via": "direct",
+        "chars": 4242
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+        "title": "Zendesk Partner Media Toolkit | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T11:11:17.852Z",
+        "via": "direct",
+        "chars": 5484
+      },
+      {
+        "url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+        "title": "For OAuth authentication do the rate limits apply to the zendesk account that makes the API calls or Zendesk account that owns the data? | The place for Zendesk users to come together and share",
+        "fetched_at": "2026-10-21T11:11:18.322Z",
+        "via": "direct",
+        "chars": 3573
+      },
+      {
+        "url": "https://support.zendesk.com/hc/en-us/articles/8662004958746-Turning-on-and-off-API-access",
+        "title": "Turning on and off API access – Zendesk help",
+        "fetched_at": "2026-10-21T11:12:21.775Z",
+        "via": "direct",
+        "chars": 4169
+      },
+      {
+        "url": "https://developer.zendesk.com/api-reference/introduction/plan/",
+        "title": "Plan availability | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T11:12:22.068Z",
+        "via": "direct",
+        "chars": 517
+      },
+      {
+        "url": "https://developer.zendesk.com/api-reference/ticketing/oauth/oauth_clients/",
+        "title": "OAuth Clients | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T11:12:22.341Z",
+        "via": "direct",
+        "chars": 26218
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.7-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-haiku-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "not_found",
+          "evidence": [
+            "E4",
+            "E8",
+            "E50",
+            "E51",
+            "E52",
+            "E53",
+            "E54"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E2",
+            "E3",
+            "E5",
+            "E9",
+            "E10",
+            "E21",
+            "E22",
+            "E23",
+            "E24",
+            "E55",
+            "E56",
+            "E57"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E25",
+            "E26"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "not_found",
+          "evidence": [
+            "E58",
+            "E59",
+            "E60",
+            "E61",
+            "E62"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "not_found",
+          "evidence": [
+            "E63",
+            "E65",
+            "E66",
+            "E67"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E6",
+            "E7",
+            "E11"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "not_found",
+          "evidence": [
+            "E68"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+            "https://developer.zendesk.com/documentation/integration-services/developer-guide/creating-managing-oauth-connections/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+            "https://support.zendesk.com/hc/en-us/articles/8662004958746-Turning-on-and-off-API-access",
+            "https://developer.zendesk.com/api-reference/introduction/plan/",
+            "https://developer.zendesk.com/api-reference/ticketing/oauth/oauth_clients/"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E27",
+            "E69",
+            "E70",
+            "E71"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "not_found",
+          "evidence": [
+            "E29",
+            "E30",
+            "E31",
+            "E32",
+            "E33",
+            "E34",
+            "E35",
+            "E36",
+            "E37",
+            "E72",
+            "E73",
+            "E74",
+            "E75"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+            "https://developer.zendesk.com/documentation/integration-services/developer-guide/creating-managing-oauth-connections/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "not_found",
+          "evidence": [
+            "E76",
+            "E77",
+            "E78",
+            "E79",
+            "E80",
+            "E81",
+            "E82",
+            "E83",
+            "E84",
+            "E85",
+            "E86"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E12",
+            "E13",
+            "E14",
+            "E15",
+            "E16",
+            "E28",
+            "E87"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+            "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://www.zendesk.com/in/partner/",
+            "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+            "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": []
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E17",
+            "E18",
+            "E19",
+            "E20",
+            "E38",
+            "E39",
+            "E40",
+            "E41",
+            "E42",
+            "E43",
+            "E44",
+            "E45",
+            "E46",
+            "E47",
+            "E48",
+            "E49"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "A profile is optional and is only published once your app or theme has been approved and published on the Zendesk Marketplace.",
+          "answer": "A Zendesk Marketplace profile is optional, so it is not a required step before customers can use the app.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.801Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            397,
+            523
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "All Zendesk Marketplace profiles are reviewed by Zendesk.",
+          "answer": "Every Zendesk Marketplace profile is reviewed by Zendesk (the page does not say what triggers this review).",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.801Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            525,
+            582
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "If you’re submitting an app or theme for the first time, we’ll review your profile in conjunction with your app or theme.",
+          "answer": "For a developer's first app or theme submission, Zendesk reviews the profile together with the app or theme.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.801Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            583,
+            704
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G1",
+          "url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+          "quote": "For OAuth authentication a third party app needs a Zendesk account to get a client id.",
+          "answer": "A third-party app needs a Zendesk account to get a client ID for OAuth authentication.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:18.322Z",
+          "page_hash": "b9ace9e0eacba648",
+          "offsets": [
+            267,
+            353
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G2",
+          "url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+          "quote": "Company B installs that app",
+          "answer": "An app created by one company (Company A) can be installed by another company (Company B) into its own Zendesk instance, and the page describes no review step before this.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:18.322Z",
+          "page_hash": "b9ace9e0eacba648",
+          "offsets": [
+            2485,
+            2512
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G6",
+          "url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+          "quote": "It's difficult to say exactly how long a request will take, as it depends on the number of pending requests, time of week, etc.",
+          "answer": "The page gives no fixed timeline for obtaining global OAuth; a Zendesk employee says the duration is hard to predict because it depends on pending requests and time of week.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:18.322Z",
+          "page_hash": "b9ace9e0eacba648",
+          "offsets": [
+            1314,
+            1441
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G6",
+          "url": "https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+          "quote": "If a request is taking longer than you would expect, you can email platformteam@zendesk.com .",
+          "answer": "If a global OAuth request takes longer than expected, the developer can email platformteam@zendesk.com.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:18.322Z",
+          "page_hash": "b9ace9e0eacba648",
+          "offsets": [
+            1442,
+            1535
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G1",
+          "url": "https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+          "quote": "For legacy clients, adopting the refresh token flow also requires explicitly setting expires_in .",
+          "answer": "The page calls OAuth clients created before refresh token support was added 'legacy' clients, which need extra setup to adopt the refresh token flow. It does not say who can create an OAuth app or what plan or region is needed.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.804Z",
+          "page_hash": "5a8c2e0ed5f32d69",
+          "offsets": [
+            2067,
+            2164
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "As part of becoming a Zendesk Marketplace partner, Zendesk offers the following benefits:",
+          "answer": "The page lists a Zendesk Marketplace listing as a benefit of becoming a Zendesk Marketplace partner. It does not say a listing is required before customers can connect.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            2883,
+            2972
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "We'll list your app in the Zendesk Marketplace .",
+          "answer": "Under the partner benefits, Zendesk says it will list the developer's app in the Zendesk Marketplace.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            3006,
+            3054
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "We’ll do our best to turn around approvals in 2-3 business days.",
+          "answer": "For press releases only, Zendesk aims to turn around approvals in 2-3 business days. The page gives no timeline for app reviews.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            355,
+            419
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "On the first mention, refer to Zendesk as Zendesk, Inc. Do not capitalize the “D” in Zendesk or use Zendesk.com.",
+          "answer": "For press releases and external materials, on first mention Zendesk must be written as Zendesk, Inc. The 'D' must not be capitalized and Zendesk.com must not be used.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            446,
+            558
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "Zendesk must not be referenced as announcing the news of an app, partnership, or integration.",
+          "answer": "For press and external materials, Zendesk must not be referenced as announcing the news of an app, partnership, or integration.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            1700,
+            1793
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "Use alternative language such as \"working with\" or “in cooperation with” instead of the terms “partnerships” or “alliance” to describe the Zendesk relationship unless otherwise approved.",
+          "answer": "For press and external materials, the developer should use wording like 'working with' or 'in cooperation with' rather than 'partnerships' or 'alliance' to describe the Zendesk relationship, unless otherwise approved.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            1938,
+            2124
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "Zendesk’s corporate boilerplate and contact information should not be included in the press release or other materials.",
+          "answer": "Zendesk's corporate boilerplate and contact information should not be included in the press release or other materials.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            2128,
+            2247
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "Brand Guidelines : The guidelines describe how to properly use the Zendesk trademark, as well as approved brand assets.",
+          "answer": "The page points to Zendesk brand guidelines that describe proper use of the Zendesk trademark and approved brand assets.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.852Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            4102,
+            4221
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Zendesk](/toolkits/zendesk.md) | `ZENDESK` |",
+          "answer": "Zendesk is listed under Composio-managed OAuth available, so Composio supplies its OAuth app (slug ZENDESK).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            7230,
+            7277
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "For toolkits in the managed list, such as Zendesk, the developer does not need to register an OAuth app or supply a client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "A toolkit appears under Composio-managed OAuth available when Composio manages at least one OAuth method, and the toolkit page must be opened to check each method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1000,
+            1153
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "Whether a toolkit's OAuth method is Composio-managed is determined by checking whether composio_managed_auth_schemes contains that OAuth method; if it does not, the developer must register their own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            939
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G2",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "All applications built for distribution to Zendesk customers—whether listed in our official marketplace or otherwise—must be submitted for review and approval, giving customers added confidence that third-party applications are safe and following security guidelines.",
+          "answer": "For Zendesk, every app built for distribution to Zendesk customers must be submitted for review and approval, whether or not it is listed in the official marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            8383,
+            8650
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G2",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "All public integrations (those made available to multiple Zendesk customers) will be required to go through Marketplace review to ensure they conform to the new standards.",
+          "answer": "Zendesk says all public integrations, meaning those made available to multiple Zendesk customers, must go through Marketplace review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            10784,
+            10955
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G2",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "These changes do not apply to customers developing applications for internal use, but to entities developing applications and integrations for distribution to multiple Zendesk customers (for short, “app developers”).",
+          "answer": "The new Zendesk requirements apply to app developers building for distribution to multiple Zendesk customers, not to customers building apps for internal use.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            7682,
+            7898
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G2",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "Customers building internal applications for their own use will not be impacted by these changes, however third-party developers will need to meet the new standards.",
+          "answer": "Customers building internal applications for their own use are not affected by the Zendesk changes, but third-party developers must meet the new standards.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            4694,
+            4859
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G3",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "And now, to take a step forward and further protect our customers, Zendesk is requiring third-party developers to begin using application-specific authorization credentials; to practice improved hygiene and transparency in API calls; to complete enhanced Zendesk security reviews; and to comply with customer protective data handling principles.",
+          "answer": "Zendesk requires third-party developers to complete enhanced Zendesk security reviews.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            4348,
+            4693
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G3",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "Additionally, Zendesk’s app ecosystem goes through a review ensuring third-party apps in our marketplace can be trusted.",
+          "answer": "Zendesk states that its app ecosystem goes through a review to ensure third-party marketplace apps can be trusted, but the page does not list the specific checks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            6780,
+            6900
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G8",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "However, for customers using third-party applications that authenticate into your account using API tokens, you will need to approve a new authentication method (global OAuth) when the app’s developer makes that available to you.",
+          "answer": "Customers using third-party apps that authenticate with API tokens will need to approve a new authentication method (global OAuth) when the developer makes it available.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            9516,
+            9745
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G11",
+          "url": "https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "quote": "New guidelines on usage and storage: App developers will be required to conform to rules about handling customer data, ensuring it is not misused or exposed to unauthorized access.",
+          "answer": "App developers serving Zendesk customers must follow rules on handling customer data so it is not misused or exposed to unauthorized access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.769Z",
+          "page_hash": "6e9efa3951cbede3",
+          "offsets": [
+            8654,
+            8834
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "The page's guidance is for all toolkits in general and does not mention Zendesk specifically. In your OAuth app's settings, you set the authorized redirect URI to your own endpoint.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example redirect URI on your own domain is https://yourdomain.com/api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "During OAuth, the browser briefly redirects through backend.composio.dev so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also display the backend.composio.dev URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "Hiding Composio's domain is the stated reason to proxy the redirect through your own domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "Your proxy endpoint receives the OAuth callback and immediately sends a redirect to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "The Composio callback URL that the proxy forwards to is https://backend.composio.dev/api/v3/toolkits/auth/callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**.",
+          "answer": "The proxy endpoint must return a 302 redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3340
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy must not follow the redirect server-side or make a fetch call to Composio; the user's browser must be redirected.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            3341,
+            3413
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "The page's guidance is general and does not describe Zendesk specifically. Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, the provider's consent screen (such as Google or GitHub) shows that Composio wants to access the user's account.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "The redirect URI to register in your own OAuth app is your own proxy endpoint, not Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack (the page does not mention Zendesk).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "With a custom auth config, the developer supplies their own OAuth app or other credentials and tells Composio to use them for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "Managed-app OAuth consent screens show Composio's name, not the developer's app name, so users see 'Composio wants to access your account' (general statement about managed apps).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Managed apps use Composio's default scopes, which may not include everything a developer needs (general statement about managed apps).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users.",
+          "answer": "Managed apps share their rate-limit quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1474
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for triggers, whereas a developer's own app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "In production, users should see your app name, not \"Composio.\" This is the most common reason to switch.",
+          "answer": "In production, users should see the developer's app name rather than Composio's, and this is the most common reason to switch to a custom app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1145,
+            1249
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "Whether Composio provides a managed OAuth app for a given toolkit is checked on the Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:05.137Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G1",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Location: Admin Center > Apps and integrations > APIs > Oauth",
+          "answer": "OAuth clients are registered in Zendesk Admin Center under Apps and integrations > APIs > OAuth clients.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            965,
+            1026
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G1",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "To use OAuth authentication, you need to register your application with Zendesk.",
+          "answer": "You must register your application with Zendesk to use OAuth authentication.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            1407,
+            1487
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G1",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Team, Growth, Professional, Enterprise, or Enterprise Plus",
+          "answer": "The plan list on the page for All Suites includes Team, Growth, Professional, Enterprise, and Enterprise Plus.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            399,
+            457
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G1",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Team, Professional, or Enterprise",
+          "answer": "The plan list on the page for Support includes Team, Professional, and Enterprise.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            471,
+            504
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G1",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "permissions required to create and manage OAuth clients, the OAuth client remains",
+          "answer": "Creating and managing OAuth clients requires specific admin permissions; an admin who loses them no longer can manage the client, but the client stays active.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            6437,
+            6518
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G2",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Click Add OAuth client on the right side of the OAuth client list.",
+          "answer": "Registering an OAuth client is a manual step done by an admin in Admin Center, not an automatic registration.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            3305,
+            3371
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G2",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "This section describes how to set up an OAuth client for users of one Zendesk account.",
+          "answer": "The standard OAuth client setup described on the page is for users of one Zendesk account.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            2790,
+            2876
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G2",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "you can request a global OAuth client.",
+          "answer": "Apps that interact with many Zendesk accounts can request a global OAuth client instead.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            2968,
+            3006
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G4",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "access to GET endpoints. It includes permission to sideload related resources.",
+          "answer": "The read scope gives an app access to GET endpoints, including permission to sideload related resources.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            14133,
+            14211
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G4",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "access to POST, PUT, and DELETE endpoints for",
+          "answer": "The write scope gives an app access to POST, PUT, and DELETE endpoints for creating, updating, and deleting resources.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            14243,
+            14288
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G4",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "The impersonate scope allows a Zendesk admin to make requests on behalf of end users.",
+          "answer": "The impersonate scope lets a Zendesk admin make requests on behalf of end users.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            0,
+            85
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G4",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "For example, the following parameter restricts an app to only reading tickets:",
+          "answer": "Scopes can be narrowed to specific resources, such as tickets:read to only read tickets.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            14935,
+            15013
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G4",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Select the scopes this client can request.",
+          "answer": "When registering the client, the admin selects the scopes the client can request; leaving the field empty allows all scopes.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            4955,
+            4997
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G5",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "The authorization code is only valid for 120 seconds.",
+          "answer": "Authorization codes are valid for only 120 seconds.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            15668,
+            15721
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G5",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "The default, minimum, and maximum expiration times are:",
+          "answer": "Access tokens have a default lifetime of 30 minutes, a minimum of 5 minutes, and a maximum of 48 hours.",
+          "kind": "reported",
+          "status": "rejected",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            10312,
+            10367
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G5",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "If a refresh token expires or is invalid, your app must send the user through the",
+          "answer": "If a refresh token expires or is invalid, the user must go through the full authorization flow again.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            10045,
+            10126
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G5",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "This setting is permanent and cannot be turned off once enabled.",
+          "answer": "The Expire tokens setting cannot be turned off once enabled; it applies a default expiration to all tokens issued by the client.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            5433,
+            5497
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G5",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "clients already have expirations set by default.",
+          "answer": "For OAuth clients created after April 30, 2026, the Expire tokens checkbox is disabled because those clients already have expirations set by default.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            5589,
+            5637
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G7",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Team, Growth, Professional, Enterprise, or Enterprise Plus",
+          "answer": "The page lists the plan tiers that include OAuth use but does not state any prices, credits, or fees.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            399,
+            457
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G8",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "asks the user to authorize your application to access Zendesk on their behalf.",
+          "answer": "The end user, not an admin, is sent to the Zendesk authorization page to grant the app access on their behalf.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            11510,
+            11588
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G8",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "The Zendesk authorization page opens in the end user's browser.",
+          "answer": "The Zendesk authorization page opens in the end user's browser.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            13827,
+            13890
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G8",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Other users can also continue to authorize the application and obtain new",
+          "answer": "Other users can also authorize the application and obtain new tokens, and their tokens act on behalf of the individual user who authorized it.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            0,
+            73
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G9",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "relative, https (unless localhost or 127.0.0.1), and newline-separated.",
+          "answer": "Redirect URLs must be absolute, not relative, and must use https unless they are localhost or 127.0.0.1; multiple URLs are newline-separated.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            4871,
+            4942
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G9",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "It also has to be secure (https) unless you're using localhost or",
+          "answer": "The redirect URI must be secure (https) unless the app uses localhost or 127.0.0.1.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            12382,
+            12447
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G9",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "where {subdomain} is your Zendesk core subdomain, not a host-mapped",
+          "answer": "The authorization URL uses the Zendesk core subdomain, not a host-mapped subdomain.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            11902,
+            11969
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G9",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "The request must be over https and the properties must be formatted as JSON.",
+          "answer": "Requests to the token endpoint must be over https and formatted as JSON.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            18385,
+            18461
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Apps and integrations in the sidebar, then select APIs > OAuth",
+          "answer": "To create the client, go to Apps and integrations in the Admin Center sidebar, then select APIs > OAuth clients.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            3229,
+            3291
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Name - Enter a name for your app.",
+          "answer": "Required setup fields include Name, Identifier, Client kind, Redirect URLs, and Scopes, plus optional Description, Company, and Logo.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            3428,
+            3461
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Identifier - The field is auto-populated with a reformatted version of the",
+          "answer": "The Identifier field is auto-populated from the app name and can be changed.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            4174,
+            4248
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Client kind - Public or Confidential.",
+          "answer": "The client kind must be set to Public or Confidential.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            4314,
+            4351
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "These clients are required to use PKCE.",
+          "answer": "Public clients are required to use PKCE.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            4489,
+            4528
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "These clients can use PKCE, client secret, or both.",
+          "answer": "Confidential clients can use PKCE, a client secret, or both.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            0,
+            51
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "Setting the kind property is mandatory for all new OAuth clients created",
+          "answer": "Setting the client kind is mandatory for new OAuth clients created in Admin Center.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            8918,
+            8990
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "The image can be a JPG, GIF, or PNG.",
+          "answer": "The logo image can be a JPG, GIF, or PNG file.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            4046,
+            4082
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "After the page refreshes, a new pre-populated Secret field",
+          "answer": "After saving, a pre-populated Secret field appears that holds the client secret.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            5654,
+            5712
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "only once. After clicking Save , you'll only have access to the first nine",
+          "answer": "The full secret is displayed only once; after saving, only the first nine characters are visible.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            6057,
+            6131
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "G10",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "client_id - Required. The unique identifier you obtained when you registered",
+          "answer": "The unique identifier from the registered client is used as the client_id in API calls.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            12462,
+            12538
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G11",
+          "url": "https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "quote": "If your application will interact not only with one Zendesk account but with lots of them,",
+          "answer": "The page gives no numeric threshold of users, workspaces, or installs before an app can be used or listed; it only mentions the global OAuth client option for many Zendesk accounts.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:11:17.754Z",
+          "page_hash": "679bcb9249dbc44c",
+          "offsets": [
+            2877,
+            2967
+          ]
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 10367
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "stop": "ok (3 facts)",
+          "ms": 5961
+        },
+        {
+          "name": "extract https://community.zendesk.com/platform-and-developer-18/for-oauth-authentication-do-the-rate-limits-apply-to-the-zendesk-account-that-makes-the-api-calls-or-zendesk-account-that-owns-the-data-9746",
+          "stop": "ok (4 facts)",
+          "ms": 10452
+        },
+        {
+          "name": "extract https://support.zendesk.com/hc/en-us/articles/9182123625370-Announcing-support-for-OAuth-refresh-token-grant-type-and-OAuth-access-and-refresh-token-expirations",
+          "stop": "ok (1 facts)",
+          "ms": 10624
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "stop": "ok (8 facts)",
+          "ms": 14101
+        },
+        {
+          "name": "extract https://www.zendesk.com/in/partner/",
+          "stop": "ok (0 facts)",
+          "ms": 5482
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (4 facts)",
+          "ms": 6364
+        },
+        {
+          "name": "extract https://www.zendesk.com/blog/customer-service/support/elevating-api-security/",
+          "stop": "ok (8 facts)",
+          "ms": 11437
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (12 facts)",
+          "ms": 13499
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (9 facts)",
+          "ms": 10831
+        },
+        {
+          "name": "extract https://support.zendesk.com/hc/en-us/articles/4408845965210-Using-OAuth-authentication-with-your-application",
+          "stop": "ok (39 facts)",
+          "ms": 44810
+        },
+        {
+          "name": "gap: official docs",
+          "stop": "no_tool_call",
+          "ms": 10375
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 16518
+        },
+        {
+          "name": "gap: important details",
+          "stop": "finished",
+          "ms": 33307
+        }
+      ],
+      "judge": {
+        "checked": 30,
+        "supported": 21,
+        "partial": 8,
+        "unsupported": 1,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "Quote states internal-use customers are not impacted and third-party developers must meet new standards."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote says the section describes OAuth client setup for users of one Zendesk account; 'standard' is a minor addition."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Quote says all apps built for distribution to customers, listed or not, must be submitted for review and approval."
+          },
+          {
+            "id": "c7",
+            "verdict": "supported",
+            "reason": "Quote says all public integrations will be required to go through Marketplace review."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "Quote says Zendesk requires third-party developers to complete enhanced Zendesk security reviews."
+          },
+          {
+            "id": "c9",
+            "verdict": "supported",
+            "reason": "Quote says it is difficult to say how long a request takes, depending on pending requests and time of week; no fixed timeline is given."
+          },
+          {
+            "id": "c10",
+            "verdict": "supported",
+            "reason": "Quote says developers can request a global OAuth client."
+          },
+          {
+            "id": "c11",
+            "verdict": "supported",
+            "reason": "Quote says the marketplace app ecosystem goes through a review ensuring apps can be trusted; the quotes list no specific checks, consistent with the statement."
+          },
+          {
+            "id": "c12",
+            "verdict": "supported",
+            "reason": "Quote says API-token customers must approve the new global OAuth method when the developer makes it available."
+          },
+          {
+            "id": "c13",
+            "verdict": "supported",
+            "reason": "Quote says app developers must conform to rules on handling customer data so it is not misused or exposed."
+          },
+          {
+            "id": "c14",
+            "verdict": "supported",
+            "reason": "Quote says Zendesk must not be referenced as announcing the news of an app, partnership, or integration."
+          },
+          {
+            "id": "c21",
+            "verdict": "supported",
+            "reason": "Quote gives an example parameter restricting an app to only reading tickets."
+          },
+          {
+            "id": "c22",
+            "verdict": "partial",
+            "reason": "Quote says to select the scopes the client can request, but does not say an empty field allows all scopes."
+          },
+          {
+            "id": "c25",
+            "verdict": "supported",
+            "reason": "Quote says a profile is optional and is published only after app approval, so it is not a required step."
+          },
+          {
+            "id": "c26",
+            "verdict": "supported",
+            "reason": "Quote says a first-time submission has the profile reviewed together with the app or theme."
+          },
+          {
+            "id": "c27",
+            "verdict": "supported",
+            "reason": "Quote says if a request takes longer than expected, the developer can email platformteam@zendesk.com."
+          },
+          {
+            "id": "c28",
+            "verdict": "unsupported",
+            "reason": "Quote only introduces a table of default, minimum and maximum expiration times; the values themselves are not in the quotes."
+          },
+          {
+            "id": "c29",
+            "verdict": "partial",
+            "reason": "Quote is truncated at 'send the user through the', so it is cut off before stating the full authorization flow requirement."
+          },
+          {
+            "id": "c30",
+            "verdict": "supported",
+            "reason": "Quote states the authorization code is only valid for 120 seconds."
+          },
+          {
+            "id": "c31",
+            "verdict": "supported",
+            "reason": "Quote states the setting is permanent and cannot be turned off once enabled."
+          },
+          {
+            "id": "c32",
+            "verdict": "partial",
+            "reason": "Quote says clients already have expirations set by default, but the April 30, 2026 date and disabled checkbox are not in the quotes."
+          },
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "Quotes say internal-use apps are not impacted by the changes, which implies no new review, but do not explicitly state that no provider review is needed."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "partial",
+            "reason": "Quotes cover the one-account OAuth client section and plans, but do not state the admin registration step in the Admin Center or the order of steps."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "partial",
+            "reason": "Quotes support the plan requirement (Team, Professional, Enterprise and others) and the need for a Zendesk account, but do not mention an Admin role."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "supported",
+            "reason": "Quotes state apps for distribution to customers and public integrations must go through Zendesk review and approval."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "supported",
+            "reason": "Quotes state all distributed apps and all public integrations must be submitted for review, with no exception given."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "Quotes support the review submission, but do not give the full ordered sequence (register client, submit, request global OAuth, wait for approval)."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "Quote states API-token customers will need to approve the new global OAuth method."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "Quotes state the customer data handling rules and the rule that Zendesk must not be referenced as announcing news."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "Quotes support the hardest case (multi-customer distribution needing review and global OAuth, with unpredictable wait), but do not give the 'about 1 hour' or 'no wait' for the easiest case."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 10367,
+        "discover_read": 3962,
+        "extract": 50776,
+        "gapfill": 33312,
+        "write": 32456,
+        "verify": 16297
+      }
+    }
+  }
+}
