@@ -72,3 +72,9 @@ v1 (data/guides/box.json): 25 claims (25 sourced) · quotes 25/25 · must-have 3
 - Variance: with Haiku as judge, the same agent scored 17 then 12. Research was steady across rounds; the swings came from the judge marking correct paths and factors "partial". With Sonnet as judge, two rounds scored 18 and 17. Sonnet is not more lenient: it marked more claims partial than Haiku (103 vs 63–73), but read setup fields more reliably.
 - Judge cost: 17–59 items per guide, about 8k tokens in and 2k out. Sonnet 5.5 ≈ $0.03 per guide; Haiku 5.5 ≈ $0.002.
 - Remaining misses are at the edge of what the quotes say (ServiceNow's customer-admin factor: the quotes give the admin roles needed, not that the customer's admin sets up the app).
+
+# API confirmation, round 1 (21 October 2026)
+
+6 apps on the real API with the Sonnet judge: Box and Xero passed; Gmail, Slack, Gusto and X did not. $0.91 total ($0.13–0.19 per guide).
+
+Cause: the API runs collected about a third of the evidence the mirror runs did (Slack: 85 facts vs 207–247), and four of Slack's key pages returned 0 facts. A direct check showed Haiku 5.5 spending the whole 3,000-token output limit on thinking and returning no text. Current models think by default and thinking counts toward the output limit; the Claude Code mirror doesn't apply that limit, so mirror rounds never hit it. Raised extraction to 16,000 (same page: 44 cited facts, 28 s, about $0.005), and the judge, factor sweep and tool loops likewise. The mirror results stand for everything after extraction; the API rounds need re-running.
