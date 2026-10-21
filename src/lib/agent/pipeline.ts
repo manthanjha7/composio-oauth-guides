@@ -416,7 +416,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   // then to developer reports.
   const important = (["G11", "G6", "G7", "G9"] as QuestionId[]).filter((q) => store.status(q) === "not_found").slice(0, 2);
   if (gapJobs.length < 2 && important.length) gapJobs.push({ name: "gap: important details", ids: important });
-  if (gapJobs.length < 2 && store.status("R1") === "not_found") gapJobs.push({ name: "gap: developer reports", ids: store.status("G6") === "found" ? ["R1"] : ["R1", "G6"] });
+  if (gapJobs.length < 3 && store.status("R1") === "not_found") gapJobs.push({ name: "gap: developer reports", ids: store.status("G6") === "found" ? ["R1"] : ["R1", "G6"] });
   if (gapJobs.length && researchDeadline - Date.now() > 15_000) {
     emit({ type: "stage", stage: "research", message: open.length ? `Searching for what the docs didn't answer (${open.join(", ")})` : "Looking for developer reports" });
     await Promise.all(
