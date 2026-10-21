@@ -8,7 +8,7 @@ import type {
 } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
 import { composioLookup, type ComposioLookup } from "../composio";
-import { baseDomain, canonicalUrl, enforceEvidence, type EvidenceContext } from "../evidence";
+import { baseDomain, canonicalUrl, enforceEvidence, numberUnitPairs, type EvidenceContext } from "../evidence";
 import { PATH_INFO, CHECK_INFO } from "../guide-view";
 import { type GeneratedGuide, type Guide, type GuideRecord, type WriterGuide, WriterGuideSchema } from "../schema";
 import { createComposioSearch, type ComposioSearch } from "../search";
@@ -70,10 +70,13 @@ const TIMELINE_QUESTIONS = new Set(["G6", "R1"]);
 
 type ToolResult = { content: string; isError?: boolean; stop?: boolean };
 
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, Math.max(0, ms)));
-/** Settle with `fallback` if `p` hasn't settled by `deadlineAt`. */
+/** Settle with `fallback` if `p` hasn't settled by `deadlineAt`. The timer is cleared either way. */
 function byDeadline<T>(p: Promise<T>, deadlineAt: number, fallback: T): Promise<T> {
-  return Promise.race([p, sleep(deadlineAt - Date.now()).then(() => fallback)]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<T>((r) => {
+    timer = setTimeout(() => r(fallback), Math.max(0, deadlineAt - Date.now()));
+  });
+  return Promise.race([p, late]).finally(() => clearTimeout(timer));
 }
 /** Run `fn` over items with at most `limit` in flight. */
 async function mapLimit<T>(items: T[], limit: number, fn: (x: T) => Promise<void>): Promise<void> {
@@ -119,11 +122,13 @@ async function toolLoop(o: {
     o.onMessage?.(msg);
     if (msg.stop_reason === "refusal") return "error: the model declined";
     messages.push({ role: "assistant", content: msg.content });
-    const why = o.stopWhen?.();
-    if (why) return why;
-    if (msg.stop_reason === "pause_turn") continue;
     const uses = msg.content.filter((b): b is BetaToolUseBlock => b.type === "tool_use");
-    if (!uses.length) return "no_tool_call";
+    if (msg.stop_reason === "pause_turn" || !uses.length) {
+      const why = o.stopWhen?.();
+      if (why) return why;
+      if (msg.stop_reason === "pause_turn") continue;
+      return "no_tool_call";
+    }
     let stop = false;
     const timeout: ToolResult = { content: "Tool timed out (out of time). Finish with what you have.", isError: true };
     const results = await Promise.all(
@@ -137,9 +142,12 @@ async function toolLoop(o: {
         }
       }),
     );
-    // All results for one turn go back in a single user message.
+    // All results for one turn go back in a single user message. Budgets are checked after the turn's tool
+    // calls ran, so a finding recorded alongside the last search is not lost.
     messages.push({ role: "user", content: results });
     if (stop) return "finished";
+    const why = o.stopWhen?.();
+    if (why) return why;
   }
   return "turns";
 }
@@ -198,7 +206,10 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   // Server web search is declared once per conversation; its version follows the model that runs it.
   const searchTools = (model: string, maxUses: number): BetaToolUnion[] =>
     search ? [searchTool] : [{ type: capabilities(model).webSearchTool, name: "web_search", max_uses: maxUses } as BetaToolUnion];
-  /** Counts server-side searches (max_uses is per request, so the cumulative budget is enforced here). */
+  /**
+   * Counts server-side searches. max_uses is per request, so each request may search once (max_uses 1) and the
+   * conversation ends once the cumulative budget is spent: at most `budget` searches in total.
+   */
   const serverSearchCounter = () => {
     let n = 0;
     return {
@@ -258,7 +269,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       model: models.identify,
       system: IDENTIFY_SYSTEM,
       tools: [
-        ...searchTools(models.identify, 2),
+        ...searchTools(models.identify, 1),
         fetchTool,
         {
           name: "submit_identity",
@@ -283,7 +294,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       maxTurns: 6,
       signal: opts.signal,
       onMessage: counter.onMessage,
-      stopWhen: () => (identity ? null : counter.spent(3)),
+      stopWhen: () => (identity ? null : counter.spent(2)),
       runTool: async (name, input) => {
         if (name === "web_search") return runSearch(String(input.query ?? ""), sBudget);
         if (name === "fetch_page") return runFetch(String(input.url ?? ""), fBudget, 6_000, deadline);
@@ -407,7 +418,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
           model: models.research,
           system: GAPFILL_SYSTEM,
           tools: [
-            ...searchTools(models.research, 2),
+            ...searchTools(models.research, 1),
             fetchTool,
             {
               name: "record_finding",
@@ -430,7 +441,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
           maxTurns: 8,
           signal: opts.signal,
           onMessage: counter.onMessage,
-          stopWhen: () => counter.spent(3),
+          stopWhen: () => counter.spent(2),
           runTool: async (name, input) => {
             if (name === "web_search") return runSearch(String(input.query ?? ""), sBudget);
             if (name === "fetch_page") {
@@ -526,6 +537,13 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   } else {
     const writer = dedupeClaims(written);
     if (writer.claims.length > MAX_CLAIMS) warnings.push(`The writer produced ${writer.claims.length} claims; only the first ${MAX_CLAIMS} were kept.`);
+    const evByIdForSupport = new Map(store.evidence.map((e) => [e.id, e]));
+    ctx.supportQuotes = new Map(
+      writer.claims.flatMap((c) => {
+        const e = c.evidence_id ? evByIdForSupport.get(c.evidence_id) : undefined;
+        return e?.extra_quotes?.length ? [[c.id, e.extra_quotes] as [string, string[]]] : [];
+      }),
+    );
     const enforced = enforceEvidence(fromWriter(writer, store), ctx);
     warnings.push(...enforced.warnings);
     stats = enforced.stats;
@@ -578,6 +596,8 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     } else if (items.length) {
       warnings.push("Out of time for the evidence judge; setup details were not double-checked.");
     }
+    // No judge, no categorical conclusions: everything that needed checking is unchecked.
+    if (!judge) for (const i of items) verdicts.set(i.id, "unchecked");
 
     // Apply claim verdicts: contradicted or unsupported → unconfirmed, and their evidence no longer answers anything.
     const rejectedEvidence: string[] = [];
@@ -607,10 +627,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       const v = verdicts.get(id);
       return v === undefined || v === "supported";
     };
-    const fieldOk = (key: string) => {
-      if (!judge) return true; // judge didn't run: warned above
-      return verdicts.get(key) === "supported";
-    };
+    const fieldOk = (key: string) => verdicts.get(key) === "supported";
     guide = applyInvariants(g, store, warnings, { claimQuestion, accepted, fieldOk, judged: !!judge });
   }
   mark("verify", t0);
@@ -666,20 +683,24 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
  * catalog's site links to it, or, with no catalog entry, its page names the app). Docs count when an official
  * page links to them or they share the official domain.
  */
-async function anchorOfficial(store: ResearchStore, ident: IdentityT, lookup: ComposioLookup | null, deadlineAt: number) {
+export async function anchorOfficial(store: ResearchStore, ident: IdentityT, lookup: ComposioLookup | null, deadlineAt: number) {
   const name = ident.name.toLowerCase();
+  const letters = name.replace(/[^a-z0-9]/g, "");
   const mentions = (p: Page) => `${p.title ?? ""} ${p.text.slice(0, 3000)}`.toLowerCase().includes(name);
+  const nameInDomain = (p: Page) => letters.length >= 3 && baseDomain(p.url).split(".")[0].replace(/[^a-z0-9]/g, "").includes(letters);
   const [catalog, site, docs] = await Promise.all([
     lookup?.app_url ? store.fetch(lookup.app_url, deadlineAt) : Promise.resolve(null),
     ident.website ? store.fetch(ident.website, deadlineAt) : Promise.resolve(null),
     ident.developer_docs_url ? store.fetch(ident.developer_docs_url, deadlineAt) : Promise.resolve(null),
   ]);
   const linksTo = (from: Page | null, to: Page | null) => !!from && !!to && from.links.some((l) => baseDomain(l) === baseDomain(to.url));
+  const sameOwner = (p: Page | null) => !!p && store.official.has(baseDomain(p.url));
   if (lookup?.app_url) store.addOfficial(catalog?.url ?? lookup.app_url);
-  if (site && (store.official.has(baseDomain(site.url)) || linksTo(catalog, site) || (!lookup?.app_url && mentions(site)))) store.addOfficial(site.url);
-  if (docs && (store.official.has(baseDomain(docs.url)) || linksTo(catalog, docs) || linksTo(site, docs) || (store.official.size === 0 && mentions(docs)))) {
-    if (store.official.size === 0 || [site, catalog].some((p) => p && store.official.has(baseDomain(p.url)))) store.addOfficial(docs.url);
-  }
+  // The website counts if the catalog vouches for it; with no catalog entry, its domain and page must both name the app.
+  const siteOk = !!site && (sameOwner(site) || linksTo(catalog, site) || (!lookup?.app_url && nameInDomain(site) && mentions(site)));
+  if (siteOk) store.addOfficial(site!.url);
+  // Docs count only when an already-trusted page vouches for them (an untrusted site can't).
+  if (docs && (sameOwner(docs) || linksTo(catalog, docs) || (siteOk && linksTo(site, docs)))) store.addOfficial(docs.url);
   store.expandOfficialFromLinks();
 }
 
@@ -713,17 +734,24 @@ export function collectCitations(msg: BetaMessage, page: Page, store: ResearchSt
     const segments = b.text.split(/(##\s*[A-Z]\d{1,2}\b)/);
     let proseQuestion: QuestionId | null = current;
     let prose = "";
+    let sectionsWithProse = 0;
+    let lastHadProse = false;
     for (const seg of segments) {
       const h = seg.match(/^##\s*([A-Z]\d{1,2})$/);
       if (h) {
         current = isQuestionId(h[1]) && allowed.includes(h[1]) ? h[1] : null;
         proseQuestion = current;
         prose = "";
+        lastHadProse = false;
       } else if (seg.trim()) {
         prose += seg;
+        if (!lastHadProse) sectionsWithProse++;
+        lastHadProse = true;
       }
     }
     const cites = (b.citations ?? []).filter((c) => c.type === "char_location" && c.cited_text?.trim());
+    // A cited block whose prose spans several question sections can't be attributed safely: skip it.
+    if (sectionsWithProse > 1 && cites.length) continue;
     if (!proseQuestion || !cites.length || !prose.trim()) continue;
     const [first, ...rest] = cites as { cited_text: string; start_char_index: number; end_char_index: number }[];
     const item = store.addEvidence({
@@ -886,7 +914,8 @@ export function applyInvariants(
     }
     if (out.shortcut && !((out.shortcut_claim_ids ?? []).some(c.accepted) && c.fieldOk(`${s.id}.shortcut`))) out.shortcut = null;
     if (out.modifiers) out.modifiers = out.modifiers.filter((m, i) => m.claim_ids.some(c.accepted) && c.fieldOk(`${s.id}.mod${i}`)).slice(0, 6);
-    out.extras = (out.modifiers?.length ? out.modifiers.map((m) => m.note) : (out.extras ?? [])).slice(0, 3).map((x) => x.split(/\s+/).slice(0, 8).join(" "));
+    // Displayed extras come only from modifiers that survived; the writer's free-text extras are never shown in v2.
+    out.extras = (out.modifiers ?? []).map((m) => m.note).slice(0, 3).map((x) => x.split(/\s+/).slice(0, 8).join(" "));
     if (out.gate_sequence) out.gate_sequence = out.gate_sequence.slice(0, 5);
     return out;
   });
@@ -895,7 +924,10 @@ export function applyInvariants(
 
   // Numbers in the verdict and summary must come from accepted claims; otherwise rebuild or replace them.
   const acceptedText = g.claims.filter((x) => c.accepted(x.id)).map((x) => `${x.text} ${x.quote ?? ""}`).join(" ");
-  const unsupportedNumber = (text: string | undefined) => (text?.match(/\d+/g) ?? []).some((n) => !new RegExp(`\\b${n}\\b`).test(acceptedText));
+  const acceptedPairs = numberUnitPairs(acceptedText);
+  // A number must appear in an accepted claim, and with a unit it must appear with the same unit ("10 days", not "10 users").
+  const unsupportedNumber = (text: string | undefined) =>
+    (text?.match(/\d+/g) ?? []).some((n) => !new RegExp(`\\b${n}\\b`).test(acceptedText)) || [...numberUnitPairs(text ?? "")].some((p) => !acceptedPairs.has(p));
   let verdict = g.verdict;
   if (verdict && unsupportedNumber(verdict)) {
     warnings.push("The one-line verdict used numbers no verified claim supports; it was rebuilt from the setups.");
@@ -911,6 +943,6 @@ export function applyInvariants(
   }
   const open = openQuestions(store);
   const open_questions = [...g.open_questions, ...open.filter((o) => !g.open_questions.some((x) => x.includes(o.slice(11, 40))))];
-  if (!c.judged && g.scenarios.length) warnings.push("Setup details (path, waits, shortcuts) were not double-checked by the evidence judge.");
+  if (!c.judged && g.scenarios.length) warnings.push("Setup details (path, waits, shortcuts) could not be double-checked, so they are not shown.");
   return { ...g, scenarios, default_scenario, verdict, summary, open_questions };
 }

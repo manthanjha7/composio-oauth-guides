@@ -39,7 +39,7 @@ vi.mock("@/lib/web", async (orig) => {
   };
 });
 
-import { collectCitations, runAgentV2 } from "@/lib/agent/pipeline";
+import { anchorOfficial, collectCitations, runAgentV2 } from "@/lib/agent/pipeline";
 import { EXTRACT_SYSTEM, GAPFILL_SYSTEM, IDENTIFY_SYSTEM, JUDGE_SYSTEM } from "@/lib/agent/prompts";
 import { ResearchStore } from "@/lib/agent/research";
 import type { AgentEvent } from "@/lib/agent/run";
@@ -326,7 +326,7 @@ describe("agent v2: review follow-ups (offline)", () => {
     });
     const r = await run(c);
     const identifyCalls = c.calls.filter((x) => x.system === IDENTIFY_SYSTEM).length;
-    expect(identifyCalls).toBe(3); // 1 + 1 + 2 searches: stops at the third call instead of running all 6 turns
+    expect(identifyCalls).toBe(2); // budget of 2 searches: stops after the second call instead of running all 6 turns
     expect(r.outcome).toBe("error"); // never identified
   });
 
@@ -355,6 +355,38 @@ describe("agent v2: review follow-ups (offline)", () => {
     expect(r.record.guide.scenarios.find((s) => s.id === "s2")!.path).toBeUndefined();
     expect(r.record.guide.claims.find((x) => x.id === "c3")!.note).toMatch(/Not double-checked/);
     expect(r.record.meta.research!.judge!.unchecked).toBe(2);
+  });
+
+  it("withholds setup conclusions when the judge cannot run", async () => {
+    const c = fakeClient({ judge: () => { throw new Error("judge outage"); } });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    const s2 = r.record.guide.scenarios.find((s) => s.id === "s2")!;
+    expect(s2.path).toBeUndefined();
+    expect(s2.modifiers ?? []).toEqual([]);
+    expect(s2.waiting.estimate).toBe("Unknown");
+    expect(r.record.meta.warnings!.some((w) => w.includes("not shown"))).toBe(true);
+  });
+
+  it("never shows the writer's free-text extras when their modifiers were rejected", async () => {
+    const c = fakeClient({
+      writer: (d) => {
+        const g = writerGuide({}, d);
+        (g.scenarios[1] as Record<string, unknown>).extras = ["Exempt from review for startups"];
+        return g;
+      },
+      judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id.includes(".mod") ? "unsupported" : "supported" })),
+    });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s2")!.extras).toEqual([]);
+  });
+
+  it("replaces a summary whose number comes with a different unit than any source", async () => {
+    const c = fakeClient({ writer: (d) => writerGuide({ summary: "Review takes 25 days.", verdict: undefined }, d) });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.summary).not.toMatch(/25 days/); // sources say 25 test users, not 25 days
   });
 
   it("saves a partial guide of verified facts when the writer fails", async () => {
@@ -393,6 +425,20 @@ describe("collectCitations, harder cases", () => {
     expect(collectCitations(m as never, page, store, ["G2", "G5"])).toBe(1);
     expect(store.evidence[0]).toMatchObject({ question: "G5", extra_quotes: ["Apps must be reviewed by our team."], offsets: [35, 66] });
   });
+  it("skips a cited block whose prose spans two sections, instead of guessing", () => {
+    const { store, page } = mk();
+    const m = {
+      content: [
+        {
+          type: "text",
+          text: "## G2\nApps must be reviewed.\n## G6\nReviews take 10 days.",
+          citations: [{ type: "char_location", cited_text: "Apps must be reviewed by our team.", document_index: 0, start_char_index: 0, end_char_index: 34 }],
+        },
+      ],
+    };
+    expect(collectCitations(m as never, page, store, ["G2", "G6"])).toBe(0);
+    expect(store.evidence).toHaveLength(0);
+  });
   it("drops citations whose heading is not an allowed question", () => {
     const { store, page } = mk();
     const m = { content: [{ type: "text", text: "## G8\n" }, cite("Admins approve.", "Admins approve installs for the org.", page.url)] };
@@ -407,6 +453,27 @@ describe("deadlines", () => {
     const p = await store.fetch("https://hangs.example/never", Date.now() + 2_000);
     expect(p).toBeNull();
     expect(Date.now() - t).toBeLessThan(4_000);
+  });
+});
+
+describe("anchorOfficial", () => {
+  const page = (url: string, links: string[], text = "Acme developer platform") => ({ url, title: "Acme", text, links, fetched_at: "", hash: url, via: "direct" as const });
+  const lookup = { app_url: "https://acme.example" } as never;
+  it("does not let an untrusted website vouch for docs", async () => {
+    const store = new ResearchStore(null);
+    store.pages.set("https://acme.example", page("https://acme.example", []));
+    store.pages.set("https://acme-tools.example", page("https://acme-tools.example", ["https://acme-docs-mirror.example/oauth"]));
+    store.pages.set("https://acme-docs-mirror.example/oauth", page("https://acme-docs-mirror.example/oauth", []));
+    await anchorOfficial(store, { name: "Acme", oauth: "yes", website: "https://acme-tools.example", developer_docs_url: "https://acme-docs-mirror.example/oauth" }, lookup, Date.now() + 5_000);
+    expect(store.official.has("acme.example")).toBe(true);
+    expect(store.official.has("acme-tools.example")).toBe(false);
+    expect(store.official.has("acme-docs-mirror.example")).toBe(false);
+  });
+  it("without a catalog entry, needs the app's name in both the domain and the page", async () => {
+    const store = new ResearchStore(null);
+    store.pages.set("https://best-oauth-tips.example", page("https://best-oauth-tips.example", [], "All about Acme OAuth"));
+    await anchorOfficial(store, { name: "Acme", oauth: "yes", website: "https://best-oauth-tips.example" }, null, Date.now() + 5_000);
+    expect(store.official.size).toBe(0);
   });
 });
 

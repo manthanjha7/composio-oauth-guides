@@ -73,3 +73,22 @@ Codex (CLI, with web search) reviewed SPEC v2.1 and commit e95e315: read the cod
 | S10 | Capabilities applied to old ids; Sonnet 5.5 cache reads are 0.05x, not 0.1x; any 400 disabled fallbacks | 5.x-only table; price fixed (verified on the docs); fallback off only for fallback errors; serving model recorded |
 
 12 new offline tests cover the request shapes, fixed tools, pause_turn and search budgets, downstream invalidation, unsupported fields, missing verdicts, writer failure, citation parsing, tenant domains and deadlines. 79 tests pass.
+
+### Codex verification pass (commit 53f3c05)
+
+S8, S9, S10 resolved; M1–M6 and S7 partly. Codex also reproduced four regressions from the fixes. All addressed in the next commit:
+
+| Issue | Change |
+|---|---|
+| Judge failure left verdicts absent, which counted as accepted | No judge = every item unchecked; setup conclusions are withheld, with a visible warning |
+| Summary numbers matched digits anywhere ("10 users" backing "10 weeks") | Numbers must match with their unit |
+| An untrusted website could vouch for docs; with no catalog entry, a page mentioning the app was enough | Docs need a trusted voucher; without a catalog, the app's name must be in the domain and on the page |
+| Sibling expansion promoted tenant hosts (acme.readme.io, acme.github.io) | Tenant hosts are never siblings |
+| A cited block spanning two sections gave every citation to the last heading | Such blocks are skipped rather than guessed |
+| Rejected modifiers came back through free-text extras | Extras come only from surviving modifiers |
+| Joint citations: only the first quote reached the support checks | All of a claim's quotes are checked together |
+| Timers left pending; late fallback fetches could still write to the store; DNS ignored cancellation | Timers cleared; late results ignored; DNS honours the abort signal |
+| Search budget could overshoot (2 per request × threshold 3); stop check ran before the turn's tool calls | max_uses 1 per request, cumulative 2, checked after tool calls |
+| Composio pages answered provider questions | Only the provider's docs answer provider questions |
+
+Known limits, not fixed: a question with several parts counts as answered when one part is (the judge and the writer's "unconfirmed" marking cover part of this); a timed-out model call or Composio request is abandoned rather than cancelled at the network level. 86 tests pass.

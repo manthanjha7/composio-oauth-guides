@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { baseDomain, canonicalUrl, quoteInText } from "../evidence";
+import { baseDomain, canonicalUrl, isTenantHost, quoteInText } from "../evidence";
 import type { ResearchRecordT, SourceRecordT } from "../schema";
 import type { ComposioSearch } from "../search";
 import { fetchPageText } from "../web";
@@ -62,15 +62,28 @@ export class ResearchStore {
     if (pending) return pending;
     const ms = Math.min(12_000, deadlineAt - Date.now());
     if (ms < 1_500) return Promise.resolve(null);
-    const p = Promise.race([this.doFetch(url, ms), new Promise<null>((r) => setTimeout(() => r(null), ms + 500))]).finally(() => this.inflight.delete(key));
+    // After the deadline, a late result is ignored: it must not change what the run has already used.
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const p = Promise.race([
+      this.doFetch(url, ms, () => live),
+      new Promise<null>((r) => {
+        timer = setTimeout(() => r(null), ms + 500);
+      }),
+    ]).finally(() => {
+      live = false;
+      clearTimeout(timer);
+      this.inflight.delete(key);
+    });
     this.inflight.set(key, p);
     return p;
   }
 
   signal?: AbortSignal;
 
-  private async doFetch(url: string, timeoutMs: number): Promise<Page | null> {
-    const store = (u: string, title: string | null, text: string, links: string[], via: Page["via"]): Page => {
+  private async doFetch(url: string, timeoutMs: number, live: () => boolean): Promise<Page | null> {
+    const store = (u: string, title: string | null, text: string, links: string[], via: Page["via"]): Page | null => {
+      if (!live()) return null;
       const page: Page = { url: u, title, text, links, fetched_at: new Date().toISOString(), hash: createHash("sha256").update(text).digest("hex").slice(0, 16), via };
       this.pages.set(canonicalUrl(u), page);
       if (canonicalUrl(u) !== canonicalUrl(url)) this.pages.set(canonicalUrl(url), page);
@@ -84,7 +97,13 @@ export class ResearchStore {
     } catch (e) {
       if (this.search) {
         try {
-          const p = await Promise.race([this.search.fetch(url), new Promise<null>((r) => setTimeout(() => r(null), Math.max(1_000, timeoutMs / 2)))]);
+          let t: ReturnType<typeof setTimeout> | undefined;
+          const p = await Promise.race([
+            this.search.fetch(url),
+            new Promise<null>((r) => {
+              t = setTimeout(() => r(null), Math.max(1_000, timeoutMs / 2));
+            }),
+          ]).finally(() => clearTimeout(t));
           if (p && p.text.length >= 200) return store(p.url, p.title, p.text, [], "composio_fetch");
         } catch {
           /* fall through */
@@ -116,7 +135,8 @@ export class ResearchStore {
       if (!this.official.has(baseDomain(page.url))) continue;
       for (const link of page.links) {
         const d = baseDomain(link);
-        if (!d || this.official.has(d)) continue;
+        // A tenant on a shared platform (acme.readme.io) is never a sibling: someone else may control it.
+        if (!d || this.official.has(d) || isTenantHost(d)) continue;
         const label = d.split(".")[0];
         if ([...this.brands].some((b) => SIBLING.test(label.slice(b.length)) && label.startsWith(b))) this.official.add(d);
       }
@@ -188,7 +208,9 @@ export class ResearchStore {
   status(q: QuestionId): "found" | "not_found" {
     const ev = this.verified(q);
     if (q === "R1") return ev.length ? "found" : "not_found";
-    if (ev.some((e) => e.kind !== "reported")) return "found";
+    if (q === "C1") return ev.some((e) => e.kind !== "reported") ? "found" : "not_found";
+    // Provider questions are answered by the provider's own docs, not by Composio's pages or blogs.
+    if (ev.some((e) => e.kind === "provider_docs")) return "found";
     if (q === "G6") {
       const timed = [...ev, ...this.verified("R1")].some((e) => TIME_SPAN.test(`${e.quote} ${(e.extra_quotes ?? []).join(" ")}`));
       return timed ? "found" : "not_found";

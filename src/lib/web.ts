@@ -41,11 +41,23 @@ function isPrivateIp(ip: string): boolean {
 }
 
 /** Resolve a promise or reject when `ms` runs out (DNS lookups have no timeout of their own). */
-function within<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
-  return Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`${what} timed out`)), Math.max(1, ms)))]);
+function within<T>(p: Promise<T>, ms: number, what: string, signal?: AbortSignal): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let onAbort: (() => void) | undefined;
+  const stop = new Promise<never>((_, rej) => {
+    timer = setTimeout(() => rej(new Error(`${what} timed out`)), Math.max(1, ms));
+    if (signal) {
+      onAbort = () => rej(new Error(`${what} cancelled`));
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+  });
+  return Promise.race([p, stop]).finally(() => {
+    clearTimeout(timer);
+    if (onAbort) signal?.removeEventListener("abort", onAbort);
+  });
 }
 
-export async function assertPublicUrl(raw: string, timeoutMs = 5_000): Promise<URL> {
+export async function assertPublicUrl(raw: string, timeoutMs = 5_000, signal?: AbortSignal): Promise<URL> {
   let url: URL;
   try {
     url = new URL(raw);
@@ -57,7 +69,7 @@ export async function assertPublicUrl(raw: string, timeoutMs = 5_000): Promise<U
   if (url.username || url.password) throw new Error("Credentials in URLs are not allowed");
   const host = url.hostname.replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".local") || host.endsWith(".internal")) throw new Error("Private host");
-  const addrs = net.isIP(host) ? [{ address: host }] : await within(lookup(host, { all: true }), timeoutMs, "DNS lookup");
+  const addrs = net.isIP(host) ? [{ address: host }] : await within(lookup(host, { all: true }), timeoutMs, "DNS lookup", signal);
   if (addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address))) throw new Error("Private or unresolvable address");
   return url;
 }
@@ -91,7 +103,7 @@ export async function safeGet(
   };
   for (let hop = 0; hop < 5; hop++) {
     opts.signal?.throwIfAborted();
-    const url = await assertPublicUrl(current, left());
+    const url = await assertPublicUrl(current, left(), opts.signal);
     const timeout = AbortSignal.timeout(left());
     const res = await fetch(url, {
       redirect: "manual",

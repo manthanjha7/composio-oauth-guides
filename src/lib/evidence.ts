@@ -69,6 +69,11 @@ export interface EvidenceContext {
    * empty list means nothing is official. composio.dev stays Composio's authority either way.
    */
   strictOfficial?: boolean;
+  /**
+   * v2: further quotes that support a claim jointly with its main quote (several citations on one sentence).
+   * The main quote must be on the page; the support checks read all of them.
+   */
+  supportQuotes?: Map<string, string[]>;
 }
 
 export interface VerificationStats {
@@ -91,6 +96,18 @@ const TENANT_PLATFORMS = new Set([
  * Public-Suffix aware ("acme.github.io" stays "acme.github.io"), and tenant-specific on shared docs platforms
  * ("acme.readme.io" stays "acme.readme.io", not "readme.io").
  */
+/** True for a host owned by one customer of a shared platform (acme.readme.io, acme.github.io). */
+export function isTenantHost(urlOrHost: string): boolean {
+  const d = baseDomain(urlOrHost);
+  const icann = getDomain(d, { allowPrivateDomains: false });
+  return TENANT_PLATFORMS.has(icann ?? "") || (icann !== null && icann !== d);
+}
+
+/** "(number unit)" pairs in a text, e.g. "10 day", "100 user". */
+export function numberUnitPairs(text: string): Set<string> {
+  return numberUnits(text);
+}
+
 export function baseDomain(urlOrHost: string): string {
   let host = urlOrHost;
   try {
@@ -353,10 +370,11 @@ export function enforceEvidence(g: GeneratedGuide, ctx: EvidenceContext): Enforc
         const why = label === "composio_docs" ? "Source is not a Composio page." : "Source is not an official page of this provider.";
         return seen.has(canonicalUrl(foundAt)) ? downgrade(`${why} Shown as a report, not as documentation.`, "reported") : downgrade(why);
       }
-      const issue = supportIssue(c.text, c.quote);
+      const support = [c.quote, ...(ctx.supportQuotes?.get(c.id) ?? [])].join(" ");
+      const issue = supportIssue(c.text, support);
       if (issue) return { ...downgrade(issue), source_url: foundAt };
       stats.quotes_verified++;
-      const flags = supportFlags(c.text, c.quote);
+      const flags = supportFlags(c.text, support);
       return { ...claim, source_url: foundAt, note: flags.length ? `${flags.join(" ")} Check the quote.` : overlapNote(c.text, c.quote) };
     }
 

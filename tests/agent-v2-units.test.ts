@@ -98,4 +98,13 @@ describe("official domains", () => {
     expect(store.kindOf("https://developer.salesforce.com/docs")).toBe("provider_docs");
     expect(store.official.has("readme.io")).toBe(false);
   });
+  it("never promotes a linked tenant host to official", () => {
+    const store = new ResearchStore(null);
+    store.addOfficial("https://acme.com");
+    store.pages.set("https://acme.com/dev", { url: "https://acme.com/dev", title: null, text: "", links: ["https://acme.readme.io/docs", "https://acme.github.io/sdk", "https://acmeapi.com/ref"], fetched_at: "", hash: "t", via: "direct" });
+    store.expandOfficialFromLinks();
+    expect(store.official.has("acme.readme.io")).toBe(false);
+    expect(store.official.has("acme.github.io")).toBe(false);
+    expect(store.official.has("acmeapi.com")).toBe(true);
+  });
 });
