@@ -157,20 +157,38 @@ const NUMBER_RUN = new RegExp(`\\b${NUMBER_WORD}(?:(?:\\s+|-|\\s+and\\s+)${NUMBE
  */
 export function wordsToDigits(text: string): string {
   return text.replace(NUMBER_RUN, (run) => {
-    const parts = run.toLowerCase().split(/\s+and\s+|\s+|-/).filter(Boolean);
-    if (parts.length === 1 && parts[0] === "one") return run;
-    let total = 0;
-    let current = 0;
-    for (const w of parts) {
-      if (w in SMALL) current += SMALL[w];
-      else if (w in TENS) current += TENS[w];
-      else if (w === "hundred") current = (current || 1) * 100;
-      else if (w === "thousand") {
-        total += (current || 1) * 1000;
-        current = 0;
-      }
+    // Tokens with the separator before each, so a range ("two-three days") stays a range ("2-3").
+    const tokens = [...run.matchAll(/(\s+and\s+|\s+|-)?([a-z]+)/gi)].map((m) => ({ sep: m[1] ?? "", w: m[2].toLowerCase() }));
+    if (tokens.length === 1 && tokens[0].w === "one") return run;
+    const groups: { sep: string; ws: string[] }[] = [];
+    for (const t of tokens) {
+      const g = groups.at(-1);
+      const last = g?.ws.at(-1);
+      // A new number starts when two values can't combine: "two three", "twenty thirty", "fifteen four".
+      const joins =
+        !!last &&
+        (t.w === "hundred" ||
+          t.w === "thousand" ||
+          (last in TENS && t.w in SMALL && SMALL[t.w] < 10) ||
+          ((last === "hundred" || last === "thousand") && (t.w in SMALL || t.w in TENS)));
+      if (g && joins) g.ws.push(t.w);
+      else groups.push({ sep: t.sep, ws: [t.w] });
     }
-    return String(total + current);
+    const value = (ws: string[]) => {
+      let total = 0;
+      let current = 0;
+      for (const w of ws) {
+        if (w in SMALL) current += SMALL[w];
+        else if (w in TENS) current += TENS[w];
+        else if (w === "hundred") current = (current || 1) * 100;
+        else if (w === "thousand") {
+          total += (current || 1) * 1000;
+          current = 0;
+        }
+      }
+      return total + current;
+    };
+    return groups.map((g, i) => `${i ? (g.sep.trim() === "" ? " " : g.sep) : ""}${value(g.ws)}`).join("");
   });
 }
 

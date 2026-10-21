@@ -68,8 +68,10 @@ const JUDGE_RESERVE = 20_000;
 const SAVE_RESERVE = 5_000;
 const TIMELINE_QUESTIONS = new Set(["G6", "R1"]);
 /** Explicit "no wait" values; anything else that isn't Unknown is a substantive wait that must be sourced. */
-const NO_WAIT = /^(none|no wait|no review|n\/a|0)\b/i;
-const isSubstantiveWait = (est: string) => !/^unknown$/i.test(est.trim()) && !NO_WAIT.test(est.trim());
+// The whole value must be an explicit no-wait: "0.5 days", "0-2 weeks" or "None for testing; ten weeks for
+// production" are real waits and must be sourced.
+const NO_WAIT = /^(?:none|no wait|no waiting|no review|n\/a|0)\.?$/i;
+const isSubstantiveWait = (est: string) => !/^unknown\.?$/i.test(est.trim()) && !NO_WAIT.test(est.trim());
 
 type ToolResult = { content: string; isError?: boolean; stop?: boolean };
 

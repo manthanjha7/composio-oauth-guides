@@ -425,6 +425,22 @@ describe("agent v2: review follow-ups (offline)", () => {
     expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.waiting.estimate).toBe("Unknown");
   });
 
+  it.each(["0.5 days", "0-2 weeks", "None for testing; production takes ten weeks"])("treats %s as a real wait that needs a source", async (est) => {
+    const c = fakeClient({
+      writer: (d) => {
+        const g = writerGuide({}, d);
+        const s1 = g.scenarios[0] as Record<string, unknown>;
+        s1.path_claim_ids = ["c1"];
+        s1.waiting = { estimate: est, basis: "guess" };
+        return g;
+      },
+      judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "s1.wait" ? "unsupported" : "supported" })),
+    });
+    const r = await run(c);
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.waiting.estimate).toBe("Unknown");
+  });
+
   it("marks difficulty unknown when a setup's path can't be confirmed", async () => {
     const c = fakeClient();
     const r = await run(c);

@@ -128,5 +128,11 @@ describe("number words", () => {
     expect(supportIssue("Review takes thirteen weeks.", "Review takes thirteen days.")).toMatch(/13 weeks/);
     expect(supportIssue("Each customer installs one app.", "Each customer installs the app.")).toBeNull();
   });
+  it("keeps spelled-out ranges as ranges", async () => {
+    const { supportIssue, wordsToDigits } = await import("@/lib/evidence");
+    expect(wordsToDigits("two-three days")).toBe("2-3 days");
+    expect(wordsToDigits("one hundred and five users")).toBe("105 users");
+    expect(supportIssue("Review takes five days.", "Review takes two-three days.")).toMatch(/5/);
+  });
 });
 
