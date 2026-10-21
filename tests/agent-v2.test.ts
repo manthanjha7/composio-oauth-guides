@@ -40,7 +40,7 @@ vi.mock("@/lib/web", async (orig) => {
 });
 
 import { anchorOfficial, collectCitations, ensureCriticalLimits, runAgentV2 } from "@/lib/agent/pipeline";
-import { EXTRACT_SYSTEM, GAPFILL_SYSTEM, IDENTIFY_SYSTEM, JUDGE_SYSTEM } from "@/lib/agent/prompts";
+import { EXTRACT_SYSTEM, GAPFILL_SYSTEM, IDENTIFY_SYSTEM, JUDGE_SYSTEM, MODIFIER_SWEEP_SYSTEM } from "@/lib/agent/prompts";
 import { ResearchStore } from "@/lib/agent/research";
 import type { AgentEvent } from "@/lib/agent/run";
 
@@ -160,6 +160,7 @@ function fakeClient(
       const items = JSON.parse(String(p.messages[0].content)) as { id: string }[];
       return msg([{ type: "text", text: JSON.stringify(opts.judge ? opts.judge(items) : items.map((i) => ({ id: i.id, verdict: "supported" }))) }]);
     }
+    if (p.system === MODIFIER_SWEEP_SYSTEM) return msg([{ type: "text", text: "[]" }]);
     // writer
     if (opts.writerFails) throw new Error("simulated writer outage");
     const dossier = String(p.messages[0].content);

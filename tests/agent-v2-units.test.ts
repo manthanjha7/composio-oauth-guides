@@ -113,6 +113,12 @@ describe("official domains", () => {
     expect(store.official.has("acme.github.io")).toBe(false);
     expect(store.official.has("acmeapi.com")).toBe(true);
   });
+  it("treats a shared platform's own developer docs as official for that platform", () => {
+    const store = new ResearchStore(null);
+    store.addOfficial("https://www.zendesk.com");
+    expect(store.kindOf("https://developer.zendesk.com/documentation/x")).toBe("provider_docs");
+    expect(store.kindOf("https://acme.zendesk.com/hc/x")).toBe("reported");
+  });
 });
 
 describe("number words", () => {
@@ -156,3 +162,29 @@ describe("number words", () => {
   });
 });
 
+
+describe("factor sweep", () => {
+  it("adds only new-kind factors that cite listed facts, to existing setups", async () => {
+    const { sweepModifiers } = await import("@/lib/agent/pipeline");
+    const g = {
+      claims: [
+        { id: "c1", text: "Listing needs 10 active workspaces.", label: "provider_docs" },
+        { id: "c2", text: "Unconfirmed thing.", label: "unknown" },
+        { id: "c3", text: "Admins may restrict installs.", label: "provider_docs" },
+      ],
+      scenarios: [{ id: "s1", label: "Marketplace", path: "app_review", modifiers: [{ kind: "customer_admin", note: "Admins may restrict installs", claim_ids: ["c3"] }] }],
+    } as never;
+    const q = new Map([["c1", "G11"], ["c2", "G11"], ["c3", "G8"]]);
+    const reply = [
+      { scenario_id: "s1", kind: "threshold", note: "At least 10 active workspaces", claim_ids: ["c1", "c9"] },
+      { scenario_id: "s1", kind: "customer_admin", note: "dup kind", claim_ids: ["c3"] },
+      { scenario_id: "s1", kind: "paid_access", note: "cites an unconfirmed fact", claim_ids: ["c2"] },
+      { scenario_id: "s9", kind: "recurring", note: "no such setup", claim_ids: ["c1"] },
+    ];
+    const ask = async () => ({ content: [{ type: "text", text: JSON.stringify(reply) }] }) as never;
+    const r = await sweepModifiers(g, q, ask);
+    expect(r.added).toBe(1);
+    const mods = (r.guide.scenarios[0].modifiers ?? []).map((m) => [m.kind, m.claim_ids]);
+    expect(mods).toEqual([["customer_admin", ["c3"]], ["threshold", ["c1"]]]);
+  });
+});

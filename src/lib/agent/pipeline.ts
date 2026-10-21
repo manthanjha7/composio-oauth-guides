@@ -10,7 +10,7 @@ import { z } from "zod";
 import { composioLookup, type ComposioLookup } from "../composio";
 import { baseDomain, canonicalUrl, enforceEvidence, numbersInText, numberUnitPairs, type EvidenceContext } from "../evidence";
 import { CHECK_INFO, pathLabel } from "../guide-view";
-import { type GeneratedGuide, type Guide, type GuideRecord, type WriterGuide, WriterGuideSchema } from "../schema";
+import { type GeneratedGuide, type Guide, type GuideRecord, ModifierKind, type WriterGuide, WriterGuideSchema } from "../schema";
 import { createComposioSearch, type ComposioSearch } from "../search";
 import { slugify } from "../slug";
 import { trimForModel } from "../web";
@@ -24,6 +24,7 @@ import {
   gapfillUser,
   IDENTIFY_SYSTEM,
   JUDGE_SYSTEM,
+  MODIFIER_SWEEP_SYSTEM,
   PROMPT_VERSION,
   WRITE_SYSTEM,
 } from "./prompts";
@@ -572,6 +573,18 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
       return e ? [e.quote, ...(e.extra_quotes ?? [])] : [];
     };
 
+    // A second look for factors the writer missed (a threshold, a limit before approval). Additions are judged
+    // below like the writer's own.
+    if (runDeadline - SAVE_RESERVE - Date.now() > 45_000) {
+      const swept = await sweepModifiers(g, claimQuestion, (system, content) =>
+        llm.call({ stage: "write", model: models.write, effort: resolveEffort("write"), system, maxTokens: 2_000, messages: [{ role: "user", content }] }, runDeadline - SAVE_RESERVE - 30_000),
+      ).catch(() => null);
+      if (swept) {
+        g = swept.guide;
+        if (swept.added) emit({ type: "stage", stage: "verify", message: `Found ${swept.added} more factor${swept.added === 1 ? "" : "s"} to check` });
+      }
+    }
+
     // Entailment judge, before any conclusion is drawn: claims on critical questions, claims the word checks
     // flagged, and each setup's path, wait, shortcut and factors as stated.
     const items = judgeItems(g, claimQuestion, quotesOf);
@@ -879,6 +892,43 @@ function fallbackGuide(ident: IdentityT, lookup: ComposioLookup | null, store: R
   };
 }
 
+const SweepAdditions = z.array(
+  z.object({ scenario_id: z.string(), kind: ModifierKind, qualifier: z.enum(["required", "optional"]).nullable().optional(), note: z.string(), claim_ids: z.array(z.string()) }),
+);
+// Questions whose facts become factors: who can build (G1), limits (G5), repeat reviews (G6), pricing (G7),
+// customer side (G8), thresholds and use rules (G11).
+const FACTOR_QUESTIONS = new Set(["G1", "G5", "G6", "G7", "G8", "G11"]);
+
+/** Ask once for factors the writer left out; code keeps only well-formed additions of a new kind, citing listed facts. */
+export async function sweepModifiers(
+  g: Guide,
+  claimQuestion: Map<string, string | undefined>,
+  ask: (system: string, content: string) => Promise<Anthropic.Beta.Messages.BetaMessage>,
+): Promise<{ guide: Guide; added: number }> {
+  const facts = g.claims
+    .filter((c) => c.label !== "unknown" && FACTOR_QUESTIONS.has(claimQuestion.get(c.id) ?? ""))
+    .map((c) => ({ id: c.id, question: claimQuestion.get(c.id), text: c.text }));
+  if (!facts.length || !g.scenarios.length) return { guide: g, added: 0 };
+  const setups = g.scenarios.map((s) => ({ id: s.id, label: s.label, path: s.path ?? null, factors: (s.modifiers ?? []).map((m) => ({ kind: m.kind, note: m.note })) }));
+  const msg = await ask(MODIFIER_SWEEP_SYSTEM, JSON.stringify({ setups, facts }));
+  const parsed = SweepAdditions.safeParse(JSON.parse(extractJson(textOf(msg))));
+  if (!parsed.success) return { guide: g, added: 0 };
+  const factIds = new Set(facts.map((f) => f.id));
+  let added = 0;
+  const scenarios = g.scenarios.map((s) => {
+    const mods = [...(s.modifiers ?? [])];
+    for (const a of parsed.data) {
+      if (a.scenario_id !== s.id || mods.some((m) => m.kind === a.kind) || added >= 4) continue;
+      const ids = [...new Set(a.claim_ids.filter((id) => factIds.has(id)))];
+      if (!ids.length || !a.note.trim()) continue;
+      mods.push({ kind: a.kind, qualifier: a.qualifier ?? null, note: a.note.trim().split(/\s+/).slice(0, 12).join(" "), claim_ids: ids });
+      added++;
+    }
+    return mods.length === (s.modifiers ?? []).length ? s : { ...s, modifiers: mods };
+  });
+  return { guide: { ...g, scenarios }, added };
+}
+
 type JudgeItem = { id: string; statement: string; quotes: string[]; reason?: string };
 
 /** What the judge checks: risky claims, and every categorical field as the guide states it, with its quotes. */
@@ -896,8 +946,8 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
   const PATH_STATEMENT = {
     automatic: "nothing has to be registered: the app's client registers itself automatically.",
     self_serve: "no review by the provider is needed before the app can be used in this setup.",
-    app_review: "the provider reviews, verifies or approves the app before it can be used in this setup.",
-    partner: "the provider must accept the developer's company (for example as a partner) before the app can be used in this setup.",
+    app_review: "the provider reviews, verifies or approves the app (or its listing) before it can be used, installed or listed as this setup requires.",
+    partner: "the developer's company itself must be accepted by the provider (for example into a partner program, or by signing an agreement) before the app can be used, installed or listed as this setup requires.",
   } as const;
   const TRIGGER_STATEMENT = { always: "the review is always required", sensitive_scopes: "the review is required only for sensitive scopes", scale: "the review is required only above a number of users, installs or calls", none: "" } as const;
   for (const s of g.scenarios) {
@@ -965,6 +1015,7 @@ export function applyInvariants(
   const REVIEW_WORDS =
     /\b(?:app|application|integration|listing)s?\s+(?:review|approval|verification|certification)|review (?:process|team|period)|submit(?:ted)?(?:\s+(?:it|your app|the app|your application))?\s+(?:for|to)\s+(?:review|approval|verification)|security (?:review|assessment)|partner program|must be (?:approved|reviewed|verified)\b|elevated access|apply for (?:access|approval)|request (?:access|approval)|access (?:request|application)/i;
   const setupFound = store.status("G10") === "found";
+  const GATE_QUESTIONS = ["G2", "G3", "G5", "G6", "G11", "R1"];
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };
     let pathOk = !!out.path && (out.path_claim_ids ?? []).some((id) => fromQuestion(id, ["G2"])) && c.fieldOk(`${s.id}.path`);
@@ -972,7 +1023,10 @@ export function applyInvariants(
     // Also when the writer left the path blank: the same labelled inference, under the same conditions.
     if (!pathOk && (out.path === "self_serve" || !out.path) && setupFound && c.fieldVerdict?.(`${s.id}.path`) !== "contradicted") {
       const own = [...s.claim_ids, ...(s.path_claim_ids ?? [])].map((id) => claimById.get(id)).filter((x) => x && x.label !== "unknown");
-      if (own.length > 0 && !own.some((x) => REVIEW_WORDS.test(`${x!.text} ${x!.quote ?? ""}`))) {
+      // Only evidence about gates and their timing counts against the inference; a program needed to build (G1)
+      // or a fact about another setup the writer also listed does not.
+      const gateEvidence = own.filter((x) => GATE_QUESTIONS.includes(c.claimQuestion.get(x!.id) ?? ""));
+      if (own.length > 0 && !gateEvidence.some((x) => REVIEW_WORDS.test(`${x!.text} ${x!.quote ?? ""}`))) {
         if (!out.path) warnings.push(`"${s.label}": no path was given; self-serve inferred because none of this setup's evidence mentions a review or an access request.`);
         out.path = "self_serve";
         pathOk = true;

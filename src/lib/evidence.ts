@@ -91,6 +91,9 @@ const TENANT_PLATFORMS = new Set([
   "document360.io", "stoplight.io", "postman.co", "apiary.io", "squarespace.com", "framer.website", "super.site",
 ]);
 
+/** Subdomains a shared platform keeps for itself; tenants get their own names. */
+const FIRST_PARTY_SUB = /^(?:www|developers?|docs|support|help|api|partners?|marketplace|apps|status)$/;
+
 /**
  * The owner of a URL's host: the registrable domain ("docs.slack.dev" -> "slack.dev", "foo.co.uk" -> "foo.co.uk"),
  * Public-Suffix aware ("acme.github.io" stays "acme.github.io"), and tenant-specific on shared docs platforms
@@ -117,7 +120,10 @@ export function baseDomain(urlOrHost: string): string {
   }
   host = host.toLowerCase().replace(/\.$/, "");
   const d = getDomain(host, { allowPrivateDomains: true }) ?? host;
-  return TENANT_PLATFORMS.has(d) && host !== d ? host.replace(/^www\./, "") : d;
+  if (!TENANT_PLATFORMS.has(d) || host === d) return d;
+  // The platform's own hosts (developer.zendesk.com, support.zendesk.com) belong to the platform company, not a tenant.
+  const sub = host.slice(0, -d.length - 1);
+  return FIRST_PARTY_SUB.test(sub) ? d : host.replace(/^www\./, "");
 }
 
 /**
@@ -333,9 +339,29 @@ export function supportIssue(claimText: string, quote: string): string | null {
   for (const p of numberUnits(claimText)) {
     const [n, u] = p.split(" ");
     const units = qNums.get(n);
-    if (units && !units.has(u)) return `The claim says ${n} ${u}s; the quote gives ${n} ${[...units].join("/")}s.`;
+    // If the quote also uses the claim's unit word, the pairing may just be reworded ("25 tokens for users" vs
+    // "tokens for 25 users"): that is left to the soft check and the judge.
+    if (units && !units.has(u) && !mentionsUnit(quote, u)) return `The claim says ${n} ${u}s; the quote gives ${n} ${[...units].join("/")}s.`;
   }
   return null;
+}
+
+function mentionsUnit(text: string, unit: string): boolean {
+  return new RegExp(`\\b${unit}s?\\b`, "i").test(text);
+}
+
+/** A number paired with a different unit than the quote gives, where the quote uses both words elsewhere. */
+function rewordedUnits(claimText: string, quote: string): string[] {
+  const qNums = new Map<string, Set<string>>();
+  numberUnits(quote).forEach((p) => {
+    const [n, u] = p.split(" ");
+    qNums.set(n, (qNums.get(n) ?? new Set()).add(u));
+  });
+  return [...numberUnits(claimText)].filter((p) => {
+    const [n, u] = p.split(" ");
+    const units = qNums.get(n);
+    return !!units && !units.has(u) && mentionsUnit(quote, u);
+  });
 }
 
 /**
@@ -348,6 +374,7 @@ export function supportIssue(claimText: string, quote: string): string | null {
  */
 export function supportFlags(claimText: string, quote: string): string[] {
   const flags: string[] = [];
+  for (const p of rewordedUnits(claimText, quote)) flags.push(`The claim pairs ${p}s; the quote pairs that number with another word.`);
   const qTime = timeUnits(quote, true);
   if (qTime.size) {
     const extra = [...timeUnits(claimText)].filter((u) => !qTime.has(u));
