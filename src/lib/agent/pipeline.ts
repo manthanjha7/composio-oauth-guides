@@ -412,6 +412,10 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   const gapJobs: { name: string; ids: QuestionId[] }[] = [];
   if (open.length) gapJobs.push({ name: "gap: official docs", ids: open.slice(0, 3) });
   if (open.length > 3) gapJobs.push({ name: "gap: official docs (2)", ids: open.slice(3, 6) });
+  // A free slot goes to important non-critical questions (thresholds, timelines, pricing, redirect rules),
+  // then to developer reports.
+  const important = (["G11", "G6", "G7", "G9"] as QuestionId[]).filter((q) => store.status(q) === "not_found").slice(0, 2);
+  if (gapJobs.length < 2 && important.length) gapJobs.push({ name: "gap: important details", ids: important });
   if (gapJobs.length < 2 && store.status("R1") === "not_found") gapJobs.push({ name: "gap: developer reports", ids: store.status("G6") === "found" ? ["R1"] : ["R1", "G6"] });
   if (gapJobs.length && researchDeadline - Date.now() > 15_000) {
     emit({ type: "stage", stage: "research", message: open.length ? `Searching for what the docs didn't answer (${open.join(", ")})` : "Looking for developer reports" });
@@ -546,7 +550,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     warnings.push(...enforced.warnings);
   } else {
     const writer = dedupeClaims(written);
-    if (writer.claims.length > MAX_CLAIMS) warnings.push(`The writer produced ${writer.claims.length} claims; only the first ${MAX_CLAIMS} were kept.`);
+    if (writer.claims.length > MAX_CLAIMS) warnings.push(`The writer produced ${writer.claims.length} claims; the ${MAX_CLAIMS} the guide uses most were kept.`);
     const evByIdForSupport = new Map(store.evidence.map((e) => [e.id, e]));
     ctx.supportQuotes = new Map(
       writer.claims.flatMap((c) => {
@@ -817,7 +821,27 @@ function buildDossier(query: string, ident: IdentityT, lookup: ComposioLookup | 
 /** Writer output → generated guide: label, url and quote come from the evidence ledger, never from the writer. */
 export function fromWriter(w: WriterGuide, store: ResearchStore): GeneratedGuide {
   const ev = new Map(store.evidence.filter((e) => e.status === "verified").map((e) => [e.id, e]));
-  const claims = w.claims.slice(0, MAX_CLAIMS).map((c) => {
+  // Over the cap, keep the claims the guide actually uses (setups first, then steps, traps, blockers) and drop
+  // unreferenced extras, never simply the last ones written.
+  const weight = new Map<string, number>();
+  const bump = (ids: string[] | undefined, n: number) => (ids ?? []).forEach((id) => weight.set(id, (weight.get(id) ?? 0) + n));
+  for (const s of w.scenarios) {
+    bump(s.claim_ids, 5);
+    bump(s.path_claim_ids, 8);
+    bump(s.shortcut_claim_ids, 4);
+    (s.modifiers ?? []).forEach((m) => bump(m.claim_ids, 4));
+  }
+  [...w.steps, ...w.traps, ...w.blockers, ...w.prerequisites].forEach((x) => bump(x.claim_ids, 2));
+  const kept =
+    w.claims.length <= MAX_CLAIMS
+      ? w.claims
+      : [...w.claims]
+          .map((c, i) => ({ c, i, wt: (weight.get(c.id) ?? 0) + (c.evidence_id ? 1 : 0) }))
+          .sort((a, b) => b.wt - a.wt || a.i - b.i)
+          .slice(0, MAX_CLAIMS)
+          .sort((a, b) => a.i - b.i)
+          .map((x) => x.c);
+  const claims = kept.map((c) => {
     const e = c.evidence_id ? ev.get(c.evidence_id) : undefined;
     return e
       ? { id: c.id, text: c.text, label: e.kind, source_url: e.url, quote: e.quote, probe_id: null }
@@ -917,7 +941,9 @@ export function applyInvariants(
   // Self-serve can't be quoted when docs simply describe no review. It may be inferred, and is labelled as such,
   // only when setup steps were found and no verified evidence anywhere mentions a review, verification or approval.
   const REVIEW_WORDS = /\b(review|verif|approv|certif|audit|assessment|partner program|publish)/i;
-  const anyReviewEvidence = store.verified().some((e) => e.kind !== "reported" && REVIEW_WORDS.test(`${e.quote} ${e.answer}`));
+  // Only evidence about the path itself (G2) can block the inference; a review of an optional directory listing
+  // (usually G3/G11 evidence) says nothing about whether customers can connect without one.
+  const anyReviewEvidence = store.verified("G2").some((e) => e.kind !== "reported" && REVIEW_WORDS.test(`${e.quote} ${e.answer}`));
   const canInferSelfServe = !anyReviewEvidence && store.status("G10") === "found";
   const scenarios = g.scenarios.map((s) => {
     const out = { ...s };

@@ -1,0 +1,4334 @@
+{
+  "slug": "intercom",
+  "guide": {
+    "app": {
+      "name": "Intercom",
+      "website": "https://www.intercom.com",
+      "developer_docs_url": "https://developers.intercom.com/docs"
+    },
+    "oauth_supported": "yes",
+    "summary": "Private app, your own workspace only (self-serve, wait none); Public unlisted app for customers' workspaces (app review); Listed app in the Intercom App Store (app review).",
+    "verdict": "Easiest: Private app, your own workspace only (self-serve, wait none). Hardest: Listed app in the Intercom App Store (app review).",
+    "default_scenario": "s2",
+    "composio": {
+      "toolkit_slug": "intercom",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio lists Intercom as Composio-managed OAuth. Use your own app for your branding on the consent screen, dedicated quota, or custom scopes."
+    },
+    "need_own_app": {
+      "answer": "Not for prototypes: Composio's managed app works. For production you usually want your own Intercom app so the consent screen shows your brand and you get your own quota.",
+      "reasons": [
+        "Consent screen shows your brand, not Composio's",
+        "Dedicated rate-limit quota instead of shared quota",
+        "Control over which scopes are requested",
+        "Install from your own site or the Intercom App Store"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Private app, your own workspace only",
+        "when_this_applies": "The app only accesses data from your own paid Intercom workspace.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "15-45 min",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "c3 states no review is required for private apps.",
+          "max_days": null
+        },
+        "approval": "No Intercom review for private apps accessing only your own paid workspace.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [],
+        "trigger": "none",
+        "modifiers": [],
+        "path_claim_ids": [
+          "c3"
+        ],
+        "path_basis": "stated"
+      },
+      {
+        "id": "s2",
+        "label": "Public unlisted app for customers' workspaces",
+        "when_this_applies": "Your agent connects many customers' Intercom workspaces, installed from your own product, not the App Store.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "2-5 hours",
+          "basis": "estimate from step count, not measured; includes recording a demo video"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No verified source backs this timeline (the agent's estimate was \"5-10 working days\").",
+          "max_days": null
+        },
+        "approval": "Intercom manually reviews the app: OAuth flow, scopes against functionality, and a demo video. Scopes over-requested are the most common rejection reason.",
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c6",
+          "c7",
+          "c8",
+          "c9"
+        ],
+        "path": "app_review",
+        "shortcut": null,
+        "extras": [
+          "Future app changes need re-approval",
+          "App is private to your team until approved"
+        ],
+        "trigger": "always",
+        "modifiers": [
+          {
+            "kind": "recurring",
+            "qualifier": "required",
+            "note": "Future app changes need re-approval",
+            "claim_ids": [
+              "c16"
+            ]
+          },
+          {
+            "kind": "limited_before_approval",
+            "qualifier": null,
+            "note": "App is private to your team until approved",
+            "claim_ids": [
+              "c10",
+              "c11"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c4",
+          "c5"
+        ],
+        "path_basis": "stated",
+        "shortcut_claim_ids": []
+      },
+      {
+        "id": "s3",
+        "label": "Listed app in the Intercom App Store",
+        "when_this_applies": "You also want discoverability in the App Store, or use Canvas Kit.",
+        "difficulty": "hard",
+        "hands_on": {
+          "estimate": "4-8 hours",
+          "basis": "estimate from step count, not measured; adds listing and partner program pages"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No verified source backs this timeline (the agent's estimate was \"5-10 working days\").",
+          "max_days": null
+        },
+        "approval": "Same app review plus App Listing and App Partner Program pages, with listing requirements checked.",
+        "claim_ids": [
+          "c4",
+          "c12",
+          "c13",
+          "c17",
+          "c18"
+        ],
+        "path": "app_review",
+        "shortcut": null,
+        "extras": [
+          "Future app changes need re-approval"
+        ],
+        "trigger": "always",
+        "modifiers": [
+          {
+            "kind": "recurring",
+            "qualifier": "required",
+            "note": "Future app changes need re-approval",
+            "claim_ids": [
+              "c16"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c4",
+          "c12"
+        ],
+        "path_basis": "stated"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Intercom account",
+        "detail": "An Intercom account is the only requirement to set up OAuth; a free trial works.",
+        "claim_ids": [
+          "c19",
+          "c20"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Paid workspace for private apps",
+        "detail": "Private apps using access tokens must access a paid workspace. Development workspaces are US-only.",
+        "claim_ids": [
+          "c3",
+          "c21",
+          "c22"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "HTTPS redirect URL",
+        "detail": "Redirect URLs must use HTTPS. You can register both testing and production URLs.",
+        "claim_ids": [
+          "c23",
+          "c24"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create Composio auth config (prototype)",
+        "owner": "agent",
+        "detail": "Use Composio's managed Intercom OAuth app for prototypes; no Intercom registration needed.",
+        "inputs": [
+          "Composio API key"
+        ],
+        "done_when": "A connected account works with the managed app.",
+        "scenario_ids": [],
+        "link": "https://docs.composio.dev/toolkits/managed-auth",
+        "claim_ids": [
+          "c25",
+          "c26"
+        ]
+      },
+      {
+        "title": "Create Intercom app and enable OAuth",
+        "owner": "you",
+        "detail": "Tick Use OAuth on the Authentication page in the Developer Hub, then fill in redirect URLs and permissions.",
+        "inputs": [
+          "Intercom account"
+        ],
+        "done_when": "Redirect URLs and permissions are saved.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": "https://app.intercom.com/a/apps/_/developer-hub",
+        "claim_ids": [
+          "c27",
+          "c28"
+        ]
+      },
+      {
+        "title": "Draft minimal scope list and justifications",
+        "owner": "agent",
+        "detail": "Pick only the scopes the use case needs and write a reason for each.",
+        "inputs": [
+          "Feature list of your agent"
+        ],
+        "done_when": "Each scope has a written justification.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c7",
+          "c29"
+        ]
+      },
+      {
+        "title": "Get redirect URI from Composio dashboard",
+        "owner": "you",
+        "detail": "Copy the redirect URI from the Composio dashboard and add it, over HTTPS, to the Intercom app's redirect URLs.",
+        "inputs": [
+          "Composio dashboard access"
+        ],
+        "done_when": "Redirect URL is saved in Intercom.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c23"
+        ]
+      },
+      {
+        "title": "Create Composio auth config with own credentials",
+        "owner": "agent",
+        "detail": "Create the auth config through Composio's API with the client_id and client_secret from the Basic Information page.",
+        "inputs": [
+          "client_id",
+          "client_secret"
+        ],
+        "done_when": "Auth config exists and a test connection succeeds.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c30",
+          "c31"
+        ]
+      },
+      {
+        "title": "Test in staging or TEST app",
+        "owner": "you",
+        "detail": "Verify the full OAuth flow in a separate staging app before submitting. Do not use old Intercom logos, even in test.",
+        "inputs": [
+          "Staging app"
+        ],
+        "done_when": "Install and uninstall via OAuth work.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c32",
+          "c33"
+        ]
+      },
+      {
+        "title": "Prepare demo script and app description",
+        "owner": "agent",
+        "detail": "Draft the description, test account instructions and a video script showing install, features and uninstall, with full client_id and state in the OAuth URL.",
+        "inputs": [
+          "Test account credentials"
+        ],
+        "done_when": "Script and description are ready.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c8",
+          "c34",
+          "c35",
+          "c36"
+        ]
+      },
+      {
+        "title": "Record end-to-end video",
+        "owner": "you",
+        "detail": "Show OAuth install, full functionality and OAuth uninstall.",
+        "inputs": [
+          "Demo script"
+        ],
+        "done_when": "Downloadable video file exists.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c8",
+          "c37"
+        ]
+      },
+      {
+        "title": "Complete listing and partner program pages",
+        "owner": "you",
+        "detail": "Fill App Listing, App Partner Program (company details, use cases, contacts) and Installation status with working links.",
+        "inputs": [
+          "Marketing images",
+          "Company details"
+        ],
+        "done_when": "All listing pages show complete.",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c12",
+          "c13",
+          "c17",
+          "c18"
+        ]
+      },
+      {
+        "title": "Submit app for review",
+        "owner": "you",
+        "detail": "Submit from the Test and publish section of the Developer Hub.",
+        "inputs": [
+          "Description",
+          "Video"
+        ],
+        "done_when": "Review banner appears in Developer Hub.",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c38"
+        ]
+      },
+      {
+        "title": "Wait for Intercom review",
+        "owner": "waiting",
+        "detail": "Intercom reviews manually in order received. If rejected, fix and resubmit.",
+        "inputs": [],
+        "done_when": "App becomes public unlisted (or listed).",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c14",
+          "c15",
+          "c9",
+          "c39"
+        ]
+      },
+      {
+        "title": "Set install method to your own product",
+        "owner": "you",
+        "detail": "Choose the installation method and enter the Learn more URL (unlisted) on the Installation status page.",
+        "inputs": [
+          "Install page URL"
+        ],
+        "done_when": "Customers can start OAuth from your product.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c40"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Over-privileged scopes",
+        "detail": "Over-privileged scopes are the most common reason apps are initially rejected. Request only the scopes your use case needs.",
+        "claim_ids": [
+          "c7",
+          "c29"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Skipping the TEST app step",
+        "detail": "One older guide says OAuth applications that skip the TEST app step are rejected. Current docs recommend a separate staging app; set up both to be safe.",
+        "claim_ids": [],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Incomplete video",
+        "detail": "If the video does not show all functionality and the OAuth processes, you must resubmit it.",
+        "claim_ids": [],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Old logos or branding misuse",
+        "detail": "Using old Intercom logos or misrepresenting branding delays approval, even on a TEST app.",
+        "claim_ids": [
+          "c33"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Changes after approval need re-approval",
+        "detail": "Later changes to the app need re-approval. The published app keeps its current functionality until the update is approved.",
+        "claim_ids": [
+          "c16"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Managed app limits",
+        "detail": "Composio's managed apps share quota across users and show Composio's name on consent. Composio states this generally, not specifically for Intercom.",
+        "claim_ids": []
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Application rejected or asked to adjust scopes",
+        "what_it_means": "Intercom found scopes beyond current functionality, a broken flow or unclear links.",
+        "what_to_do": "Make the requested changes and resubmit; Intercom gives a reason and actions before re-applying.",
+        "agent_can_help": "Trim the scope list and rewrite the justifications.",
+        "claim_ids": [
+          "c9"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "symptom": "Cannot get customers outside your team to authorize",
+        "what_it_means": "Before approval the app is private and usable only by you and your team.",
+        "what_to_do": "Complete the review, or use the Composio managed app meanwhile.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c10",
+          "c11"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Which scopes (if any) trigger extra scrutiny? Docs do not say; ask Intercom developer support or check the review feedback.",
+      "Do edits to an approved app always trigger a full re-review, and how long does it take? Not documented; ask Intercom support.",
+      "Does the TEST app step still apply, given the older guide and the newer staging-app guidance? Check the current Developer Hub.",
+      "Do the 5-10 working day times hold currently? No recent measured data; ask Intercom or other developers.",
+      "Can customer workspace admins restrict installing your app? Not found in the docs; check Intercom's admin documentation."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Private apps that only access data from your own paid Intercom workspace can use access tokens and do not need OAuth.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+        "quote": "If you are building a private app that only needs to access the data from your paid Intercom workspace, you can use [Access Tokens](/docs/build-an-integration/learn-more/authentication#access-tokens) and do not need to set up OAuth.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "Installing an app in a workspace creates an access token for that workspace, which provides API access to its data.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+        "quote": "This app will then be installed and an Access Token will be provided for that workspace so you can access its data through the API.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Private apps that only access your own paid workspace data do not require a review.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "Private apps that only access your own paid workspace data **do not require a review.** You can ignore the rest of this page!",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "A public app that any customer can install and that accesses their workspace data must be reviewed and approved by Intercom before it is available to install.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "If you are building an app that can be installed and used by any customer on Intercom, and will have access to their workspace data, you are building a **public app**. This means that the Intercom team must review and approve your app before it is available to install.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Both listed and unlisted public apps must be submitted for review.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "Both unlisted and listed apps must be submitted for review.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "An unlisted public app is available for anyone to install but is not listed in the App Store, so it must be installed via the developer's own product or website.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "An unlisted app is a public app that is available for anyone to install but is **not** listed in the App Store: It must be installed via your own product or website.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Over-privileged scopes are the most common reason apps are initially rejected in the approval process.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+        "quote": "Over-privileged scopes are the most common reason that apps are initially rejected in the approval process.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "The developer must submit an end-to-end video showing installation of the app with OAuth working.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "Installation of the app with OAuth successfully working",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "If the app is rejected, the developer must make the requested changes and resubmit.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "If your app is rejected, you will need to resubmit your app after you have made the changes that our team has requested.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "While under review, the app is private and can only be used by the developer and their team.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "During this process, your app will be **private** and can only be used by you and your team.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "Before production approval, OAuth access in the TEST app is limited to your Intercom teammates.",
+        "label": "reported",
+        "source_url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+        "quote": "The main difference between your TEST and main app is that the TEST app limits OAuth access to your Intercom teammates – you can't request OAuth access from someone that it not a teammate in your TEST app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "A listed app is discoverable and installable by anyone in the Intercom App Store, and requires filling out the App Listing and App Partner Program pages.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "This requires filling out the App Listing and App Partner Program pages in the Developer Hub and ensuring that all the requirements for each are met.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote supports filling out the App Listing and App Partner Program pages, but does not say a listed app is discoverable and installable by anyone in the App Store."
+      },
+      {
+        "id": "c13",
+        "text": "The App Partner Program form asks for company details, target use cases, points of contact, and more.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "This form asks for information including your company details, target use cases, points of contact, and more.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "Intercom says it manually reviews applications in the order received, which can take 5-10 working days.",
+        "label": "reported",
+        "source_url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+        "quote": "We manually review all applications in the order they come in, so it can take 5-10 working days for us to get back to you.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "Review can take up to seven business days, as shown by a banner in the developer console.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "You will see a yellow banner at the top of the screen stating it can take up to seven business days for review.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "After approval, any future changes require re-approval by the Intercom team.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "However, if you need to make any changes in the future the app will need to be re-approved by the Intercom team.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "For a listed app, the App Store listing must meet its requirements, and images must be in marketing format; submitting non-marketing images is a common pitfall.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "Please ensure that you have met the requirements for the App Store listing — one common pitfall is submitting images that are not in marketing format.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "Listed apps must fill out the Installation status section to be submitted for App Store listing.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "You must fill out the Installation status section in order to submit your app to be listed in the App Store.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "The only requirement to set up OAuth on Intercom is an Intercom account.",
+        "label": "reported",
+        "source_url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+        "quote": "The only thing you need to setup OAuth is an Intercom account.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "If you do not have an Intercom account, you can sign up for a free trial.",
+        "label": "reported",
+        "source_url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+        "quote": "If not, then just follow the instructions here to sign up for a free trial of Intercom.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21",
+        "text": "Development workspaces are only available in the US region.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+        "quote": "Development workspaces are for US region only.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "A private app built in a development workspace can only be installed into a paid US-region Intercom workspace.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+        "quote": "If you are using a development workspace to develop a private app, you will only be able to install your app into a paid Intercom workspace that is also in the US region.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "Redirect URLs must use HTTPS.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+        "quote": "Redirect URLs must use HTTPS",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "Testing and production redirect URLs can both be registered.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+        "quote": "This means you can include testing as well as production URLs here.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "Composio-managed OAuth means Composio supplies the OAuth app that users authorize when they connect a toolkit, so you do not register an app or supply a client ID and secret.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "Intercom is listed under Composio-managed OAuth available, so Composio provides its OAuth app and you do not need to register your own.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "| [Intercom](/toolkits/intercom.md) | `INTERCOM` |",
+        "probe_id": null,
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      },
+      {
+        "id": "c27",
+        "text": "OAuth is turned on by ticking the Use OAuth option on the Authentication page in the Developer Hub.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+        "quote": "To start, tick the **Use OAuth** option on your Authentication page in the Developer Hub.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c28",
+        "text": "After enabling OAuth, two sections must be filled out: redirect URLs and permissions.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+        "quote": "You'll now have two sections to fill out:",
+        "probe_id": null,
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      },
+      {
+        "id": "c29",
+        "text": "The developer must specify only the scopes needed for their use case and no more.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+        "quote": "It's important that you only specify the scopes you need to satisfy your use case and no more.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c30",
+        "text": "The client_id and client_secret are on the Basic Information page for the app in the Developer Hub.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+        "quote": "You'll first need your `client_id` and `client_secret`. These can be found on the Basic Information page for your app in the Developer Hub.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c31",
+        "text": "Custom auth configs let you supply your own OAuth app, API key, bearer token, or other credentials for a toolkit.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c32",
+        "text": "The developer can create a separate staging app from the Developer Hub home page for development use.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "We recommend [creating a new app](https://app.intercom.io/a/apps/_/developer-hub) on the Developer Hub home page if you haven't already, which can be used purely as a staging app for development purposes.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c33",
+        "text": "Do not use old Intercom logos or misrepresent Intercom branding, including on the TEST app, or approval will be delayed.",
+        "label": "reported",
+        "source_url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+        "quote": "Please, please, please ... do not use old Intercom logos or misrepresent our branding, even on your TEST app.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote supports not using old logos or misrepresenting branding, including on the TEST app, but does not say approval will be delayed."
+      },
+      {
+        "id": "c34",
+        "text": "If the app requires a subscription or account with the developer's service, the developer must provide test account credentials or setup instructions in the description.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "In order to access your app we will need to test out the full functionality. This means if your app requires a subscription or account with your service, you'll need to provide us with test account credentials or set up instructions within the description.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c35",
+        "text": "The OAuth URL shown in the video must include the full client_id and state parameter.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "Please show the full `client_id` and state parameter in the OAuth URL.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c36",
+        "text": "The end-to-end video must also show uninstallation of the app with OAuth.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "Uninstallation of the app with OAuth",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c37",
+        "text": "The end-to-end video must also show the app's full end-to-end experience and functionality.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "The end-to-end experience and functionality of your app",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c38",
+        "text": "The app is submitted for review from the 'Test and publish' section of the Developer Hub, after OAuth has been successfully set up.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "quote": "Once you've finished developing your public app and have [successfully set up OAuth](/docs/build-an-integration/learn-more/authentication/setting-up-oauth), you can submit your app for review and choose when to make it available for install by filling out the pages in the Test and publish section of your [Developer Hub](https://app.intercom.com/a/apps/_/developer-hub).",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c39",
+        "text": "After a denial, Intercom gives a reason and any actions you can take before you re-apply.",
+        "label": "reported",
+        "source_url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+        "quote": "If your application is denied, we will provide you with a reason for this and any actions you can take before re-applying.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c40",
+        "text": "The installation method is chosen on the Installation status page of the Developer Hub under Test and publish.",
+        "label": "provider_docs",
+        "source_url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+        "quote": "You can choose your method by going to the Installation status page of your Developer Hub under the Test and publish section.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T10:01:45.022Z",
+    "generated_by": "agent v2 (v2.4-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-haiku-5-5 · composio_search",
+    "duration_ms": 144139,
+    "query": "Intercom",
+    "partial": false,
+    "warnings": [
+      "The writer produced 50 claims; only the first 40 were kept.",
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 40,
+      "quotes_checked": 34,
+      "quotes_verified": 34,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 22968,
+      "output_tokens": 61994,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:21.165Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:21.166Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:21.166Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/intercom",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:21.166Z",
+        "via": "direct",
+        "chars": 363
+      },
+      {
+        "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:27.859Z",
+        "via": "direct",
+        "chars": 18075
+      },
+      {
+        "url": "https://developers.intercom.com/docs",
+        "title": "Overview | Intercom and Fin Developer Platform",
+        "fetched_at": "2026-10-21T09:59:31.998Z",
+        "via": "direct",
+        "chars": 4586
+      },
+      {
+        "url": "https://www.intercom.com/",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:32.113Z",
+        "via": "direct",
+        "chars": 20334
+      },
+      {
+        "url": "https://developers.intercom.com/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:32.158Z",
+        "via": "direct",
+        "chars": 264017
+      },
+      {
+        "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+        "title": "Installing your App | Intercom and Fin Developer Platform",
+        "fetched_at": "2026-10-21T09:59:36.201Z",
+        "via": "direct",
+        "chars": 6185
+      },
+      {
+        "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:36.210Z",
+        "via": "direct",
+        "chars": 4990
+      },
+      {
+        "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app.md",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:36.214Z",
+        "via": "direct",
+        "chars": 12649
+      },
+      {
+        "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:36.216Z",
+        "via": "direct",
+        "chars": 11670
+      },
+      {
+        "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:36.216Z",
+        "via": "direct",
+        "chars": 14763
+      },
+      {
+        "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+        "title": null,
+        "fetched_at": "2026-10-21T09:59:36.226Z",
+        "via": "direct",
+        "chars": 12649
+      },
+      {
+        "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+        "title": "Applying for OAuth",
+        "fetched_at": "2026-10-21T09:59:37.340Z",
+        "via": "composio_fetch",
+        "chars": 6623
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.4-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-haiku-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E29",
+            "E30",
+            "E132",
+            "E133"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E8",
+            "E16",
+            "E17",
+            "E18",
+            "E31",
+            "E32",
+            "E33",
+            "E34",
+            "E35",
+            "E36",
+            "E63",
+            "E64",
+            "E65",
+            "E66",
+            "E67",
+            "E68",
+            "E69",
+            "E70",
+            "E71",
+            "E101",
+            "E102",
+            "E103",
+            "E104",
+            "E105",
+            "E106",
+            "E107",
+            "E108",
+            "E109",
+            "E134",
+            "E135"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E19",
+            "E20",
+            "E37",
+            "E38",
+            "E39",
+            "E40",
+            "E41",
+            "E42",
+            "E43",
+            "E44",
+            "E72",
+            "E73",
+            "E74",
+            "E76",
+            "E77",
+            "E78",
+            "E79",
+            "E80",
+            "E81",
+            "E82",
+            "E83",
+            "E84",
+            "E85",
+            "E86",
+            "E136"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E21",
+            "E22",
+            "E23",
+            "E24",
+            "E25",
+            "E26",
+            "E45",
+            "E75",
+            "E137",
+            "E138",
+            "E139",
+            "E140",
+            "E141",
+            "E142",
+            "E143",
+            "E144",
+            "E145"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14",
+            "E15",
+            "E46",
+            "E47",
+            "E92",
+            "E93",
+            "E110",
+            "E111",
+            "E112"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E48",
+            "E49",
+            "E50",
+            "E51",
+            "E87",
+            "E88",
+            "E89",
+            "E90",
+            "E91"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "found",
+          "evidence": [
+            "E52",
+            "E113",
+            "E157"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E2",
+            "E114",
+            "E115",
+            "E146",
+            "E147"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E53",
+            "E123",
+            "E124",
+            "E125",
+            "E126",
+            "E127",
+            "E148",
+            "E149",
+            "E150",
+            "E151",
+            "E152"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E27",
+            "E54",
+            "E55",
+            "E94",
+            "E95",
+            "E96",
+            "E97",
+            "E98",
+            "E116",
+            "E117",
+            "E118",
+            "E119",
+            "E120",
+            "E121",
+            "E153",
+            "E154",
+            "E155",
+            "E156"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E28",
+            "E56",
+            "E57",
+            "E58",
+            "E99",
+            "E100",
+            "E122"
+          ],
+          "tried": [
+            "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+            "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+            "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+            "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+            "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": []
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E59",
+            "E60",
+            "E61",
+            "E62",
+            "E128",
+            "E129",
+            "E130",
+            "E131",
+            "E158",
+            "E159",
+            "E160",
+            "E161",
+            "E162",
+            "E163",
+            "E164",
+            "E165",
+            "E166"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G8",
+          "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "quote": "Navigate to the Deploy > Fin Messenger section in your Fin Workspace.",
+          "answer": "The integration is set up by the customer in their own Fin Workspace, under Deploy > Fin Messenger, for their custom helpdesk integration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "1082645e51d361e9",
+          "offsets": [
+            4181,
+            4250
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G8",
+          "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "quote": "Finally, when you've configured your workflow and installed the Fin Messenger you're ready to activate Fin.",
+          "answer": "Fin is activated only after the workflow is configured and the Fin Messenger is installed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "1082645e51d361e9",
+          "offsets": [
+            5628,
+            5735
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "quote": "You can give your integration a name to identify it.",
+          "answer": "In the Fin Workspace Deploy > Fin Messenger section, the customer gives the integration a name.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "1082645e51d361e9",
+          "offsets": [
+            4280,
+            4332
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "quote": "Make note of the *Identifier* value you are given here. This is the identifer you must use in your webhooks back to the Fin system.",
+          "answer": "Fin gives an Identifier value for the integration, which must be used in webhooks sent back to Fin.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "1082645e51d361e9",
+          "offsets": [
+            4579,
+            4710
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "quote": "By default we use OAuth for this. Choose the \"OAuth token settings\" option and configure the OAuth connection with your server.",
+          "answer": "For this custom helpdesk integration, authentication is OAuth by default. The customer selects the \"OAuth token settings\" option and configures the OAuth connection with their server.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "1082645e51d361e9",
+          "offsets": [
+            4926,
+            5053
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "quote": "Note the webhook secret generated for you. This must be provided in the X-Webhook-Key header in webhook requests to the Fin system.",
+          "answer": "Fin generates a webhook secret, which must be sent in the X-Webhook-Key header of webhook requests to Fin.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "1082645e51d361e9",
+          "offsets": [
+            5244,
+            5375
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "quote": "Choose a agent from your system to attribute Fin's replies to.",
+          "answer": "The customer chooses an agent from their own system to which Fin's replies are attributed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "1082645e51d361e9",
+          "offsets": [
+            5405,
+            5467
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "The amount we rate limit them by is different for apps which are privately built for your own usage, or for apps that are publicly installed by third-parties.",
+          "answer": "The page distinguishes apps privately built for the developer's own use from apps publicly installed by third parties, and rate limits apply differently to each.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            1725,
+            1883
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "Every app will have default rate limits.",
+          "answer": "Every app has default rate limits, whether private or public.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            1684,
+            1724
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "Private apps have a default rate limit of **10,000 API calls per minute per app** and **25,000 API calls per minute per workspace**.",
+          "answer": "Private apps (built for your own usage) have a default limit of 10,000 API calls per minute per app and 25,000 API calls per minute per workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            1898,
+            2030
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "This means that if a workspace has multiple private apps installed, every one contributes towards total number of requests.",
+          "answer": "For private apps, every private app installed in a workspace counts toward the workspace's total request count.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            2031,
+            2154
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "Public apps have a default rate limit of **10,000 API calls per minute for each app** and **25,000 API calls per minute per workspace**.",
+          "answer": "Public apps (installed by third parties) have a default limit of 10,000 API calls per minute for each app and 25,000 API calls per minute per workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            2168,
+            2304
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "This means that if a workspace has multiple public apps installed, each one has its own separate request limit without contributing to the others.",
+          "answer": "For public apps, each installed public app has its own separate request limit and does not count toward the others in the workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            2305,
+            2451
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "Although the permitted limit of requests lasts for 1 minute, we evenly **distribute this into 10 second windows**.",
+          "answer": "The per-minute limit is split evenly into 10-second windows, so the allowance resets every 10 seconds (for example, 1,000 per minute allows 166 per 10 seconds).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            2630,
+            2744
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "quote": "If you require higher rate limits than the defaults, you can contact us using the messenger in the bottom right.",
+          "answer": "Developers who need limits above the defaults can contact Intercom through the messenger in the bottom right; the page gives no approval criteria or thresholds for this.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.216Z",
+          "page_hash": "bfbfe003ffd701d6",
+          "offsets": [
+            2472,
+            2584
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "When you configure OAuth you will need to define the OAuth scopes, and these will be reviewed when you [submit your app for approval](/docs/publish-to-the-app-store/review-publish-your-app).",
+          "answer": "For public apps, the OAuth scopes the developer defines are reviewed when the app is submitted for approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            16,
+            206
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "For the security of our customers, Intercom ensures that public apps only access resources necessary to the functionality of the app.",
+          "answer": "The page does not say what triggers the scope review, such as sensitive scopes or a user or install count. Intercom ensures public apps only access resources needed for their function.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            953,
+            1086
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "It's also important to note that if you are using Canvas Kit for Messenger or Inbox apps, certain OAuth scopes are required by default.",
+          "answer": "Apps using Canvas Kit for Messenger or Inbox have certain OAuth scopes required by default.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            1297,
+            1432
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "Over-privileged scopes are the most common reason that apps are initially rejected in the approval process.",
+          "answer": "The scope review checks whether the app requests only the scopes it needs. Over-privileged scopes are the most common reason apps are initially rejected in the approval process.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            1186,
+            1293
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "It's important that you only specify the scopes you need to satisfy your use case and no more.",
+          "answer": "The developer must specify only the scopes needed for their use case and no more.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            1088,
+            1182
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "The following scopes will be automatically selected and cannot be deselected:",
+          "answer": "Canvas Kit apps have four scopes automatically selected that cannot be deselected: read and list users and companies, read conversations, read admins, and gather app data.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            1584,
+            1661
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "If your app utilizes Canvas Kit, certain permissions are required by default due to the data your app will have access to.",
+          "answer": "Canvas Kit apps have certain permissions required by default because of the data the app can access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            1461,
+            1583
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "| Standard scopes | Description |",
+          "answer": "Scopes are grouped into Standard scopes (people and conversation data) and Extended scopes (workspace data). The page does not say which tier triggers extra review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            1924,
+            1957
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "| Extended scopes | Description |",
+          "answer": "Extended scopes cover workspace data such as admins, articles, news items, data connectors and AI content.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            3325,
+            3358
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "| Delete conversations and metrics | Delete conversations and their metrics, cannot be recovered |",
+          "answer": "The scope 'Delete conversations and metrics' deletes data that cannot be recovered.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            2525,
+            2623
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "For example, if you need to setup a webook to trigger when a user/lead is created then you will need to select the \"Read and write users\" permission scopes.",
+          "answer": "Webhook topics are tied to scopes. For example, a webhook that fires when a user or lead is created requires the 'Read and write users' scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            4578,
+            4734
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "The following scopes can be selected via checkboxes on your Authorization settings page in the Developer Hub:",
+          "answer": "Scopes are selected via checkboxes on the Authorization settings page in the Developer Hub, during OAuth configuration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            1781,
+            1890
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G11",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "quote": "For the security of our customers, Intercom ensures that public apps only access resources necessary to the functionality of the app.",
+          "answer": "Use restriction: public apps may only access resources necessary to their functionality.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.210Z",
+          "page_hash": "78338d5ca764db8f",
+          "offsets": [
+            953,
+            1086
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G1",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "The only thing you need to setup OAuth is an Intercom account.",
+          "answer": "The only requirement to set up OAuth on Intercom is an Intercom account.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            94,
+            156
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G1",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "If not, then just follow the instructions here to sign up for a free trial of Intercom.",
+          "answer": "If you do not have an Intercom account, you can sign up for a free trial.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            199,
+            286
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G2",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "You'll only need to go through an approval process once you're ready to put your integration into production.",
+          "answer": "Approval is only needed when you move the integration to production, not while you build it.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            630,
+            739
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G2",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "The main difference between your TEST and main app is that the TEST app limits OAuth access to your Intercom teammates – you can't request OAuth access from someone that it not a teammate in your TEST app.",
+          "answer": "Before the main app is approved, OAuth in the TEST app only works for your Intercom teammates, not outside users.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            1699,
+            1904
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G2",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Once you're happy that your integration is ready, you need to apply for OAuth approval for your main Intercom app so that you can accept users outside of your own app.",
+          "answer": "To accept users outside your own app, you must apply for OAuth approval for your main Intercom app, and the page sets no user or install threshold for this.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            3955,
+            4122
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G2",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "You must setup your integration in your TEST app first; we will not approve OAuth applications for main apps without this step.",
+          "answer": "You must first set up the integration in your TEST app, or Intercom will not approve OAuth for the main app.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            2075,
+            2202
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G2",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Note that this also includes any integrations migrating from using API keys to OAuth.",
+          "answer": "OAuth applications that skip the TEST app step are rejected, and this also applies to integrations moving from API keys to OAuth.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            3359,
+            3444
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G2",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Any applications for OAuth without first applying via a TEST app will be rejected.",
+          "answer": "OAuth applications submitted without first applying through a TEST app will be rejected.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            3445,
+            3527
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "For this, you'll need to put together a short demo video for our team to review.",
+          "answer": "For the main app review, you must submit a short demo video for the Intercom team to review.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            4124,
+            4204
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "This video should clearly show the OAuth setup flow.",
+          "answer": "The demo video must clearly show the OAuth setup flow.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            4205,
+            4257
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Alongside the video, you should also provide reasons for the scopes you need.",
+          "answer": "Along with the video, you must give reasons for each scope you need.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            4258,
+            4335
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Make sure the video is in a downloadable format, so that we can keep it for future reference (we will never share your video with anyone else without your approval).",
+          "answer": "The video must be in a downloadable format so Intercom can keep it on file; Intercom says it will not share it without your approval.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            4474,
+            4639
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "The setup flow is non-functional or broken",
+          "answer": "A broken or non-functional setup flow is a reason for denial.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            5254,
+            5296
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "There is a risk to the security of a user's data",
+          "answer": "A risk to user data security is a reason for denial.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            5299,
+            5347
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "You're using old Intercom logos or misusing our branding in some way",
+          "answer": "Using old Intercom logos or misusing Intercom branding is a reason for denial.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            5350,
+            5418
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "G3",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "You're requesting too many permissions you don't need",
+          "answer": "Requesting too many permissions you do not need is a reason for denial.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            5421,
+            5474
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G4",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Only apply for permissions you actually need – otherwise your approval for your main app may be denied or delayed.",
+          "answer": "Request only the permissions you actually need, since over-requesting can get the main app denied or delayed. The page names no specific scopes or scope tiers.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            3097,
+            3211
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G5",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Once you have created your TEST app you can get OAuth access immediately by applying for OAuth from your TEST app.",
+          "answer": "The TEST app can get OAuth access instantly, so you can start building before any approval.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            2235,
+            2349
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G5",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "The main difference between your TEST and main app is that the TEST app limits OAuth access to your Intercom teammates – you can't request OAuth access from someone that it not a teammate in your TEST app.",
+          "answer": "Before production approval, OAuth access in the TEST app is limited to your Intercom teammates.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            1699,
+            1904
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G6",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "We manually review all applications in the order they come in, so it can take 5-10 working days for us to get back to you.",
+          "answer": "Intercom says it manually reviews applications in the order received, which can take 5-10 working days.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            4738,
+            4860
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G6",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "We'll review your application, usually within 5-10 working days",
+          "answer": "The published review timeline for the main app is usually 5-10 working days.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            1022,
+            1085
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G6",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "If your application is denied, we will provide you with a reason for this and any actions you can take before re-applying.",
+          "answer": "After a denial, Intercom gives a reason and any actions you can take before you re-apply.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            5476,
+            5598
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G6",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "You can simply update your OAuth application from your TEST app and it will update instantly.",
+          "answer": "Changes to permissions or redirect URL are made by updating the TEST app, and they take effect instantly. The page does not say whether changes trigger a new review.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            2998,
+            3091
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G7",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "For more detailed information on the different products and pricing options available you can check out our pricing page.",
+          "answer": "The page refers to a separate pricing page for product and pricing options but does not state any fees for OAuth access.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            287,
+            408
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G9",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "While working on your integration you might discover that you need additional permissions or you need to change the redirect URL.",
+          "answer": "The redirect URL can be changed by updating the OAuth application in the TEST app. The page gives no domain or HTTPS rules.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            2868,
+            2997
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G10",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Setting up your TEST environment in Intercom is as simply as ticking a box in your main production app settings page:",
+          "answer": "The TEST environment is set up by ticking a box in the settings page of your main production app.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            1435,
+            1552
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G10",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "You can apply here or by going to 'settings' within the Intercom app menu (hover over your avatar on the bottom left) and then clicking on the 'app settings' tab > 'developer tools' > 'OAuth'.",
+          "answer": "OAuth is applied for in the Intercom app menu by going to settings, then app settings, then developer tools, then OAuth, or through a link on the page.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            2350,
+            2542
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G11",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "By integrating with Intercom or using our API, you are agreeing to abide by our developer guidelines so you should be sure to read them.",
+          "answer": "Using Intercom's API or integration means you agree to follow its developer guidelines, which apply to the integration.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            5601,
+            5737
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G11",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "We use these when evaluating your integration so it's worth ensuring you're following them to increase the chances of your application being approved.",
+          "answer": "Intercom uses its integration guidelines when evaluating an integration, so following them improves approval chances.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            5831,
+            5981
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G11",
+          "url": "https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "quote": "Please, please, please ... do not use old Intercom logos or misrepresent our branding, even on your TEST app.",
+          "answer": "Do not use old Intercom logos or misrepresent Intercom branding, including on the TEST app, or approval will be delayed.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:37.340Z",
+          "page_hash": "9be8d1a939fb1660",
+          "offsets": [
+            6352,
+            6461
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Intercom](/toolkits/intercom.md) | `INTERCOM` |",
+          "answer": "Intercom is listed under Composio-managed OAuth available, so Composio provides its OAuth app and you do not need to register your own.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.165Z",
+          "page_hash": "",
+          "offsets": [
+            4521,
+            4571
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "Composio-managed OAuth means Composio supplies the OAuth app that users authorize when they connect a toolkit, so you do not register an app or supply a client ID and secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.165Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "A toolkit is listed as Composio-managed when Composio manages at least one OAuth method, and some toolkits have more than one authentication method, so each method must be checked on the toolkit page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.165Z",
+          "page_hash": "",
+          "offsets": [
+            1000,
+            1153
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app.",
+          "answer": "To check whether Composio provides the OAuth app for a toolkit, read the composio_managed_auth_schemes field from the toolkit endpoint; if it contains the toolkit's OAuth method, Composio provides the app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.165Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            824
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "If you are building an app that can be installed and used by any customer on Intercom, and will have access to their workspace data, you are building a **public app**. This means that the Intercom team must review and approve your app before it is available to install.",
+          "answer": "A public app that any customer can install and that accesses their workspace data must be reviewed and approved by Intercom before it is available to install.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            438,
+            707
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Private apps that only access your own paid workspace data **do not require a review.** You can ignore the rest of this page!",
+          "answer": "Private apps that only access your own paid workspace data do not require a review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            709,
+            834
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Both unlisted and listed apps must be submitted for review.",
+          "answer": "Both listed and unlisted public apps must be submitted for review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            3494,
+            3553
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "This requires filling out the App Listing and App Partner Program pages in the Developer Hub and ensuring that all the requirements for each are met.",
+          "answer": "A listed app is discoverable and installable by anyone in the Intercom App Store, and requires filling out the App Listing and App Partner Program pages.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            1212,
+            1361
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "For listed apps, you can give your customers the option to install your app from the App Store or on your own website or app.",
+          "answer": "For listed apps, customers can be given the option to install from the App Store or from the developer's own website or app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            1481,
+            1606
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "An unlisted app is a public app that is available for anyone to install but is **not** listed in the App Store: It must be installed via your own product or website.",
+          "answer": "An unlisted public app is available for anyone to install but is not listed in the App Store, so it must be installed via the developer's own product or website.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            2943,
+            3108
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "During this process, your app will be **private** and can only be used by you and your team.",
+          "answer": "While under review, the app is private and can only be used by the developer and their team.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            8943,
+            9035
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "When your app is approved, it will become a **public unlisted** app.",
+          "answer": "Once approved, the app becomes a public unlisted app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            9037,
+            9105
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "You can instead **test out your app in a separate staging environment, or send to your customers individually to collect feedback (ie. when in beta)**.",
+          "answer": "An approved unlisted app can be tested in a staging environment or sent to customers individually to collect feedback, for example during a beta.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            9432,
+            9583
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Once your app is with the Intercom team, we will review it to ensure it meets our requirements.",
+          "answer": "The app review checks whether the app meets Intercom's requirements.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            8132,
+            8227
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "The purpose of the video is to understand if the OAuth flow works and if your app meets our [app guidelines](/docs/build-an-integration/learn-more/building-successful-apps).",
+          "answer": "The review video's purpose is to check that the OAuth flow works and that the app meets Intercom's app guidelines.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            7215,
+            7388
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "It is also to determine whether the scopes match the required functionality of the app: If you have requested scopes outside of the current functionality, you may be asked to adjust your scopes and resubmit the app.",
+          "answer": "The review also checks whether the requested scopes match the app's actual functionality.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            7389,
+            7604
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "If you have requested scopes outside of the current functionality, you may be asked to adjust your scopes and resubmit the app.",
+          "answer": "Requesting scopes beyond the app's current functionality may lead to a request to adjust scopes and resubmit the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            7477,
+            7604
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Write a brief description of your app and how it works with Intercom.",
+          "answer": "The developer must submit a brief description of the app and how it works with Intercom.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            5889,
+            5958
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "In order to access your app we will need to test out the full functionality. This means if your app requires a subscription or account with your service, you'll need to provide us with test account credentials or set up instructions within the description.",
+          "answer": "If the app requires a subscription or account with the developer's service, the developer must provide test account credentials or setup instructions in the description.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            5960,
+            6216
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Installation of the app with OAuth successfully working",
+          "answer": "The developer must submit an end-to-end video showing installation of the app with OAuth working.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            6303,
+            6358
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "The end-to-end experience and functionality of your app",
+          "answer": "The end-to-end video must also show the app's full end-to-end experience and functionality.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            6361,
+            6416
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Uninstallation of the app with OAuth",
+          "answer": "The end-to-end video must also show uninstallation of the app with OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            6419,
+            6455
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Please show the full `client_id` and state parameter in the OAuth URL.",
+          "answer": "The OAuth URL shown in the video must include the full client_id and state parameter.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            7143,
+            7213
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "It is better to show too much of your app than not enough. If you do not show all of the functionality of your app as well as the OAuth processes, you will have to resubmit your video.",
+          "answer": "Videos should show more of the app rather than less; if not all functionality and the OAuth processes are shown, the video must be resubmitted.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            7606,
+            7790
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Please ensure that you have met the requirements for the App Store listing — one common pitfall is submitting images that are not in marketing format.",
+          "answer": "For a listed app, the App Store listing must meet its requirements, and images must be in marketing format; submitting non-marketing images is a common pitfall.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            4313,
+            4463
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "This form asks for information including your company details, target use cases, points of contact, and more.",
+          "answer": "The App Partner Program form asks for company details, target use cases, points of contact, and more.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            4764,
+            4873
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Providing broken or unclear links will result in an application rejection, and you will have to resubmit for review.",
+          "answer": "Listed apps must fill out the Installation status section, and broken or unclear install links lead to rejection and resubmission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            1806,
+            1922
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "You must fill out the Installation status section in order to submit your app to be listed in the App Store.",
+          "answer": "Listed apps must fill out the Installation status section to be submitted for App Store listing.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            1697,
+            1805
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G6",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "You will see a yellow banner at the top of the screen stating it can take up to seven business days for review.",
+          "answer": "Review can take up to seven business days, as shown by a banner in the developer console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            8229,
+            8340
+          ]
+        },
+        {
+          "id": "E88",
+          "question": "G6",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Your application can take up to seven business days to review, so ensure everything is fixed.",
+          "answer": "Resubmitted apps after rejection can also take up to seven business days to review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            10634,
+            10727
+          ]
+        },
+        {
+          "id": "E89",
+          "question": "G6",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "If your app is rejected, you will need to resubmit your app after you have made the changes that our team has requested.",
+          "answer": "If the app is rejected, the developer must make the requested changes and resubmit.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            10162,
+            10282
+          ]
+        },
+        {
+          "id": "E90",
+          "question": "G6",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "However, if you need to make any changes in the future the app will need to be re-approved by the Intercom team.",
+          "answer": "After approval, any future changes require re-approval by the Intercom team.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            10879,
+            10991
+          ]
+        },
+        {
+          "id": "E91",
+          "question": "G6",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "in cases where an app is updated after it is approved and published, the app will remain public with the current functionality until your updates have been approved.",
+          "answer": "If an approved and published app is updated, it stays public with its current functionality until the updates are approved.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            11119,
+            11284
+          ]
+        },
+        {
+          "id": "E92",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "During this process, your app will be **private** and can only be used by you and your team.",
+          "answer": "Before approval, the app is private and usable only by the developer and their team.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            8943,
+            9035
+          ]
+        },
+        {
+          "id": "E93",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "You'll also see that the production app will be labeled as `Public` and your development app will be labeled as `Private`.",
+          "answer": "The page recommends a separate staging app for development, which is labeled Private, while the production app is labeled Public.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            12527,
+            12649
+          ]
+        },
+        {
+          "id": "E94",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "Once you've finished developing your public app and have [successfully set up OAuth](/docs/build-an-integration/learn-more/authentication/setting-up-oauth), you can submit your app for review and choose when to make it available for install by filling out the pages in the Test and publish section of your [Developer Hub](https://app.intercom.com/a/apps/_/developer-hub).",
+          "answer": "The app is submitted for review from the 'Test and publish' section of the Developer Hub, after OAuth has been successfully set up.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            3555,
+            3926
+          ]
+        },
+        {
+          "id": "E95",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "The final step is to fill in the [app description](/docs/publish-to-the-app-store/review-publish-your-app#app-description) and [end-to-end video](/docs/publish-to-the-app-store/review-publish-your-app#end-to-end-video) sections on the \"Submit for a review\" page.",
+          "answer": "The final submission step is on the 'Submit for a review' page, where the app description and end-to-end video are filled in and then submitted.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            5173,
+            5435
+          ]
+        },
+        {
+          "id": "E96",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "If you need to discard any changes that have been made to your app to start over, you can use the Discard Changes button on this page.",
+          "answer": "The developer can discard app changes and start over using the Discard Changes button on the submission page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            7851,
+            7985
+          ]
+        },
+        {
+          "id": "E97",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "We recommend [creating a new app](https://app.intercom.io/a/apps/_/developer-hub) on the Developer Hub home page if you haven't already, which can be used purely as a staging app for development purposes.",
+          "answer": "The developer can recommend creating a separate staging app from the Developer Hub home page for development use.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            12030,
+            12234
+          ]
+        },
+        {
+          "id": "E98",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "You can see and review all the changes in the **Review changes** tab in your Developer Hub before you submit again.",
+          "answer": "Changes to an approved app can be reviewed in the Review changes tab of the Developer Hub before resubmitting.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            11286,
+            11401
+          ]
+        },
+        {
+          "id": "E99",
+          "question": "G11",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "This is in addition to our [developer terms](/docs/publish-to-the-app-store/intercom-developer-terms) and [platform guidelines](/docs/publish-to-the-app-store/intercom-platform-guidelines)",
+          "answer": "Apps must also comply with Intercom's developer terms and platform guidelines, in addition to the review requirements.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            6953,
+            7141
+          ]
+        },
+        {
+          "id": "E100",
+          "question": "G11",
+          "url": "https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "quote": "A good rule is to name the development app the same as your production app but append something such as `[Staging]` or `[Dev]` at the end to differentiate these.",
+          "answer": "The recommended naming convention is to name the staging app the same as the production app with a suffix such as [Staging] or [Dev].",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.226Z",
+          "page_hash": "011a6528ea9ee25f",
+          "offsets": [
+            12365,
+            12526
+          ]
+        },
+        {
+          "id": "E101",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "Installation setup is dependent on whether your app is public or private .",
+          "answer": "Installation setup differs depending on whether the app is public or private.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            28,
+            102
+          ]
+        },
+        {
+          "id": "E102",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "If your app is going to be public for any customer to install, you can set it as listed or unlisted .",
+          "answer": "A public app can be set as listed or unlisted, and is meant for any customer to install.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            1967,
+            2068
+          ]
+        },
+        {
+          "id": "E103",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "For listed apps, customers may install your app directly from the Intercom App Store or through your product or website.",
+          "answer": "For listed apps, customers can install either from the Intercom App Store or through the developer's own product or website.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            2069,
+            2189
+          ]
+        },
+        {
+          "id": "E104",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "Note that whether you decide to allow customers to install your app directly from the App Store or you provide installation through your own product or website, OAuth must be configured and functioning properly.",
+          "answer": "OAuth must be configured and working whether customers install from the App Store or from the developer's own product or website.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            2233,
+            2444
+          ]
+        },
+        {
+          "id": "E105",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "Third-parties (i.e. other Intercom workspaces) must authenticate via OAuth.",
+          "answer": "Third-party customers from other Intercom workspaces must authenticate via OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            2719,
+            2794
+          ]
+        },
+        {
+          "id": "E106",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "If your app uses any form of Canvas Kit capability, it's mandatory to allow your app to be installed through the listing on the App Store.",
+          "answer": "Apps that use any form of Canvas Kit capability must allow installation through the App Store listing.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            3423,
+            3561
+          ]
+        },
+        {
+          "id": "E107",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "Unlisted apps do not need to fill out the Installation status section.",
+          "answer": "Unlisted apps do not need to fill out the Installation status section.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            2495,
+            2565
+          ]
+        },
+        {
+          "id": "E108",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "Your app can also be installed through your own product or website exclusively.",
+          "answer": "An app can be installed only through the developer's own product or website, without the App Store.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            4805,
+            4884
+          ]
+        },
+        {
+          "id": "E109",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "If you visit the Test & Publish > Your Workspaces page of your app in the Developer Hub then you should see all the workspaces you (as an Intercom teammate) are a member of.",
+          "answer": "Private apps are installed into workspaces where the developer is a teammate, which are listed on the Your Workspaces page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            810,
+            983
+          ]
+        },
+        {
+          "id": "E110",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "Development workspaces are for US region only.",
+          "answer": "Development workspaces are only available in the US region.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            354,
+            400
+          ]
+        },
+        {
+          "id": "E111",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "If you are using a development workspace to develop a private app, you will only be able to install your app into a paid Intercom workspace that is also in the US region.",
+          "answer": "A private app built in a development workspace can only be installed into a paid US-region Intercom workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            401,
+            571
+          ]
+        },
+        {
+          "id": "E112",
+          "question": "G5",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "If you are building a private app in EU or AU, we recommend using your paid Intercom workspace to develop the app; to use a development workspace, you will have to manually copy over your settings and endpoints into your paid workspace.",
+          "answer": "For private apps in the EU or AU, Intercom recommends developing in a paid workspace; using a development workspace requires manually copying settings and endpoints to a paid workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            572,
+            808
+          ]
+        },
+        {
+          "id": "E113",
+          "question": "G7",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "If you are using a development workspace to develop a private app, you will only be able to install your app into a paid Intercom workspace that is also in the US region.",
+          "answer": "Installing a private app built in a development workspace requires a paid Intercom workspace in the US region.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            401,
+            571
+          ]
+        },
+        {
+          "id": "E114",
+          "question": "G8",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "This app will then be installed and an Access Token will be provided for that workspace so you can access its data through the API.",
+          "answer": "Installing an app in a workspace creates an access token for that workspace, which provides API access to its data.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            1073,
+            1204
+          ]
+        },
+        {
+          "id": "E115",
+          "question": "G8",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "This is strongly recommended because it drives higher install rates and reduces confusion on the part of teammates installing the app.",
+          "answer": "Installing from the App Store listing is strongly recommended because it increases install rates and reduces confusion for teammates installing the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            3870,
+            4004
+          ]
+        },
+        {
+          "id": "E116",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "You can choose your method by going to the Installation status page of your Developer Hub under the Test and publish section.",
+          "answer": "The installation method is chosen on the Installation status page of the Developer Hub under Test and publish.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            3070,
+            3195
+          ]
+        },
+        {
+          "id": "E117",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "Our Setting up OAuth tutorial provides details on how to set up the flow.",
+          "answer": "The developer hosts a URL that starts the OAuth flow; the page points to a separate Setting up OAuth tutorial for how to build it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            2904,
+            2977
+          ]
+        },
+        {
+          "id": "E118",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "When you click installation, you have the option to set a Direct installation URL (listed apps) or a Learn more URL (unlisted apps).",
+          "answer": "On the installation form, a listed app sets a Direct installation URL and an unlisted app sets a Learn more URL.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            3196,
+            3328
+          ]
+        },
+        {
+          "id": "E119",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "To choose this method, you will need to select Directly from the Intercom App Store from the form, and insert the URL that kicks off the OAuth flow in the Direct installation URL field.",
+          "answer": "For App Store installation, select the 'Directly from the Intercom App Store' option and enter the OAuth-starting URL in the Direct installation URL field.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            4005,
+            4190
+          ]
+        },
+        {
+          "id": "E120",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "For this method, choose Through your own product or website from the form.",
+          "answer": "For installation through the developer's own product, select the 'Through your own product or website' option on the form.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            5015,
+            5089
+          ]
+        },
+        {
+          "id": "E121",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "This URL must go to a page where customers can install your app.",
+          "answer": "The Learn more URL must lead to a page where customers can install the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            5144,
+            5208
+          ]
+        },
+        {
+          "id": "E122",
+          "question": "G11",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "quote": "If your app uses any form of Canvas Kit capability, it's mandatory to allow your app to be installed through the listing on the App Store.",
+          "answer": "Apps using Canvas Kit must be installable through the App Store listing, which is a mandatory condition.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:36.201Z",
+          "page_hash": "b5b365f89f92d8a0",
+          "offsets": [
+            3423,
+            3561
+          ]
+        },
+        {
+          "id": "E123",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "In the OAuth app's settings, you set the authorized redirect URI to your own endpoint, not Composio's.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E124",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "During OAuth, the browser briefly redirects through backend.composio.dev so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E125",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also show the backend.composio.dev URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E126",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "The proxy endpoint on your domain receives the OAuth callback and immediately redirects it to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E127",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy endpoint must return a 302 redirect, and must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3413
+          ]
+        },
+        {
+          "id": "E128",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, the provider's consent screen shows \"Composio wants to access your account\" on Google, GitHub, etc.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E129",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "You should add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E130",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Set your app title, logo, and theme for the hosted Connect Link.",
+          "answer": "The Connect Link (hosted auth page) can be customized with your app title, logo, and theme set in the Composio dashboard.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1174,
+            1238
+          ]
+        },
+        {
+          "id": "E131",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "The callback endpoint Composio uses for the proxy redirect is https://backend.composio.dev/api/v3/toolkits/auth/callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E132",
+          "question": "G1",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "Each development workspace automatically gives you the option to use OAuth. To start, tick the **Use OAuth** option on your Authentication page in the Developer Hub.",
+          "answer": "Each development workspace automatically gets the option to use OAuth, enabled by ticking Use OAuth on the Authentication page in the Developer Hub.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            1390,
+            1555
+          ]
+        },
+        {
+          "id": "E133",
+          "question": "G1",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "If you are building a private app that only needs to access the data from your paid Intercom workspace, you can use [Access Tokens](/docs/build-an-integration/learn-more/authentication#access-tokens) and do not need to set up OAuth.",
+          "answer": "Private apps that only access data from the developer's own paid Intercom workspace can use access tokens and do not need OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            1017,
+            1249
+          ]
+        },
+        {
+          "id": "E134",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "If you are building a public integration that will have access to **other peoples'** Intercom data you are required to set up OAuth.",
+          "answer": "A public integration that accesses other people's Intercom data is required to set up OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            20,
+            152
+          ]
+        },
+        {
+          "id": "E135",
+          "question": "G2",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "It's best practice as these will go up for review when you [submit your app for review](/docs/publish-to-the-app-store/review-publish-your-app).",
+          "answer": "Requested scopes go up for review when the developer submits the app for review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            2831,
+            2975
+          ]
+        },
+        {
+          "id": "E136",
+          "question": "G3",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "You should only specify the scopes you definitely need for your use case.",
+          "answer": "The scopes the app requests are what gets reviewed, so the developer should request only the scopes the use case definitely needs.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            2757,
+            2830
+          ]
+        },
+        {
+          "id": "E137",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "If your app utilizes Canvas Kit, certain permissions are required by default due to the data your app will have access to.",
+          "answer": "Canvas Kit apps have some scopes selected automatically by default, and these cannot be deselected.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            3018,
+            3140
+          ]
+        },
+        {
+          "id": "E138",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "The following scopes will be automatically selected and cannot be deselected:",
+          "answer": "The Canvas Kit default scopes are read and list users and companies, read conversations, read admins, and gather app data.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            3141,
+            3218
+          ]
+        },
+        {
+          "id": "E139",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "| Read and list users and companies | List and view all segments, users, companies, and tags |",
+          "answer": "Standard people and conversation scope 'Read and list users and companies' lists and views segments, users, companies and tags.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            3478,
+            3572
+          ]
+        },
+        {
+          "id": "E140",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "| Write conversations | Reply to, mark as read and close conversations |",
+          "answer": "Standard scope 'Write conversations' allows replying to, marking as read, and closing conversations.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            3957,
+            4029
+          ]
+        },
+        {
+          "id": "E141",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "| Read and write users | List all users, execute bulk actions, and add or remove users from companies |",
+          "answer": "Standard scope 'Read and write users' allows listing users, executing bulk actions, and adding or removing users from companies.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            3573,
+            3676
+          ]
+        },
+        {
+          "id": "E142",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "| Read admins | List and view all admins |",
+          "answer": "Extended workspace scope 'Read admins' allows listing and viewing all admins.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            4780,
+            4822
+          ]
+        },
+        {
+          "id": "E143",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "| Read and write AI content | Create and update AI content |",
+          "answer": "Extended workspace scope 'Read and write AI content' allows creating and updating AI content.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            5606,
+            5666
+          ]
+        },
+        {
+          "id": "E144",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "The following permissions can be selected via checkboxes on your Authorization page:",
+          "answer": "The page groups permissions into Standard scopes (people and conversation data) and Extended scopes (workspace data); the page does not say which scopes trigger extra review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            3311,
+            3395
+          ]
+        },
+        {
+          "id": "E145",
+          "question": "G4",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "**Webhook topics are related to corresponding permission scopes**.",
+          "answer": "Webhook topics are tied to permission scopes, so a webhook needs the matching scope selected (for example, user/lead-created webhooks need the Read and write users scope).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            5899,
+            5965
+          ]
+        },
+        {
+          "id": "E146",
+          "question": "G8",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "Your user will be presented with the permissions that your app is requesting.",
+          "answer": "The end user is shown the permissions the app requests and must approve them.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            8054,
+            8131
+          ]
+        },
+        {
+          "id": "E147",
+          "question": "G8",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "Once the user approves this request, they are redirected back via the Redirect URLs which you provided earlier.",
+          "answer": "After the end user approves, they are redirected back to the developer's registered redirect URLs.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            8132,
+            8243
+          ]
+        },
+        {
+          "id": "E148",
+          "question": "G9",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "This is the URL which we POST to when your user has authorized your app to access their information.",
+          "answer": "The redirect URL is where Intercom sends the authorization code after the user authorizes the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            1745,
+            1845
+          ]
+        },
+        {
+          "id": "E149",
+          "question": "G9",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "Redirect URLs must use HTTPS",
+          "answer": "Redirect URLs must use HTTPS.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            1950,
+            1978
+          ]
+        },
+        {
+          "id": "E150",
+          "question": "G9",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "The first will always be the default.",
+          "answer": "Multiple redirect URLs can be added, and the first one entered is the default.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            2408,
+            2445
+          ]
+        },
+        {
+          "id": "E151",
+          "question": "G9",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "After approval, you can choose which URL to use when you're initiating the OAuth flow via the `redirect_uri` parameter.",
+          "answer": "After approval, the developer can choose which registered redirect URL to use via the redirect_uri parameter.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            2449,
+            2568
+          ]
+        },
+        {
+          "id": "E152",
+          "question": "G9",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "This means you can include testing as well as production URLs here.",
+          "answer": "Testing and production redirect URLs can both be registered.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            2569,
+            2636
+          ]
+        },
+        {
+          "id": "E153",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "To start, tick the **Use OAuth** option on your Authentication page in the Developer Hub.",
+          "answer": "OAuth is turned on by ticking the Use OAuth option on the Authentication page in the Developer Hub.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            1466,
+            1555
+          ]
+        },
+        {
+          "id": "E154",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "You'll now have two sections to fill out:",
+          "answer": "After enabling OAuth, two sections must be filled out: redirect URLs and permissions.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            1684,
+            1725
+          ]
+        },
+        {
+          "id": "E155",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "You'll first need your `client_id` and `client_secret`. These can be found on the Basic Information page for your app in the Developer Hub.",
+          "answer": "The client_id and client_secret are on the Basic Information page for the app in the Developer Hub.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            6431,
+            6570
+          ]
+        },
+        {
+          "id": "E156",
+          "question": "G10",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "The following permissions can be selected via checkboxes on your Authorization page:",
+          "answer": "Permissions are selected with checkboxes on the Authorization page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            3311,
+            3395
+          ]
+        },
+        {
+          "id": "E157",
+          "question": "G7",
+          "url": "https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "quote": "If you are building a private app that only needs to access the data from your paid Intercom workspace, you can use [Access Tokens](/docs/build-an-integration/learn-more/authentication#access-tokens) and do not need to set up OAuth.",
+          "answer": "Private apps that use access tokens must access data from a paid Intercom workspace; the page gives no pricing for OAuth apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:27.859Z",
+          "page_hash": "a40c7b463b7d52a6",
+          "offsets": [
+            1017,
+            1249
+          ]
+        },
+        {
+          "id": "E158",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack, so you do not register your own (general statement for toolkits; the page does not mention Intercom).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            153
+          ]
+        },
+        {
+          "id": "E159",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available (general statement for toolkits; the page does not mention Intercom).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E160",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "To check whether Composio provides the OAuth app for a given toolkit, the page points to a separate Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E161",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "Custom auth configs let you supply your own OAuth app, API key, bearer token, or other credentials for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E162",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users.",
+          "answer": "Managed apps are limited in that they share rate-limit quota across all Composio users, while your own app gets a dedicated quota (general statement; the page does not mention Intercom).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1474
+          ]
+        },
+        {
+          "id": "E163",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval, while your own app can use shorter polling intervals where supported (general statement; the page does not mention Intercom).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E164",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Composio's default scopes may not include everything you need, for example write access to a specific Google API (general statement; the page does not mention Intercom).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E165",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With a managed app, users see the Composio name on the OAuth consent screen rather than your app name (general statement; the page does not mention Intercom).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E166",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+          "answer": "You can use a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T09:59:21.166Z",
+          "page_hash": "",
+          "offsets": [
+            1996,
+            2112
+          ]
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 11089
+        },
+        {
+          "name": "extract https://developers.intercom.com/docs/guides/fin-custom-helpdesk/api-posts-only.md",
+          "stop": "ok (7 facts)",
+          "ms": 13226
+        },
+        {
+          "name": "extract https://developers.intercom.com/docs/references/preview/rest-api/errors/rate-limiting.md",
+          "stop": "ok (8 facts)",
+          "ms": 13543
+        },
+        {
+          "name": "extract https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/oauth-scopes",
+          "stop": "ok (13 facts)",
+          "ms": 14986
+        },
+        {
+          "name": "extract https://intercom-developer-hub.readme.io/docs/applying-for-oauth",
+          "stop": "ok (30 facts)",
+          "ms": 26139
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (4 facts)",
+          "ms": 7433
+        },
+        {
+          "name": "extract https://developers.intercom.com/docs/publish-to-the-app-store/review-publish-your-app",
+          "stop": "ok (38 facts)",
+          "ms": 29064
+        },
+        {
+          "name": "extract https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/installing-uninstalling-apps",
+          "stop": "ok (22 facts)",
+          "ms": 28623
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (9 facts)",
+          "ms": 10254
+        },
+        {
+          "name": "extract https://developers.intercom.com/docs/build-an-integration/learn-more/authentication/setting-up-oauth",
+          "stop": "ok (26 facts)",
+          "ms": 32892
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (9 facts)",
+          "ms": 11829
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "no_tool_call",
+          "ms": 16603
+        }
+      ],
+      "judge": {
+        "checked": 42,
+        "supported": 32,
+        "partial": 6,
+        "unsupported": 4,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "The quote states that installing creates an access token for the workspace to access its data through the API."
+          },
+          {
+            "id": "c3",
+            "verdict": "supported",
+            "reason": "The quote states that private apps accessing only your own paid workspace data do not require a review."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "The quote states that public apps must be reviewed and approved by Intercom before they are available to install."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "The quote states that both unlisted and listed apps must be submitted for review."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "The quote states that an unlisted app is available to anyone but not listed in the App Store, and must be installed via your own product or website."
+          },
+          {
+            "id": "c7",
+            "verdict": "supported",
+            "reason": "The quote states that over-privileged scopes are the most common reason apps are initially rejected."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "The quote lists installation of the app with OAuth successfully working as a required item in the video."
+          },
+          {
+            "id": "c9",
+            "verdict": "supported",
+            "reason": "The quote states that a rejected app must be resubmitted after making the changes the team requested."
+          },
+          {
+            "id": "c10",
+            "verdict": "supported",
+            "reason": "The quote states that during review the app is private and can only be used by the developer and their team."
+          },
+          {
+            "id": "c11",
+            "verdict": "supported",
+            "reason": "The quote states that the TEST app limits OAuth access to Intercom teammates."
+          },
+          {
+            "id": "c12",
+            "verdict": "partial",
+            "reason": "The quote supports filling out the App Listing and App Partner Program pages, but does not say a listed app is discoverable and installable by anyone in the App Store."
+          },
+          {
+            "id": "c13",
+            "verdict": "supported",
+            "reason": "The quote states the form asks for company details, target use cases, points of contact, and more."
+          },
+          {
+            "id": "c14",
+            "verdict": "supported",
+            "reason": "The quote states applications are reviewed manually in the order received and can take 5-10 working days."
+          },
+          {
+            "id": "c15",
+            "verdict": "supported",
+            "reason": "The quote states a yellow banner says review can take up to seven business days."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "The quote states that future changes require the app to be re-approved by the Intercom team."
+          },
+          {
+            "id": "c17",
+            "verdict": "supported",
+            "reason": "The quote states the listing requirements apply and that non-marketing-format images are a common pitfall."
+          },
+          {
+            "id": "c18",
+            "verdict": "supported",
+            "reason": "The quote states the Installation status section must be filled out to submit the app for App Store listing."
+          },
+          {
+            "id": "c21",
+            "verdict": "supported",
+            "reason": "The quote states development workspaces are for the US region only."
+          },
+          {
+            "id": "c22",
+            "verdict": "supported",
+            "reason": "The quote states a private app in a development workspace can only be installed into a paid US-region workspace."
+          },
+          {
+            "id": "c29",
+            "verdict": "supported",
+            "reason": "The quote states to specify only the scopes needed for the use case and no more."
+          },
+          {
+            "id": "c33",
+            "verdict": "partial",
+            "reason": "The quote supports not using old logos or misrepresenting branding, including on the TEST app, but does not say approval will be delayed."
+          },
+          {
+            "id": "c34",
+            "verdict": "supported",
+            "reason": "The quote states that if a subscription or account is required, test credentials or setup instructions must be provided in the description."
+          },
+          {
+            "id": "c35",
+            "verdict": "supported",
+            "reason": "The quote states to show the full client_id and state parameter in the OAuth URL."
+          },
+          {
+            "id": "c36",
+            "verdict": "supported",
+            "reason": "The quote lists uninstallation of the app with OAuth as a required item to show."
+          },
+          {
+            "id": "c37",
+            "verdict": "supported",
+            "reason": "The quote lists the end-to-end experience and functionality of the app as a required item to show."
+          },
+          {
+            "id": "c39",
+            "verdict": "supported",
+            "reason": "The quote states that a denial comes with a reason and any actions the developer can take before re-applying."
+          },
+          {
+            "id": "s1.path",
+            "verdict": "supported",
+            "reason": "The quote states private apps accessing only your own paid workspace data do not require a review."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "unsupported",
+            "reason": "The quote only says private apps do not require review; it does not list the steps (create app, install into workspace) or their order."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "partial",
+            "reason": "The quote refers to private apps accessing a paid workspace's data, but does not state a paid workspace is a required prerequisite for the builder."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "supported",
+            "reason": "The quotes state public apps must be reviewed and approved by Intercom before they are available to install, and that unlisted apps must be submitted for review."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "supported",
+            "reason": "The quotes state that public apps must be reviewed and approved, and that both unlisted and listed apps must be submitted for review."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "The quotes support the review and submission steps, but do not list the other steps (TEST app testing, description and video, install via own site) or their order."
+          },
+          {
+            "id": "s2.checks",
+            "verdict": "unsupported",
+            "reason": "The quotes do not say what the review checks (data need, demo, security)."
+          },
+          {
+            "id": "s2.wait",
+            "verdict": "unsupported",
+            "reason": "The quote is about resubmitting after rejection and gives no wait time; the 5-10 working day figure is not in these quotes."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "The quote states that future changes require re-approval by the Intercom team."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "The quotes state the app is private to the developer and their team during review, and that TEST app OAuth is limited to teammates."
+          },
+          {
+            "id": "s3.path",
+            "verdict": "supported",
+            "reason": "The quotes state public apps must be reviewed and approved by Intercom, and that listed apps require filling out the App Listing and Partner Program pages."
+          },
+          {
+            "id": "s3.trigger",
+            "verdict": "supported",
+            "reason": "The quotes state public apps must be reviewed and approved, and listing requires the App Listing and Partner Program pages to be completed."
+          },
+          {
+            "id": "s3.gates",
+            "verdict": "partial",
+            "reason": "The quotes support the App Listing page, Partner Program, and review steps, but do not mention the Installation status section, the description and video, or the order."
+          },
+          {
+            "id": "s3.checks",
+            "verdict": "unsupported",
+            "reason": "The quotes do not say what the review checks (data need, demo, security, listing, identity)."
+          },
+          {
+            "id": "s3.mod0",
+            "verdict": "supported",
+            "reason": "The quote states that future changes require re-approval by the Intercom team."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "The quotes support that private apps need no review and public apps need review, but do not mention Composio, the 1-2 hours of work, or the 5-10 working day figure."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 11089,
+        "discover_read": 5370,
+        "extract": 54119,
+        "gapfill": 16606,
+        "write": 40603,
+        "verify": 16351
+      }
+    }
+  }
+}
