@@ -22,8 +22,11 @@ import { extractJson, newSpend, type CallParams, type Llm } from "./llm";
 const WORKDIR = mkdtempSync(join(tmpdir(), "agent-mirror-"));
 
 /** Environment for the child: the API key is removed so the subscription is used and API credits can't be. */
-function childEnv(): NodeJS.ProcessEnv {
+function childEnv(maxTokens?: number): NodeJS.ProcessEnv {
   const env = { ...process.env };
+  // The same output limit the API call would have (thinking included), so a limit that starves an answer on the
+  // API starves it here too. Missing this hid a 3,000-token extraction limit through ten mirror rounds.
+  if (maxTokens) env.CLAUDE_CODE_MAX_OUTPUT_TOKENS = String(maxTokens);
   delete env.ANTHROPIC_API_KEY;
   delete env.ANTHROPIC_AUTH_TOKEN;
   return env;
@@ -40,7 +43,7 @@ interface CliResult {
 
 /** One headless Claude Code call. Rejects on timeout, a non-zero exit, or an error result. */
 /** Retries a failed headless call (rate limits, a busy subscription) while time allows. */
-export async function runClaude(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object }): Promise<CliResult> {
+export async function runClaude(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object; maxTokens?: number }): Promise<CliResult> {
   const deadline = Date.now() + o.timeoutMs;
   let last: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -57,12 +60,12 @@ export async function runClaude(o: { system: string; prompt: string; model: stri
   throw last ?? new Error("mirror call had no time to run");
 }
 
-function runClaudeOnce(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object }): Promise<CliResult> {
+function runClaudeOnce(o: { system: string; prompt: string; model: string; effort: string; timeoutMs: number; signal?: AbortSignal; schema?: object; maxTokens?: number }): Promise<CliResult> {
   return new Promise((resolve, reject) => {
     const args = ["-p", "--output-format", "json", "--model", o.model, "--system-prompt", o.system, "--tools", "", "--effort", o.effort, "--no-session-persistence"];
     // A JSON schema forces the reply's shape, so the model can't drift into prose instead of tool calls.
     if (o.schema) args.push("--json-schema", JSON.stringify(o.schema));
-    const child = spawn("claude", args, { cwd: WORKDIR, env: childEnv(), stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn("claude", args, { cwd: WORKDIR, env: childEnv(o.maxTokens), stdio: ["pipe", "pipe", "pipe"] });
     let out = "";
     let err = "";
     const kill = () => child.kill("SIGKILL");
@@ -188,7 +191,7 @@ export function createMirrorLlm(opts: { signal?: AbortSignal } = {}): Llm {
 Output format for this run (replaces "## G5" sections): your structured reply's "facts" list, one object per fact:
 {"question": "G5", "answer": "one short sentence in plain words", "quote": "the exact sentence copied character for character from the document"}
 The quote must be copied exactly from the document; it is checked. Return an empty list if the document answers none of the questions.`;
-      const r = await runClaude({ system, prompt: `<document title="${doc.title ?? ""}">\n${text}\n</document>\n\n${ask}`, model: p.model, effort: p.effort, timeoutMs, signal: opts.signal, schema: FACTS_SCHEMA });
+      const r = await runClaude({ system, prompt: `<document title="${doc.title ?? ""}">\n${text}\n</document>\n\n${ask}`, model: p.model, effort: p.effort, timeoutMs, signal: opts.signal, schema: FACTS_SCHEMA, maxTokens: p.maxTokens });
       track(p, r.usage);
       let facts: { question: string; answer: string; quote: string }[] = [];
       const so = r.structured_output as { facts?: typeof facts } | undefined;
@@ -220,7 +223,7 @@ The quote must be copied exactly from the document; it is checked. Return an emp
       const system = `${p.system}\n\n${toolProtocol(p.tools)}`;
       type Reply = { tool_calls?: { name: string; input: Record<string, unknown> }[]; final?: string };
       const ask = async (extra: string) => {
-        const r = await runClaude({ system, prompt: transcript(p.messages) + extra, model: p.model, effort: p.effort, timeoutMs: deadlineAt - Date.now(), signal: opts.signal, schema: TOOL_SCHEMA });
+        const r = await runClaude({ system, prompt: transcript(p.messages) + extra, model: p.model, effort: p.effort, timeoutMs: deadlineAt - Date.now(), signal: opts.signal, schema: TOOL_SCHEMA, maxTokens: p.maxTokens });
         track(p, r.usage);
         let reply = r.structured_output as Reply | undefined;
         if (!reply) {
@@ -251,7 +254,7 @@ The quote must be copied exactly from the document; it is checked. Return an emp
     }
 
     // Plain calls (writer, judge).
-    const r = await runClaude({ system: p.system, prompt: transcript(p.messages), model: p.model, effort: p.effort, timeoutMs, signal: opts.signal });
+    const r = await runClaude({ system: p.system, prompt: transcript(p.messages), model: p.model, effort: p.effort, timeoutMs, signal: opts.signal, maxTokens: p.maxTokens });
     track(p, r.usage);
     return message([{ type: "text", text: r.result, citations: null }], "end_turn", r.usage);
   }

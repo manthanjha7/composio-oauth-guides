@@ -199,7 +199,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   let t0 = Date.now();
   emit({ type: "stage", stage: "composio", message: "Checking Composio" });
   const searchP: Promise<ComposioSearch | null> =
-    opts.search !== undefined ? Promise.resolve(opts.search) : byDeadline(createComposioSearch(runId).catch(() => null), Date.now() + 12_000, null);
+    opts.search !== undefined ? Promise.resolve(opts.search) : byDeadline(createComposioSearch(runId).catch(() => null), Date.now() + 25_000, null); // starting a session can take 20+ s when Composio is busy
   const lookup: ComposioLookup | null = await byDeadline(
     composioLookup(opts.query).catch(() => null),
     Date.now() + 10_000,
