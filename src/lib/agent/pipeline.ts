@@ -69,7 +69,10 @@ const MAX_PAGES = 8;
 const MAX_CLAIMS = 40;
 const MAX_SCENARIOS = 4;
 const EXTRACT_CONCURRENCY = 4;
-const EXTRACT_MAX_TOKENS = 3_000;
+// Output limits include thinking: current models think by default, and a long page can use several thousand
+// tokens of thinking before the first fact. At 3,000, Haiku 5.5 spent the whole limit thinking on Slack's
+// review guide and returned no text (0 facts). Only tokens actually produced are billed.
+const EXTRACT_MAX_TOKENS = 16_000;
 const JUDGE_RESERVE = 20_000;
 const SAVE_RESERVE = 5_000;
 const TIMELINE_QUESTIONS = new Set(["G6", "R1"]);
@@ -125,7 +128,7 @@ async function toolLoop(o: {
     o.signal?.throwIfAborted();
     let msg: BetaMessage;
     try {
-      msg = await o.llm.call({ stage: o.stage, model: o.model, effort, system: o.system, tools: o.tools, messages, cache: true, maxTokens: 8_000 }, o.deadline);
+      msg = await o.llm.call({ stage: o.stage, model: o.model, effort, system: o.system, tools: o.tools, messages, cache: true, maxTokens: 16_000 }, o.deadline);
     } catch (e) {
       if (o.signal?.aborted) throw e;
       return Date.now() >= o.deadline - 6_000 ? "deadline" : `error: ${(e as Error).message}`;
@@ -399,7 +402,8 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
         extractDeadline,
       );
       const n = collectCitations(msg, page, store, ids);
-      workers.push({ name: `extract ${page.url}`, stop: `ok (${n} facts)`, ms: Date.now() - tStart });
+      const cut = msg.stop_reason === "max_tokens" ? ", cut off at the output limit" : "";
+      workers.push({ name: `extract ${page.url}`, stop: `ok (${n} facts${cut})`, ms: Date.now() - tStart });
     } catch (e) {
       workers.push({ name: `extract ${page.url}`, stop: `error: ${(e as Error).message}`, ms: Date.now() - tStart });
     } finally {
@@ -578,7 +582,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     // below like the writer's own.
     if (runDeadline - SAVE_RESERVE - Date.now() > 45_000) {
       const swept = await sweepModifiers(g, claimQuestion, (system, content) =>
-        llm.call({ stage: "write", model: models.write, effort: resolveEffort("write"), system, maxTokens: 2_000, messages: [{ role: "user", content }] }, runDeadline - SAVE_RESERVE - 30_000),
+        llm.call({ stage: "write", model: models.write, effort: resolveEffort("write"), system, maxTokens: 8_000, messages: [{ role: "user", content }] }, runDeadline - SAVE_RESERVE - 30_000),
       ).catch(() => null);
       if (swept) {
         g = swept.guide;
@@ -598,7 +602,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
             model: models.critic,
             effort: resolveEffort("critic"),
             system: JUDGE_SYSTEM,
-            maxTokens: 6_000,
+            maxTokens: 16_000,
             messages: [{ role: "user", content: JSON.stringify(items.map(({ id, statement, quotes }) => ({ id, statement, quotes }))) }],
           },
           runDeadline - SAVE_RESERVE,
