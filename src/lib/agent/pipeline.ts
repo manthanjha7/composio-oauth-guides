@@ -531,6 +531,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   let guide: Guide;
   let stats: ReturnType<typeof enforceEvidence>["stats"];
   let judge: { checked: number; supported: number; partial: number; unsupported: number; contradicted: number; unchecked: number } | null = null;
+  let judgeLog: { id: string; verdict: string; reason: string | null }[] = [];
 
   if (!written) {
     // The writer failed: save what was verified rather than nothing, clearly marked as incomplete.
@@ -594,6 +595,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
         for (const id of sent) if (!verdicts.has(id)) verdicts.set(id, "unchecked");
         judge = { checked: items.length, supported: 0, partial: 0, unsupported: 0, contradicted: 0, unchecked: 0 };
         for (const v of verdicts.values()) judge[v]++;
+        judgeLog = items.map((i) => ({ id: i.id, verdict: verdicts.get(i.id) ?? "unchecked", reason: i.reason ?? null }));
         if (judge.unchecked) warnings.push(`${judge.unchecked} statements were not double-checked by the evidence judge.`);
       } catch (e) {
         warnings.push(`The evidence judge did not run (${(e as Error).message}); setup details were not double-checked.`);
@@ -674,7 +676,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
         questions: store.questionRecords(),
         evidence: store.evidence,
         workers,
-        judge,
+        judge: judge ? { ...judge, items: judgeLog } : null,
         timings_ms: timings,
       },
     },
@@ -856,16 +858,22 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
     }
   }
   const gather = (ids: string[] | undefined) => [...new Set((ids ?? []).flatMap(quotesOf))];
+  // One atomic statement per part, so an unproven detail drops only itself, never the whole path.
+  const PATH_STATEMENT = {
+    automatic: "nothing has to be registered: the app's client registers itself automatically.",
+    self_serve: "other organizations can connect without the provider reviewing the app first.",
+    app_review: "the provider reviews the app before customers outside the developer's company can connect.",
+    partner: "the provider must accept the developer's company (for example as a partner) before customers can connect.",
+  } as const;
+  const TRIGGER_STATEMENT = { always: "the review is always required", sensitive_scopes: "the review is required only for sensitive scopes", scale: "the review is required only above a number of users, installs or calls", none: "" } as const;
   for (const s of g.scenarios) {
     const who = `For "${s.label}"`;
     if (s.path) {
-      const parts = [
-        `${who}: ${PATH_INFO[s.path].name.toLowerCase()} (${PATH_INFO[s.path].meaning.toLowerCase()})`,
-        s.trigger && s.trigger !== "none" ? `triggered ${s.trigger.replace("_", " ")}` : "",
-        s.gate_sequence?.length ? `steps: ${s.gate_sequence.join(" → ")}` : "",
-        s.review_checks?.length ? `the review checks: ${s.review_checks.map((c) => CHECK_INFO[c].toLowerCase()).join(", ")}` : "",
-      ].filter(Boolean);
-      items.push({ id: `${s.id}.path`, statement: `${parts.join("; ")}.`, quotes: gather(s.path_claim_ids) });
+      const quotes = gather(s.path_claim_ids);
+      items.push({ id: `${s.id}.path`, statement: `${who}: ${PATH_STATEMENT[s.path]}`, quotes });
+      if (s.trigger && s.trigger !== "none") items.push({ id: `${s.id}.trigger`, statement: `${who}: ${TRIGGER_STATEMENT[s.trigger]}.`, quotes });
+      if (s.gate_sequence?.length) items.push({ id: `${s.id}.gates`, statement: `${who}: the steps before customers can connect are, in order: ${s.gate_sequence.join("; ")}.`, quotes });
+      if (s.review_checks?.length) items.push({ id: `${s.id}.checks`, statement: `${who}: the review checks ${s.review_checks.map((c) => CHECK_INFO[c].toLowerCase()).join(", ")}.`, quotes });
     }
     if (isSubstantiveWait(s.waiting.estimate)) {
       const ids = s.claim_ids.filter((id) => TIMELINE_QUESTIONS.has(claimQuestion.get(id) ?? ""));
@@ -913,6 +921,11 @@ export function applyInvariants(
       delete out.review_checks;
       // Difficulty rests on the path; without a confirmed path it is not known.
       out.difficulty = "unknown";
+    } else {
+      // Each detail of a confirmed path stands or falls on its own verdict.
+      if (out.trigger && out.trigger !== "none" && !c.fieldOk(`${s.id}.trigger`)) delete out.trigger;
+      if (out.gate_sequence?.length && !c.fieldOk(`${s.id}.gates`)) delete out.gate_sequence;
+      if (out.review_checks?.length && !c.fieldOk(`${s.id}.checks`)) delete out.review_checks;
     }
     // Waits: a number needs an accepted timeline claim (G6/R1) and a supported field; "None" needs an accepted
     // no-review path. Otherwise the wait is Unknown.

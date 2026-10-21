@@ -201,7 +201,15 @@ export const ResearchRecord = z.object({
   ),
   workers: z.array(z.object({ name: z.string(), stop: z.string(), ms: z.number() })),
   judge: z
-    .object({ checked: z.number(), supported: z.number(), partial: z.number(), unsupported: z.number().optional(), contradicted: z.number(), unchecked: z.number().optional() })
+    .object({
+      checked: z.number(),
+      supported: z.number(),
+      partial: z.number(),
+      unsupported: z.number().optional(),
+      contradicted: z.number(),
+      unchecked: z.number().optional(),
+      items: z.array(z.object({ id: z.string(), verdict: z.string(), reason: z.string().nullable() })).optional(),
+    })
     .nullable(),
   served: z.record(z.string(), z.array(z.string())).optional(),
   timings_ms: z.record(z.string(), z.number()),
