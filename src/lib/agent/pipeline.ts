@@ -353,8 +353,9 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
   // ---- 2–3. Establish official domains, discover, read ----
   t0 = Date.now();
   emit({ type: "stage", stage: "research", message: `Finding ${ident.name}'s OAuth, review and limits pages` });
-  const readDeadline = Math.min(Date.now() + 25_000, researchDeadline - 40_000);
-  await anchorOfficial(store, ident, lookup, readDeadline);
+  // Each step gets its own window: one shared 25 s window let a slow website fetch leave discovery 6 s, and
+  // every search came back empty.
+  await anchorOfficial(store, ident, lookup, Math.min(Date.now() + 12_000, researchDeadline - 60_000));
   const entry = [...new Set([...(ident.entry_points ?? []), ident.developer_docs_url ?? ""].filter((u) => /^https?:\/\//.test(u)))].slice(0, 8);
   const { candidates } = await discover({
     app: ident.name,
@@ -363,10 +364,11 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     store,
     search,
     max: MAX_PAGES,
-    deadlineAt: Math.min(Date.now() + 12_000, readDeadline),
+    deadlineAt: Math.min(Date.now() + 20_000, researchDeadline - 50_000),
     onSearch: (query, results) => emit({ type: "search", query, via: "Composio Search", results: results.slice(0, 5).map(({ title, url }) => ({ title, url })) }),
   });
   emit({ type: "stage", stage: "research", message: `Reading ${candidates.length} pages` });
+  const readDeadline = Math.min(Date.now() + 20_000, researchDeadline - 40_000);
   const read = (await Promise.all(candidates.map((c) => store.fetch(c.url, readDeadline)))).filter((p): p is Page => !!p);
   store.expandOfficialFromLinks();
   store.relabel();

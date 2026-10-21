@@ -83,7 +83,8 @@ export async function discover(opts: {
   const all = new Map<string, Candidate>();
   const add = (c: Candidate) => {
     if (SKIP.test(c.url)) return;
-    const key = canonicalUrl(c.url);
+    // "page" and "page.md" are the same doc (many docs sites serve both); keep one.
+    const key = canonicalUrl(c.url).replace(/\.md$/, "");
     const prev = all.get(key);
     if (!prev || prev.score < c.score) all.set(key, c);
   };
