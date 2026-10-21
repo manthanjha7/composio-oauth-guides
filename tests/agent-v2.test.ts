@@ -23,6 +23,7 @@ const PAGES: Record<string, string> = {
   "https://developers.acme.example/docs":
     "Acme developer docs. Public apps must pass an app review before they can be installed by other organizations. Reviews take up to 10 business days. Apps under review can be used by up to 25 test users. " +
     "Only workspace admins can install apps that request admin scopes. ".repeat(3),
+  "https://developers.acme.example/docs/review": "App review. Submit your app for review from the developer console. Reviewers check your use case and a demo video. ".repeat(12),
   "https://developers.acme.example/docs/scopes": "Scopes. The files.read scope is a sensitive scope and requires additional review. ".repeat(6),
   "https://acmeblog-unofficial.example/post": "I waited about 6 weeks for my Acme app review to be approved, which was frustrating. ".repeat(6),
 };
@@ -111,6 +112,7 @@ function fakeClient(
     gap?: boolean;
     identify?: (turn: number) => ReturnType<typeof msg> | null;
     writerFails?: boolean;
+    gapFetchOfficial?: boolean;
   } = {},
 ) {
   const calls: { system: string; messages: unknown[]; tools?: unknown[]; raw: Record<string, unknown> }[] = [];
@@ -155,6 +157,7 @@ function fakeClient(
           );
         return msg([tool(`f${turn}`, "finish", { notes: "done" })], "tool_use");
       }
+      if (opts.gapFetchOfficial && turn === 1) return msg([tool("g9", "fetch_page", { url: "https://developers.acme.example/docs/review" })], "tool_use");
       return msg([tool(`f${turn}`, "finish", { notes: "could not find G3" })], "tool_use");
     }
     if (p.system.startsWith(JUDGE_SYSTEM)) {
@@ -565,6 +568,19 @@ describe("self-serve inference", () => {
     if (r.outcome !== "ok") throw new Error(r.outcome);
     // Acme's docs say public apps must pass a review, so self-serve can't be inferred for s1.
     expect(r.record.guide.scenarios.find((s) => s.id === "s1")!.path).toBeUndefined();
+  });
+});
+
+describe("late extraction", () => {
+  it("reads in full an official page a gap worker fetched but discovery never read", async () => {
+    const c = fakeClient({ gapFetchOfficial: true });
+    const r = await runAgentV2({ query: "Acme", client: c.client, search: null, emit: () => {} });
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    const extractedTitles = c.calls
+      .filter((x) => x.system === EXTRACT_SYSTEM)
+      .map((x) => ((x.messages[0] as { content: { type: string; title?: string }[] }).content.find((b) => b.type === "document")?.title ?? ""));
+    expect(extractedTitles).toContain("https://developers.acme.example/docs/review");
+    expect(extractedTitles.filter((t) => t === "https://developers.acme.example/docs").length).toBe(1);
   });
 });
 

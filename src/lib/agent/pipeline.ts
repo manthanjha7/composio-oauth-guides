@@ -69,6 +69,7 @@ const MAX_PAGES = 8;
 const MAX_CLAIMS = 40;
 const MAX_SCENARIOS = 4;
 const EXTRACT_CONCURRENCY = 4;
+const MAX_LATE_PAGES = 4;
 // Output limits include thinking: current models think by default, and a long page can use several thousand
 // tokens of thinking before the first fact. At 3,000, Haiku 5.5 spent the whole limit thinking on Slack's
 // review guide and returned no text (0 facts). Only tokens actually produced are billed.
@@ -384,9 +385,11 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     ...providerPages.map((page) => ({ page, ids: PROVIDER_QUESTIONS })),
     ...composioPages.map((page) => ({ page, ids: COMPOSIO_QUESTIONS })),
   ];
-  await mapLimit(jobs, EXTRACT_CONCURRENCY, async ({ page, ids }) => {
+  const extracted = new Set<string>();
+  const extractOne = (deadlineAt: number) => async ({ page, ids }: { page: Page; ids: QuestionId[] }) => {
     const tStart = Date.now();
-    if (extractDeadline - Date.now() < 8_000) {
+    extracted.add(canonicalUrl(page.url));
+    if (deadlineAt - Date.now() < 8_000) {
       workers.push({ name: `extract ${page.url}`, stop: "deadline (not started)", ms: 0 });
       return;
     }
@@ -409,7 +412,7 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
             },
           ],
         },
-        extractDeadline,
+        deadlineAt,
       );
       const n = collectCitations(msg, page, store, ids);
       const cut = msg.stop_reason === "max_tokens" ? ", cut off at the output limit" : "";
@@ -419,7 +422,8 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     } finally {
       ids.forEach((q) => store.markTried(q, page.url));
     }
-  });
+  };
+  await mapLimit(jobs, EXTRACT_CONCURRENCY, extractOne(extractDeadline));
   mark("extract", t0);
   emitCoverage(emit, store);
 
@@ -501,6 +505,20 @@ export async function runAgentV2(opts: RunOptionsV2): Promise<RunResult> {
     emitCoverage(emit, store);
   }
   mark("gapfill", t0);
+
+  // ---- 6b. Read in full the official pages the gap workers found. They record only a few findings each; when
+  // discovery came back thin (search down, site blocking fetches), these pages are often the best evidence.
+  const late = [...store.pages.values()]
+    .filter((p) => store.kindOf(p.url) === "provider_docs" && !extracted.has(canonicalUrl(p.url)) && !/\/llms\.txt$/.test(p.url) && p.text.length > 800)
+    .slice(0, MAX_LATE_PAGES);
+  if (late.length && researchDeadline - Date.now() > 25_000) {
+    t0 = Date.now();
+    emit({ type: "stage", stage: "research", message: `Reading ${late.length} more official page${late.length === 1 ? "" : "s"} in full` });
+    await mapLimit(late.map((page) => ({ page, ids: PROVIDER_QUESTIONS })), EXTRACT_CONCURRENCY, extractOne(Math.min(Date.now() + 40_000 * k, researchDeadline - 5_000)));
+    store.relabel();
+    emitCoverage(emit, store);
+    mark("extract_late", t0);
+  }
 
   // ---- 7. Write ----
   t0 = Date.now();
