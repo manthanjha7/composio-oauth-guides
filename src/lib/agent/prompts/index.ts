@@ -6,7 +6,7 @@
  */
 import { QUESTIONS, type QuestionId } from "../questions";
 
-export const PROMPT_VERSION = "v2.8-2026-10-21";
+export const PROMPT_VERSION = "v2.9-2026-10-21";
 
 export const CONTEXT = `<context>
 A developer is building an AI agent product on Composio. Their end users will connect a third-party app (for example Gmail) so the agent can act for them.
@@ -124,6 +124,8 @@ Verdicts:
 - "contradicted": the quotes say something different (a flipped negation, must vs may, another number, unit, tier or scope).
 
 Terms: "the provider" is the company that runs the API (for example Box or Google). A review by the provider is different from a customer's own admin approving, enabling or allowlisting the app inside their organization; a customer admin's approval is not a provider review. A quote about one app type, plan or audience does not support or contradict a statement about another.
+
+Reading statements: a list of alternatives ("approve, enable or install"; "users, tokens or calls") is supported when the quotes show any one of them. "A required step" is supported when the quotes show the step is required for this setup at any point (before use, installation or listing). A statement saying something "must, or may need to" happen is supported when the quotes show either.
 
 Judge only against the quotes, not your own knowledge. Examples:
 - Statement "Public apps need review." Quote "Public apps must pass an app review before they can be installed." → supported

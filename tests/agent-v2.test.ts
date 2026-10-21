@@ -587,6 +587,23 @@ describe("partner fallback", () => {
   });
 });
 
+describe("factor wording", () => {
+  it("keeps a factor whose kind is supported but shows plain wording when its note is not", async () => {
+    const c = fakeClient({ judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "s2.mod0.note" ? "partial" : "supported" })) });
+    const r = await runAgentV2({ query: "Acme", client: c.client, search: null, emit: () => {} });
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    const m = r.record.guide.scenarios.find((s) => s.id === "s2")!.modifiers![0];
+    expect(m.kind).toBe("limited_before_approval");
+    expect(m.note).toBe("Limited until approved");
+  });
+  it("drops a factor whose kind is not supported", async () => {
+    const c = fakeClient({ judge: (items) => items.map((i) => ({ id: i.id, verdict: i.id === "s2.mod0" ? "partial" : "supported" })) });
+    const r = await runAgentV2({ query: "Acme", client: c.client, search: null, emit: () => {} });
+    if (r.outcome !== "ok") throw new Error(r.outcome);
+    expect(r.record.guide.scenarios.find((s) => s.id === "s2")!.modifiers ?? []).toHaveLength(0);
+  });
+});
+
 describe("ensureCriticalLimits", () => {
   it("adds a numeric limit from critical evidence that no claim covers, and nothing already covered", () => {
     const store = new ResearchStore(null);

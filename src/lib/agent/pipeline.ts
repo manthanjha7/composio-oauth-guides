@@ -11,6 +11,7 @@ import { composioLookup, type ComposioLookup } from "../composio";
 import { baseDomain, canonicalUrl, enforceEvidence, numbersInText, numberUnitPairs, type EvidenceContext } from "../evidence";
 import { CHECK_INFO, pathLabel } from "../guide-view";
 import { type GeneratedGuide, type Guide, type GuideRecord, ModifierKind, type WriterGuide, WriterGuideSchema } from "../schema";
+type ModifierKindT = z.infer<typeof ModifierKind>;
 import { createComposioSearch, type ComposioSearch } from "../search";
 import { slugify } from "../slug";
 import { trimForModel } from "../web";
@@ -936,6 +937,27 @@ export async function sweepModifiers(
   return { guide: { ...g, scenarios }, added };
 }
 
+/** What each factor kind asserts, as the judge checks it. */
+const KIND_STATEMENT: Record<ModifierKindT, string> = {
+  customer_admin: "a customer's admin must, or may need to, approve, enable, allowlist, install or set up the app in their own organization or instance.",
+  limited_before_approval: "before approval, the app works only with limits (on users, tokens, workspaces, connections, calls or features) or shows warnings.",
+  threshold: "a minimum number of users, installs, customers, workspaces or connections is needed before the developer may apply, be listed or move to the next stage.",
+  paid_access: "a paid plan, credits or fees are needed for API access, by the developer or by their customers.",
+  builder_prerequisite: "the developer needs something first (for example an approved developer account, a sandbox, a plan or an agreement) before building or testing.",
+  use_restrictions: "the provider restricts what the app may do, what data it may use, or how it is named or presented.",
+  recurring: "a review, check or re-authorization repeats, on changes or periodically.",
+};
+/** Plain wording shown when a factor applies but its specific note was not confirmed. */
+const KIND_NOTE: Record<ModifierKindT, string> = {
+  customer_admin: "Customer admins may need to approve or enable it",
+  limited_before_approval: "Limited until approved",
+  threshold: "Minimum usage needed before applying or listing",
+  paid_access: "Paid plan or fees needed for API access",
+  builder_prerequisite: "Prerequisite needed before building",
+  use_restrictions: "Rules on what you may build or say",
+  recurring: "Reviews repeat on changes or periodically",
+};
+
 type JudgeItem = { id: string; statement: string; quotes: string[]; reason?: string };
 
 /** What the judge checks: risky claims, and every categorical field as the guide states it, with its quotes. */
@@ -952,9 +974,9 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
   // One atomic statement per part, so an unproven detail drops only itself, never the whole path.
   const PATH_STATEMENT = {
     automatic: "nothing has to be registered: the app's client registers itself automatically.",
-    self_serve: "no review by the provider is needed before the app can be used in this setup.",
-    app_review: "the provider reviews, verifies or approves the app (or its listing) before it can be used, installed or listed as this setup requires.",
-    partner: "the developer's company itself must be accepted by the provider (for example into a partner program, or by signing an agreement) before the app can be used, installed or listed as this setup requires.",
+    self_serve: "no review by the provider is needed for this setup.",
+    app_review: "a required step is that the provider reviews, verifies, certifies or approves the app or its listing (any one of these is enough).",
+    partner: "a required step is that the provider accepts the developer's company itself (for example into a partner program, through a signed agreement, or by approving the developer's business account).",
   } as const;
   const TRIGGER_STATEMENT = { always: "the review is always required", sensitive_scopes: "the review is required only for sensitive scopes", scale: "the review is required only above a number of users, installs or calls", none: "" } as const;
   for (const s of g.scenarios) {
@@ -973,15 +995,24 @@ function judgeItems(g: Guide, claimQuestion: Map<string, string | undefined>, qu
       items.push({ id: `${s.id}.wait`, statement: `${who}: the wait on the provider is ${s.waiting.estimate}.`, quotes: gather(ids) });
     }
     if (s.shortcut) items.push({ id: `${s.id}.shortcut`, statement: `${who}: ${s.shortcut}`, quotes: gather(s.shortcut_claim_ids) });
-    (s.modifiers ?? []).forEach((m, i) => items.push({ id: `${s.id}.mod${i}`, statement: `${who}: ${m.kind.replace(/_/g, " ")}: ${m.note}`, quotes: gather(m.claim_ids) }));
+    // A factor is judged twice: its kind (does it apply here at all?) and its note as written. A detail in the
+    // note the quotes don't carry costs only the wording, which falls back to a plain description of the kind.
+    (s.modifiers ?? []).forEach((m, i) => {
+      const quotes = gather(m.claim_ids);
+      items.push({ id: `${s.id}.mod${i}`, statement: `${who}: ${KIND_STATEMENT[m.kind]}`, quotes });
+      items.push({ id: `${s.id}.mod${i}.note`, statement: `${who}: ${m.note}`, quotes });
+    });
   }
   // The one-line verdict is judged too, against the quotes behind every setup's path and wait.
   if (g.verdict) {
     const ids = g.scenarios.flatMap((s) => [...(s.path_claim_ids ?? []), ...s.claim_ids.filter((id) => TIMELINE_QUESTIONS.has(claimQuestion.get(id) ?? ""))]);
     items.push({ id: "verdict", statement: g.verdict, quotes: gather(ids).slice(0, 10) });
   }
-  // Items without quotes can't be supported; they are decided in code (removed), not sent.
-  return items.filter((i) => i.quotes.length).slice(0, 45);
+  // Items without quotes can't be supported; they are decided in code (removed), not sent. Setup fields go first:
+  // an unjudged field is dropped, an unjudged claim only gets a note.
+  const isField = (i: JudgeItem) => i.id.includes(".") || i.id === "verdict";
+  const withQuotes = items.filter((i) => i.quotes.length);
+  return [...withQuotes.filter(isField), ...withQuotes.filter((i) => !isField(i))].slice(0, 70);
 }
 
 function openQuestions(store: ResearchStore): string[] {
@@ -1074,7 +1105,12 @@ export function applyInvariants(
       if (!noReview) out.waiting = { estimate: "Unknown", basis: `No verified source confirms "${est}".`, max_days: null };
     }
     if (out.shortcut && !((out.shortcut_claim_ids ?? []).some(sourced) && c.fieldOk(`${s.id}.shortcut`))) out.shortcut = null;
-    if (out.modifiers) out.modifiers = out.modifiers.filter((m, i) => m.claim_ids.some(sourced) && c.fieldOk(`${s.id}.mod${i}`)).slice(0, 6);
+    if (out.modifiers)
+      out.modifiers = out.modifiers
+        .map((m, i) => ({ m, i }))
+        .filter(({ m, i }) => m.claim_ids.some(sourced) && c.fieldOk(`${s.id}.mod${i}`))
+        .map(({ m, i }) => (c.fieldOk(`${s.id}.mod${i}.note`) ? m : { ...m, note: KIND_NOTE[m.kind] }))
+        .slice(0, 6);
     // Displayed extras come only from modifiers that survived; the writer's free-text extras are never shown in v2.
     out.extras = (out.modifiers ?? []).map((m) => m.note).slice(0, 3).map((x) => x.split(/\s+/).slice(0, 8).join(" "));
     if (out.gate_sequence) out.gate_sequence = out.gate_sequence.slice(0, 5);
