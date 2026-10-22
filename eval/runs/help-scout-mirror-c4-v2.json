@@ -1,0 +1,2393 @@
+{
+  "slug": "help-scout",
+  "guide": {
+    "app": {
+      "name": "Help Scout",
+      "website": "https://www.helpscout.com",
+      "developer_docs_url": "https://developer.helpscout.com/"
+    },
+    "oauth_supported": "yes",
+    "summary": "Internal integration, one Help Scout account (self-serve (no review step found in the docs), wait none); Public agent connecting many customers' accounts (self-serve (no review step found in the docs)).",
+    "verdict": "Internal integration, one Help Scout account (self-serve (no review step found in the docs), wait none).",
+    "default_scenario": "s2",
+    "composio": {
+      "toolkit_slug": "help_scout",
+      "managed_oauth": "no",
+      "credential_guide_url": null,
+      "note": "Help Scout is in Composio's bring-your-own-OAuth-app list, so create the auth config with your own client ID and secret. Copy the redirect URI from the Composio dashboard."
+    },
+    "need_own_app": {
+      "answer": "Yes. Composio has no managed OAuth app for Help Scout, so you must register your own app in Help Scout and give Composio its client ID and secret.",
+      "reasons": [
+        "No Composio-managed app exists for Help Scout",
+        "The API requires an OAuth2 application to exist before use"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Internal integration, one Help Scout account",
+        "when_this_applies": "Only your own company's Help Scout account uses the integration, via the Client Credentials flow.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "30-60 min",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No review documented for this flow (inferred)",
+          "max_days": null
+        },
+        "approval": "No review found in Help Scout docs; docs describe Client Credentials as meant for internal integrations.",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c5",
+          "c7",
+          "c9"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "trigger": "none",
+        "modifiers": [
+          {
+            "kind": "paid_access",
+            "qualifier": "required",
+            "note": "Free plan has no API access; paid plan needed.",
+            "claim_ids": [
+              "c10",
+              "c11"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c2",
+          "c3"
+        ],
+        "path_basis": "inferred",
+        "extras": [
+          "Free plan has no API access; paid plan"
+        ]
+      },
+      {
+        "id": "s2",
+        "label": "Public agent connecting many customers' accounts",
+        "when_this_applies": "Each end user authorizes your app on their own Help Scout account via the Authorization Code flow.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No review or timeline found in Help Scout docs; no documented wait",
+          "max_days": null
+        },
+        "approval": "No provider review is documented for outside customers. This is unconfirmed beyond the docs reviewed.",
+        "claim_ids": [
+          "c1",
+          "c3",
+          "c6",
+          "c7",
+          "c8",
+          "c9",
+          "c10",
+          "c13"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "trigger": "none",
+        "modifiers": [
+          {
+            "kind": "paid_access",
+            "qualifier": "required",
+            "note": "Free plan has no API access; customers need paid plans.",
+            "claim_ids": [
+              "c10",
+              "c11"
+            ]
+          },
+          {
+            "kind": "use_restrictions",
+            "qualifier": "optional",
+            "note": "Read brand guidelines before launching publicly.",
+            "claim_ids": [
+              "c13"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c1"
+        ],
+        "path_basis": "inferred",
+        "extras": [
+          "Free plan has no API access; customers need",
+          "Read brand guidelines before launching publicly."
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Paid Help Scout plan",
+        "detail": "The Free plan has no API or integration access, and paid plans differ in API access levels.",
+        "claim_ids": [
+          "c10",
+          "c11"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Active, invited Help Scout user",
+        "detail": "Every credential must be tied to an active, invited user in the account, or the API returns 401.",
+        "claim_ids": [
+          "c9"
+        ],
+        "scenario_ids": []
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create OAuth2 app in Help Scout",
+        "owner": "you",
+        "detail": "Go to Your Profile > My apps and click Create My App. Enter a redirection URL; for Client Credentials only, a placeholder URL works.",
+        "inputs": [
+          "Help Scout login on a paid plan",
+          "Redirect URI from Composio dashboard"
+        ],
+        "done_when": "You have an application ID and secret.",
+        "scenario_ids": [],
+        "link": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "claim_ids": [
+          "c3",
+          "c4",
+          "c5",
+          "c6"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the auth config via Composio's API with your own client ID and secret.",
+        "inputs": [
+          "Application ID",
+          "Application secret"
+        ],
+        "done_when": "Auth config exists for help_scout.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c12",
+          "c4"
+        ]
+      },
+      {
+        "title": "Connect a test account",
+        "owner": "you",
+        "detail": "Authorize the app from a Help Scout user and confirm calls work. Plan for token expiry and refresh.",
+        "inputs": [
+          "Auth config"
+        ],
+        "done_when": "A connected account makes a successful API call.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c7",
+          "c8",
+          "c14"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Client Credentials tokens expire after 2 days",
+        "detail": "Expiry shows as HTTP 401; create a new token only then. Authorization Code tokens are renewed with a refresh token.",
+        "claim_ids": [
+          "c7",
+          "c8"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Redirection URL is required for Authorization Code",
+        "detail": "Set it correctly when creating the app; users return to it after authorizing.",
+        "claim_ids": [
+          "c6",
+          "c15"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "API returns 401",
+        "what_it_means": "The token expired, or the credential's user is not active and invited in the account.",
+        "what_to_do": "Refresh or recreate the token, and confirm the user is active and invited.",
+        "agent_can_help": "Add automatic token refresh handling.",
+        "claim_ids": [
+          "c7",
+          "c8",
+          "c9"
+        ],
+        "scenario_ids": []
+      }
+    ],
+    "open_questions": [
+      "Is any provider review required for public apps? Ask Help Scout support or the developer forum.",
+      "What are the API rate limits? Check the Mailbox API rate-limiting docs or ask support.",
+      "Which scopes or plans does the app need? Not found; check Help Scout plan docs.",
+      "Not found: what each review or verification checks and what the developer must submit. Checked helpscout.com, helpscout.com.",
+      "Not found: scope or permission tiers. Checked helpscout.com, helpscout.com."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "The Authorization Code flow is typically used for integrations to be used by other Help Scout users.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "The Authorization Code flow is typically used for integrations to be used by other Help Scout users.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "The Client Credentials flow is meant for internal integrations.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "The Client Credentials\nflow is meant for internal integrations.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "The OAuth2 application is created in Help Scout under Your Profile > My apps by clicking Create My App; an application must exist before the API can be used.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "You need to create an OAuth2 application before you can use the API. Create one by navigating to Your Profile > My apps and click Create My App.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "The application ID (client_id) and application secret (client_secret) are the credentials used in the authorization URL and token requests.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "If creating a new application to generate an application_id and application_secret , you will be prompted to supply a redirection URL.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "For Client Credentials only, a placeholder redirection URL such as https://www.google.com can be given to finish creating the app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "If you intend to exclusively a Client Credentials flow, you can provide a placeholder URL (such as https://www.google.com) to continue with generating the application.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "A redirection URL is required when using the Authorization Code flow.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "A redirection URL is necessary when using the Authorization Code flow.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Client Credentials access tokens are valid for 2 days and a new token should be created only after the existing one expires, indicated by HTTP 401.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "This token is valid for 2 days and you should create a new one only after the existing token expires. Expiration will be indicated by the API responding with HTTP 401.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "When an Authorization Code access token expires (HTTP 401), a refresh token can be used to get a new access and refresh token pair.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "When the access token expires (indicated by HTTP 401 return code), you can use the refresh token to retrieve a new access and refresh token pair:",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "All credentials must be associated with an active, invited user in the Help Scout account, or a 401 error is returned.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "All credentials must be associated with an active, invited user in the Help Scout account; a 401 error will be returned if a user does not meet these credentials.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "API access is tied to paid Help Scout plans, which offer different levels of access.",
+        "label": "provider_docs",
+        "source_url": "https://docs.helpscout.com/article/1140-mailbox-api",
+        "quote": "Each paid Help Scout plan has different levels of API access.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "The Free plan does not include API or integration access.",
+        "label": "provider_docs",
+        "source_url": "https://docs.helpscout.com/article/1140-mailbox-api",
+        "quote": "The Free plan does not include access to the API or integrations.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "Help Scout is listed under 'Bring your own OAuth app' in Composio, so Composio does not supply a managed OAuth app for it.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "| [Help Scout](/toolkits/help_scout.md) | `HELP_SCOUT` |",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "Before launching a project publicly, the developer should read Help Scout's brand guidelines.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/",
+        "quote": "But before you launch anything, please read over our brand guidelines to make sure everything looks tip top.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "A user who is already logged in to Help Scout sees an Authorization screen when authorizing the app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "If the user is already logged in to Help Scout, they will see the following Authorization screen.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "After the user authorizes the app, Help Scout redirects them back to the Redirection URL defined in My Apps, with a code query parameter.",
+        "label": "provider_docs",
+        "source_url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "quote": "After the user authorizes your application, we will redirect them back to the Redirection URL that is defined in My Apps. The URI will contain the code query param (and optionally a state param)",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T11:55:33.869Z",
+    "generated_by": "agent v2 (v2.7-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-haiku-5-5 · composio_search",
+    "duration_ms": 121649,
+    "query": "Help Scout",
+    "partial": true,
+    "warnings": [
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 15,
+      "quotes_checked": 15,
+      "quotes_verified": 15,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 81944,
+      "output_tokens": 39567,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T11:53:32.477Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T11:53:32.477Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T11:53:32.477Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/help_scout",
+        "title": null,
+        "fetched_at": "2026-10-21T11:53:32.477Z",
+        "via": "direct",
+        "chars": 309
+      },
+      {
+        "url": "https://developer.helpscout.com/",
+        "title": "Help Scout Developers - API Documentation\n      \n      | Help Scout Developers",
+        "fetched_at": "2026-10-21T11:53:38.829Z",
+        "via": "direct",
+        "chars": 1265
+      },
+      {
+        "url": "https://www.helpscout.com/",
+        "title": "Help Scout: The AI-driven support platform for customer-first brands",
+        "fetched_at": "2026-10-21T11:53:38.877Z",
+        "via": "direct",
+        "chars": 4681
+      },
+      {
+        "url": "https://developer.helpscout.com/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T11:53:38.885Z",
+        "via": "direct",
+        "chars": 40456
+      },
+      {
+        "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+        "title": "Authentication\n      \n      | Help Scout Developers",
+        "fetched_at": "2026-10-21T11:53:41.863Z",
+        "via": "direct",
+        "chars": 4712
+      },
+      {
+        "url": "https://developer.helpscout.com/apps/getting-started/",
+        "title": "Getting Started with the Developer Platform\n      \n      | Help Scout Developers",
+        "fetched_at": "2026-10-21T11:53:41.874Z",
+        "via": "direct",
+        "chars": 5879
+      },
+      {
+        "url": "https://developer.helpscout.com/mailbox-api/",
+        "title": "Inbox API 2.0\n      \n      | Help Scout Developers",
+        "fetched_at": "2026-10-21T11:53:41.876Z",
+        "via": "direct",
+        "chars": 978
+      },
+      {
+        "url": "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+        "title": "Rate limiting\n      \n      | Help Scout Developers",
+        "fetched_at": "2026-10-21T11:53:41.877Z",
+        "via": "direct",
+        "chars": 742
+      },
+      {
+        "url": "https://docs.helpscout.com/article/1140-mailbox-api",
+        "title": "Help Scout's Inbox API, Docs API, Beacon JavaScript, Apps, and Open Source Tools - Help Scout Support",
+        "fetched_at": "2026-10-21T11:53:41.888Z",
+        "via": "direct",
+        "chars": 2137
+      },
+      {
+        "url": "https://www.helpscout.com/partner/",
+        "title": "Help Scout Partner Programs",
+        "fetched_at": "2026-10-21T11:53:41.907Z",
+        "via": "direct",
+        "chars": 2358
+      },
+      {
+        "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+        "title": "Sensitive scope verification  |  App verification to use Google Authorization APIs  |  Google for Developers",
+        "fetched_at": "2026-10-21T11:53:42.136Z",
+        "via": "direct",
+        "chars": 15776
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.7-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-haiku-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E16",
+            "E22"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E3",
+            "E4",
+            "E47",
+            "E48",
+            "E49",
+            "E50",
+            "E51",
+            "E52",
+            "E53",
+            "E54",
+            "E55",
+            "E56"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "not_found",
+          "evidence": [
+            "E57",
+            "E58",
+            "E59",
+            "E60",
+            "E61",
+            "E62"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "not_found",
+          "evidence": [
+            "E63",
+            "E64"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E14",
+            "E15",
+            "E65",
+            "E66",
+            "E67",
+            "E68"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E69",
+            "E70",
+            "E71",
+            "E72"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "found",
+          "evidence": [
+            "E17",
+            "E18"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E5",
+            "E6",
+            "E73",
+            "E74",
+            "E75",
+            "E76"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E7",
+            "E8",
+            "E9",
+            "E23",
+            "E24",
+            "E25",
+            "E32",
+            "E33",
+            "E34",
+            "E35",
+            "E36",
+            "E37",
+            "E77",
+            "E78",
+            "E79",
+            "E80"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E26",
+            "E27",
+            "E28",
+            "E29",
+            "E30",
+            "E31",
+            "E81",
+            "E82",
+            "E83",
+            "E84"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E85",
+            "E86",
+            "E87"
+          ],
+          "tried": [
+            "https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+            "https://www.helpscout.com/partner/",
+            "https://developer.helpscout.com/mailbox-api/",
+            "https://developer.helpscout.com/",
+            "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+            "https://docs.helpscout.com/article/1140-mailbox-api",
+            "https://developer.helpscout.com/apps/getting-started/",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": []
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E19",
+            "E20",
+            "E21",
+            "E38",
+            "E39",
+            "E40",
+            "E41",
+            "E42",
+            "E43",
+            "E44",
+            "E45",
+            "E46"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G11",
+          "url": "https://developer.helpscout.com/",
+          "quote": "But before you launch anything, please read over our brand guidelines to make sure everything looks tip top.",
+          "answer": "Before launching a project publicly, the developer should read Help Scout's brand guidelines.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:38.829Z",
+          "page_hash": "a7b4f0af3e507bc7",
+          "offsets": [
+            1065,
+            1173
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G2",
+          "url": "https://developer.helpscout.com/",
+          "quote": "Apps - display your own content as an internal sidebar application in the Inbox",
+          "answer": "The page describes the Apps product as showing the developer's own content as an internal sidebar application in the Inbox; it does not describe any review or approval for outside customers.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:38.829Z",
+          "page_hash": "a7b4f0af3e507bc7",
+          "offsets": [
+            321,
+            400
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G2",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "The Authorization Code flow is typically used for integrations to be used by other Help Scout users.",
+          "answer": "The Authorization Code flow is typically used for integrations to be used by other Help Scout users.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            300,
+            400
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G2",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "The Client Credentials\nflow is meant for internal integrations.",
+          "answer": "The Client Credentials flow is meant for internal integrations.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            401,
+            464
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G8",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "All credentials must be associated with an active, invited user in the Help Scout account; a 401 error will be returned if a user does not meet these credentials.",
+          "answer": "All credentials must be associated with an active, invited user in the Help Scout account, or a 401 error is returned.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            466,
+            628
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G8",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "If the user is already logged in to Help Scout, they will see the following Authorization screen.",
+          "answer": "A user who is already logged in to Help Scout sees an Authorization screen when authorizing the app; a user not logged in is shown it after logging in.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            1666,
+            1763
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G9",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "This is an HTTPS-only API and it uses OAuth 2.0 authorization , implementing Authorization Code and Client Credential flows.",
+          "answer": "The API is HTTPS-only and uses OAuth 2.0 with Authorization Code and Client Credentials flows.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            0,
+            124
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G9",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "A redirection URL is necessary when using the Authorization Code flow.",
+          "answer": "A redirection URL is required when using the Authorization Code flow.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            970,
+            1040
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G9",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "After the user authorizes your application, we will redirect them back to the Redirection URL that is defined in My Apps. The URI will contain the code query param (and optionally a state param)",
+          "answer": "After the user authorizes the app, Help Scout redirects them back to the Redirection URL defined in My Apps, with a code query parameter.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            1913,
+            2107
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "You need to create an OAuth2 application before you can use the API. Create one by navigating to Your Profile > My apps and click Create My App.",
+          "answer": "The OAuth2 application is created in Help Scout under Your Profile > My apps by clicking Create My App; an application must exist before the API can be used.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            825,
+            969
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "If creating a new application to generate an application_id and application_secret , you will be prompted to supply a redirection URL.",
+          "answer": "The application ID (client_id) and application secret (client_secret) are the credentials used in the authorization URL and token requests.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            4079,
+            4213
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "https://secure.helpscout.net/authentication/authorizeClientApplication?client_id={application_id}&state={your_secret}",
+          "answer": "The authorization step uses a URL with client_id set to the application ID and an optional state parameter.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            1461,
+            1578
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "If you intend to exclusively a Client Credentials flow, you can provide a placeholder URL (such as https://www.google.com) to continue with generating the application.",
+          "answer": "For Client Credentials only, a placeholder redirection URL such as https://www.google.com can be given to finish creating the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            4214,
+            4381
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G5",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "This token is valid for 2 days and you should create a new one only after the existing token expires. Expiration will be indicated by the API responding with HTTP 401.",
+          "answer": "Client Credentials access tokens are valid for 2 days and a new token should be created only after the existing one expires, indicated by HTTP 401; the page does not mention testing-mode limits.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            3910,
+            4077
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G5",
+          "url": "https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "quote": "When the access token expires (indicated by HTTP 401 return code), you can use the refresh token to retrieve a new access and refresh token pair:",
+          "answer": "When an Authorization Code access token expires (HTTP 401), a refresh token can be used to get a new access and refresh token pair.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.863Z",
+          "page_hash": "537775b06fb37446",
+          "offsets": [
+            2737,
+            2882
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G1",
+          "url": "https://docs.helpscout.com/article/1140-mailbox-api",
+          "quote": "The Free plan does not include access to the API or integrations.",
+          "answer": "Help Scout's Free plan does not include API or integration access, so a paid plan is needed for API access (the page does not mention OAuth app creation).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.888Z",
+          "page_hash": "5dcc00d6a56f9213",
+          "offsets": [
+            1121,
+            1186
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G7",
+          "url": "https://docs.helpscout.com/article/1140-mailbox-api",
+          "quote": "Each paid Help Scout plan has different levels of API access.",
+          "answer": "API access is tied to paid Help Scout plans, which offer different levels of access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.888Z",
+          "page_hash": "5dcc00d6a56f9213",
+          "offsets": [
+            818,
+            879
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G7",
+          "url": "https://docs.helpscout.com/article/1140-mailbox-api",
+          "quote": "The Free plan does not include access to the API or integrations.",
+          "answer": "The Free plan does not include API or integration access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.888Z",
+          "page_hash": "5dcc00d6a56f9213",
+          "offsets": [
+            1121,
+            1186
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Help Scout](/toolkits/help_scout.md) | `HELP_SCOUT` |",
+          "answer": "Help Scout is listed under 'Bring your own OAuth app', so Composio does not supply a managed OAuth app for it and the developer must bring their own.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            13141,
+            13197
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "## Bring your own OAuth app (219)",
+          "answer": "Help Scout appears in the bring-your-own table, not the 'Composio-managed OAuth available' table.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            7756,
+            7789
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "General rule for toolkits like Help Scout: if the managed-auth field lacks the OAuth method, the developer must register their own OAuth app and supply its client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            825,
+            939
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G1",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "Log into your Help Scout account as an administrator or account owner.",
+          "answer": "To create a Help Scout app (a sidebar app, not described as an OAuth app), you must log into Help Scout as an administrator or account owner.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            4575,
+            4645
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G9",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "SSL is required for all Apps so you’ll need to configure your Vite site with an SSL.",
+          "answer": "SSL is required for all Help Scout Apps, so the developer's local web app must be served over SSL.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            1934,
+            2018
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G9",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "The URL host has to be network available ( localhost or 127.0.0.1 will not work)",
+          "answer": "The app's callback URL host must be network available; localhost and 127.0.0.1 will not work.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            4977,
+            5057
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G9",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "Be sure to use one of the Network URLs (not the Local URL) as your callback URL.",
+          "answer": "When running a Vite app locally, the developer should use a Network URL, not the Local URL, as the callback URL.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            4185,
+            4265
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "Click the gear icon ( Settings ) in the top right, then head to Workspace > Apps .",
+          "answer": "To find the app creation page, click the gear icon (Settings) at the top right, then go to Workspace > Apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            4649,
+            4731
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "Click the “Create” button (on the top of the page).",
+          "answer": "On the Apps page, click the 'Create' button at the top of the page, then click the 'Create App' button in the left sidebar.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            0,
+            51
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "Enter the URL of your web app",
+          "answer": "In the Create App form, the callback URL field takes the URL of your web app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            4945,
+            4974
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "If your app is validating the header signature",
+          "answer": "The Create App form has a Secret Key field, which can be any value; it is used to generate the header signature if the app validates it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            5093,
+            5139
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "Select the Inboxes where this app should appear",
+          "answer": "In the Create App form, you select the Inboxes where the app should appear.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            5200,
+            5247
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G10",
+          "url": "https://developer.helpscout.com/apps/getting-started/",
+          "quote": "Click the “Save” button.",
+          "answer": "After completing the form, click the 'Save' button to save the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:41.874Z",
+          "page_hash": "669166746e3e28cc",
+          "offsets": [
+            5253,
+            5277
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "For your own OAuth app (general, not specific to Help Scout), you set the authorized redirect URI in the app's settings to your own endpoint, not to Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.",
+          "answer": "The redirect proxy endpoint on your domain must return a 302 redirect (general, not Help Scout-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3494
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "The proxy endpoint receives the OAuth callback and immediately 302-redirects it to Composio's callback URL (general, not Help Scout-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "By default, during OAuth the browser briefly redirects through backend.composio.dev so Composio can capture the auth token (general, not Help Scout-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits display the Composio backend URL on the consent screen (general, not Help Scout-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "You can proxy the redirect through your own domain if you need to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "2. Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "Using your own OAuth app is recommended only for toolkits where the provider consent screen must show your brand (general guidance, not Help Scout-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            1239,
+            1338
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "This page is generic and does not mention Help Scout. It says Composio registers and maintains managed OAuth apps for popular toolkits such as GitHub, Gmail, and Slack, so you do not need to register your own OAuth app for those.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "A custom auth config lets you supply your own OAuth app, API key, bearer token, or other credentials for a toolkit. This is the bring-your-own option, generic to all toolkits and not specific to Help Scout.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available, per this page (generic, not Help Scout-specific).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "To check whether Composio provides the OAuth app for a given toolkit, the page directs you to its Managed OAuth apps page. The page does not say whether Help Scout is one of them.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With a managed app, end users see the Composio name on the OAuth consent screen rather than the developer's app name.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Managed apps request Composio's default scopes, which may not include everything a developer needs. Custom scopes are a reason to use your own app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users.",
+          "answer": "Managed apps share their rate-limit quota across all Composio users; a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1474
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for triggers, while your own app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:32.477Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Your app might need to complete a verification process if it requests sensitive or restricted Google user data scopes using Google APIs and OAuth 2.0, unless an exception applies.",
+          "answer": "An app that requests sensitive or restricted Google user data scopes may need a verification process before it is made public, unless an exception applies.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            284,
+            463
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Sensitive scopes require review by Google before a Google Account can grant access and might be restricted by Google Workspace organization administrators.",
+          "answer": "Sensitive scopes require Google review before any Google Account can grant access, and Google Workspace administrators may restrict them.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            467,
+            622
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Whether this requirement applies to your app depends mostly on two factors:",
+          "answer": "Whether verification applies depends mostly on the type of user data accessed and the degree of access needed.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            1429,
+            1504
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "If your app is going to be used in any of the scenarios described in the following sections, you don't need to submit it for review.",
+          "answer": "If an app is used in any of the scenarios in the exceptions section, it does not need to be submitted for review.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            12217,
+            12349
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "One use case is if you are the only user of your app or if your app is used by only a few users, all of whom are known personally to you.",
+          "answer": "Personal use exception: no verification is needed if the app is used only by the developer or a few users who are all personally known to the developer.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            12369,
+            12506
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "We recommend that you only submit your app for verification if you want to make your app available to any user with a Google Account.",
+          "answer": "Google recommends submitting for verification only if the app will be available to any user with a Google Account; development, testing, or staging apps do not need verification.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            12973,
+            13106
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Therefore, if your app is in the development, testing, or staging phases, verification isn't required.",
+          "answer": "Development, testing, or staging phase apps do not require verification.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            13107,
+            13209
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "If your app uses a service account to access only its own data, and it doesn't access any user data (linked to a Google Account), then you don't need to submit for verification.",
+          "answer": "Service-account apps that access only their own data and no user data do not need to submit for verification.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            13778,
+            13955
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "The project must be owned by the organization, and its OAuth consent screen needs to be configured for an Internal user type",
+          "answer": "Internal-only apps used within the developer's Google Workspace or Cloud Identity organization are exempt from review when the project is owned by that organization and set to Internal user type; the app may still need admin approval.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            14282,
+            14406
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "then your app won't require brand verification.",
+          "answer": "Apps targeting only one Google Workspace or Cloud Identity organization that always use domain-wide installation do not need brand verification, but apps using restricted or sensitive scopes still need app verification.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            14883,
+            14930
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Preparation for verification includes checking exceptions, complying with branding, verifying domain ownership, and ensuring accurate OAuth consent screen information and policy links.",
+          "answer": "Verification preparation includes checking exceptions, complying with branding, verifying domain ownership, and making sure the OAuth consent screen information and policy links are accurate.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            779,
+            963
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Submitting your app for verification involves confirming policy compliance, keeping contact information current, using the Cloud Console Verification Center, declaring all scopes, and providing detailed justification and a video demonstration for sensitive scopes.",
+          "answer": "Submission involves confirming policy compliance, keeping contact information current, declaring all scopes, and providing a detailed justification and a video demonstration for sensitive scopes.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            967,
+            1231
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Show the OAuth grant process that users will experience, in English.",
+          "answer": "The demonstration video must show the OAuth grant process users will experience, in English, including the consent flow.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            11162,
+            11230
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Show that the OAuth consent screen correctly displays the App Name.",
+          "answer": "The demonstration video must show the OAuth consent screen correctly displaying the app name.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            11315,
+            11382
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "After you publish your branding or submit a data access request, Google's Trust & Safety team may follow up by email with any additional information they need or steps you must complete.",
+          "answer": "After publishing branding or submitting a data access request, Google's Trust & Safety team may follow up by email asking for more information or steps to complete.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            11621,
+            11807
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Provide up to three links to any relevant documentation for related features in your app.",
+          "answer": "Developers can provide up to three links to documentation for related features in the app.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            10233,
+            10322
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G4",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Examples of sensitive scopes include reading events stored in Google Calendar, storing a new contact in Google Contacts, or deleting a YouTube video.",
+          "answer": "Examples of sensitive scopes include reading Google Calendar events, storing a new Google Contacts contact, or deleting a YouTube video.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            0,
+            149
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G4",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Your app might need to complete a verification process if it requests sensitive or restricted Google user data scopes using Google APIs and OAuth 2.0, unless an exception applies.",
+          "answer": "Apps requesting sensitive or restricted scopes may need to complete verification; the page does not list scopes specific to AI agents.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            284,
+            463
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G5",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "A user cap restricts the number of Google Accounts able to grant access to your unverified app.",
+          "answer": "A user cap restricts how many Google Accounts can grant access to an unverified app.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            12677,
+            12772
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G5",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "You and your limited number of users might be comfortable with advancing through the unverified app screen and granting your personal accounts access to your app.",
+          "answer": "Unverified apps used by a few personally known users may involve the unverified app warning screen that those users must advance through.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            12507,
+            12669
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G5",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "This setting means that your app is still in development and is only available to users you add to the list of test users.",
+          "answer": "Apps in Testing publishing status are available only to users added to the test-user list, and the developer must manage that list.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            13336,
+            13458
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G5",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Your app is still subject to a tester warning screen, as shown in figure 2, a user cap is in effect, and the refresh token lifetime is limited.",
+          "answer": "Apps in testing mode show a tester warning screen, have a user cap in effect, and have a limited refresh token lifetime.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            13571,
+            13714
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "scope verification process typically takes 3-5 business days to complete.",
+          "answer": "The sensitive scope verification process typically takes 3-5 business days to complete.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            3074,
+            3147
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "The automated review usually completes in a few minutes.",
+          "answer": "The automated brand verification review usually completes in a few minutes.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            8878,
+            8934
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Compliant verification results are valid for 7 days.",
+          "answer": "Compliant brand verification results are valid for 7 days; if not published in that time, brand verification must be run again.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            9423,
+            9475
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Branding modifications are not permitted while verification is in progress.",
+          "answer": "Changes to branding are not permitted while verification is in progress; the verification must be canceled first.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            8941,
+            9016
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G8",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Sensitive scopes require review by Google before a Google Account can grant access and might be restricted by Google Workspace organization administrators.",
+          "answer": "Sensitive scope access can be restricted by Google Workspace organization administrators.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            467,
+            622
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G8",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "In this case, your app might need approval from an organization administrator.",
+          "answer": "For internal-only apps, the app may need approval from an organization administrator.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            14409,
+            14487
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G8",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Organization administrators are the only accounts that can add the app to an allowlist for use within their domains.",
+          "answer": "For domain-wide installation, only organization administrators can add the app to an allowlist for use within their domains.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            15167,
+            15283
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G8",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "This is because a domain-wide installation lets a domain administrator grant third-party and internal applications access to your users' data.",
+          "answer": "Domain-wide installation lets a domain administrator grant third-party and internal apps access to users' data.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            15024,
+            15166
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G9",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Verify ownership of your project's authorized domains",
+          "answer": "Developers must verify ownership of their project's authorized domains in Google Search Console, using an account that is an Owner or Editor of the project.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            5569,
+            5622
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G9",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Your home page must be publicly accessible, and not just accessible to your",
+          "answer": "The application home page must be publicly accessible, not only to the site's logged-in users.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            6048,
+            6123
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G9",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "The privacy policy must be visible to users, hosted within the same domain",
+          "answer": "The privacy policy must be visible to users and hosted within the same domain as the application's home page.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            6478,
+            6552
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G9",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "aren't considered valid application home pages.",
+          "answer": "Links to the app's Google Play Store listing or its Facebook page are not considered valid application home pages.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            6306,
+            6353
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G10",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Declare all scopes used by your app in the Cloud Console's",
+          "answer": "Scopes are declared in the Cloud Console's Data Access page.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            4607,
+            4665
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G10",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Use the Add or remove scopes button to declare all scopes requested by your app.",
+          "answer": "Scopes are declared using the Add or remove scopes button on the OAuth consent screen scopes configuration.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            9961,
+            10041
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G10",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Go to the Cloud Console OAuth Branding page",
+          "answer": "Brand verification is started from the Cloud Console OAuth Branding page, after selecting the project.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            8207,
+            8250
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G10",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Note that you must have a published branding status before you can request verification for data access.",
+          "answer": "A published branding status is required before requesting data access verification in the OAuth Verification Center.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            9853,
+            9957
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "G11",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "You must request the narrowest scope necessary for your app's functionality and ensure data usage complies with API policies and your privacy policy.",
+          "answer": "Apps must request the narrowest scope necessary and ensure data usage complies with API policies and the developer's privacy policy.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            626,
+            775
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "G11",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Ensure your app complies with the Google APIs Terms of Service",
+          "answer": "Apps must comply with the Google APIs Terms of Service and the Google API Services User Data Policy.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            7805,
+            7867
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G11",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "You must limit your use of Google user data to the practices that your published privacy policy discloses.",
+          "answer": "Use of Google user data must be limited to the practices disclosed in the app's published privacy policy.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T11:53:42.136Z",
+          "page_hash": "c5c33956197f303a",
+          "offsets": [
+            0,
+            106
+          ]
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 6567
+        },
+        {
+          "name": "extract https://developer.helpscout.com/mailbox-api/overview/rate-limiting/",
+          "stop": "ok (0 facts)",
+          "ms": 3491
+        },
+        {
+          "name": "extract https://www.helpscout.com/partner/",
+          "stop": "ok (0 facts)",
+          "ms": 4379
+        },
+        {
+          "name": "extract https://developer.helpscout.com/mailbox-api/",
+          "stop": "ok (0 facts)",
+          "ms": 4354
+        },
+        {
+          "name": "extract https://developer.helpscout.com/",
+          "stop": "ok (2 facts)",
+          "ms": 7079
+        },
+        {
+          "name": "extract https://developer.helpscout.com/mailbox-api/overview/authentication/",
+          "stop": "ok (13 facts)",
+          "ms": 12601
+        },
+        {
+          "name": "extract https://docs.helpscout.com/article/1140-mailbox-api",
+          "stop": "ok (3 facts)",
+          "ms": 6056
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (3 facts)",
+          "ms": 6659
+        },
+        {
+          "name": "extract https://developer.helpscout.com/apps/getting-started/",
+          "stop": "ok (10 facts)",
+          "ms": 12463
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (7 facts)",
+          "ms": 8971
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (8 facts)",
+          "ms": 9677
+        },
+        {
+          "name": "extract https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "stop": "ok (41 facts)",
+          "ms": 53745
+        },
+        {
+          "name": "gap: official docs",
+          "stop": "finished",
+          "ms": 12024
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 23104
+        }
+      ],
+      "judge": {
+        "checked": 18,
+        "supported": 13,
+        "partial": 3,
+        "unsupported": 2,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "The quote states the same claim: the Authorization Code flow is typically used for integrations used by other Help Scout users."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "The quote states that the Client Credentials flow is meant for internal integrations."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "The quote says that for an exclusively Client Credentials flow, a placeholder URL such as https://www.google.com can be provided to continue creating the app."
+          },
+          {
+            "id": "c7",
+            "verdict": "supported",
+            "reason": "The quote gives the 2-day validity, says to create a new token only after expiry, and identifies expiry by HTTP 401."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "The quote says that when the access token expires (HTTP 401), the refresh token can be used to retrieve a new access and refresh token pair."
+          },
+          {
+            "id": "c9",
+            "verdict": "supported",
+            "reason": "The quote states that all credentials must be tied to an active, invited user and that a 401 is returned otherwise."
+          },
+          {
+            "id": "c10",
+            "verdict": "supported",
+            "reason": "The quote states that each paid Help Scout plan has different levels of API access."
+          },
+          {
+            "id": "c11",
+            "verdict": "supported",
+            "reason": "The quote states that the Free plan does not include access to the API or integrations."
+          },
+          {
+            "id": "c13",
+            "verdict": "supported",
+            "reason": "The quote says to read the brand guidelines before launching anything."
+          },
+          {
+            "id": "c14",
+            "verdict": "supported",
+            "reason": "The quote states that a logged-in user will see the Authorization screen."
+          },
+          {
+            "id": "s1.path",
+            "verdict": "unsupported",
+            "reason": "The quotes say the flow is for internal integrations and where to create the app, but say nothing about whether provider review is needed or not."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "partial",
+            "reason": "The quotes support creating the OAuth2 app in My apps, but do not mention getting the app ID and secret or the order of steps."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "supported",
+            "reason": "The quotes state that the Free plan lacks API access and that API access depends on paid plans."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "unsupported",
+            "reason": "The quote says the Authorization Code flow is used for integrations for other users, but says nothing about provider review being required or not."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "The quote supports that the Authorization Code flow is used by other users, but does not mention creating the app with a redirect URL or the step order."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "The quotes say the Free plan lacks API access and that API access depends on paid plans, which implies customers need a paid plan."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "The quote says to read the brand guidelines before launching anything publicly."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "The quotes support self-serve app creation and the Authorization Code use case, but say nothing about a one-hour timeframe or the absence of documented review."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 6567,
+        "discover_read": 3351,
+        "extract": 53746,
+        "gapfill": 23111,
+        "write": 24496,
+        "verify": 10377
+      }
+    }
+  }
+}

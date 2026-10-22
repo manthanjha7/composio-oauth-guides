@@ -1,0 +1,2919 @@
+{
+  "slug": "slack",
+  "guide": {
+    "app": {
+      "name": "Slack",
+      "website": "https://slack.com",
+      "developer_docs_url": "https://docs.slack.dev/"
+    },
+    "oauth_supported": "yes",
+    "summary": "Unlisted distributed app, any workspace (self-serve (no review step found in the docs), wait none); Slack Marketplace listing (approval path unconfirmed); Single workspace internal app (self-serve (no review step found in the docs), wait none). Where the path is unconfirmed, the agent did not find it in the provider's docs.",
+    "verdict": "Unlisted distributed app, any workspace (self-serve (no review step found in the docs), wait none).",
+    "default_scenario": "s1",
+    "composio": {
+      "toolkit_slug": "slack",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio provides a managed Slack OAuth app, but its docs suggest using your own credentials for Slack because users see a consent screen."
+    },
+    "need_own_app": {
+      "answer": "Not for a prototype, since Composio manages a Slack app. For production, Composio's docs suggest your own credentials, because users see the consent screen and the managed app shows Composio's name.",
+      "reasons": [
+        "Consent screen shows your brand instead of Composio",
+        "Custom scopes beyond Composio's defaults",
+        "Dedicated quota instead of shared quota",
+        "Shorter trigger polling than the 15-minute managed minimum"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Unlisted distributed app, any workspace",
+        "when_this_applies": "Your own Slack app is installed by customers' workspaces through OAuth without a Marketplace listing.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "Docs show no provider review for OAuth installs; Marketplace wait times not found.",
+          "max_days": null
+        },
+        "approval": "No provider review is mentioned for OAuth installs. Each customer workspace may require admin approval of the app.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "trigger": "none",
+        "modifiers": [
+          {
+            "kind": "customer_admin",
+            "qualifier": "optional",
+            "note": "Workspaces can require admin approval before installs.",
+            "claim_ids": [
+              "c4",
+              "c5"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c1",
+          "c2"
+        ],
+        "path_basis": "inferred",
+        "extras": [
+          "Workspaces can require admin approval before installs."
+        ]
+      },
+      {
+        "id": "s2",
+        "label": "Slack Marketplace listing",
+        "when_this_applies": "You want the app listed in the Slack Marketplace.",
+        "difficulty": "unknown",
+        "hands_on": {
+          "estimate": "1-3 days",
+          "basis": "estimate from guideline scope, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No review timeline was found.",
+          "max_days": null
+        },
+        "approval": "Marketplace submission triggers a security review against guidelines for suitability, functionality, security, design and listing details.",
+        "claim_ids": [
+          "c6",
+          "c7",
+          "c8",
+          "c9"
+        ],
+        "shortcut": null,
+        "modifiers": [
+          {
+            "kind": "customer_admin",
+            "qualifier": "required",
+            "note": "With Require App Approval on, members install only admin-approved apps",
+            "claim_ids": [
+              "c4",
+              "c5"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c6",
+          "c7"
+        ],
+        "extras": [
+          "With Require App Approval on, members install only"
+        ]
+      },
+      {
+        "id": "s3",
+        "label": "Single workspace internal app",
+        "when_this_applies": "The app is used only in the workspace that owns it.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "30-60 min",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No review mentioned for non-distributed apps.",
+          "max_days": null
+        },
+        "approval": "No review is mentioned; the app installs only on the owning workspace.",
+        "claim_ids": [
+          "c11",
+          "c12"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "trigger": "none",
+        "modifiers": [],
+        "path_claim_ids": [
+          "c13"
+        ],
+        "path_basis": "inferred",
+        "extras": []
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Slack app with client ID and secret",
+        "detail": "Create the app in app settings; the client ID is on the App Management page and token exchange needs the client secret.",
+        "claim_ids": [
+          "c14",
+          "c15",
+          "c16"
+        ]
+      },
+      {
+        "title": "HTTPS redirect URL",
+        "detail": "The redirect URL must use HTTPS and cannot contain an anchor. Copy Composio's redirect URI from the Composio dashboard.",
+        "claim_ids": [
+          "c17",
+          "c18",
+          "c19"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create Slack app in app settings",
+        "owner": "you",
+        "detail": "Sign in and create the app at api.slack.com/apps.",
+        "inputs": [
+          "Slack account"
+        ],
+        "done_when": "App exists with client ID and secret available.",
+        "scenario_ids": [],
+        "link": "https://api.slack.com/apps",
+        "claim_ids": [
+          "c14",
+          "c15"
+        ]
+      },
+      {
+        "title": "Choose bot and user scopes",
+        "owner": "agent",
+        "detail": "Draft the scope list: bot scopes via scope, user scopes via user_scope. Mark non-essential scopes optional.",
+        "inputs": [
+          "Required agent actions"
+        ],
+        "done_when": "Scopes configured in app settings.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c20",
+          "c21",
+          "c22"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create a custom auth config via Composio's API with your client ID and secret.",
+        "inputs": [
+          "Client ID",
+          "Client secret"
+        ],
+        "done_when": "Auth config returns a Composio redirect URI.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c23"
+        ]
+      },
+      {
+        "title": "Add redirect URL to Slack app",
+        "owner": "you",
+        "detail": "Paste the Composio redirect URI under OAuth & Permissions as a Redirect URL.",
+        "inputs": [
+          "Composio redirect URI"
+        ],
+        "done_when": "Redirect URL is saved in Slack.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c17",
+          "c24"
+        ]
+      },
+      {
+        "title": "Prepare Marketplace submission",
+        "owner": "agent",
+        "detail": "Draft scope justifications and listing details; show usage of every scope, including optional ones.",
+        "inputs": [
+          "Scope list",
+          "Listing copy"
+        ],
+        "done_when": "Submission package is ready.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c8",
+          "c9"
+        ]
+      },
+      {
+        "title": "Submit app for Marketplace review",
+        "owner": "you",
+        "detail": "Submit the app and accept Slack's policies and agreements.",
+        "inputs": [
+          "Submission package"
+        ],
+        "done_when": "Submission accepted by Slack.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c7"
+        ]
+      },
+      {
+        "title": "Wait for Marketplace review",
+        "owner": "waiting",
+        "detail": "Slack reviews the app; the duration is unknown.",
+        "inputs": [],
+        "done_when": "App approved and listed.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c6",
+          "c10"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Unapproved scopes block published app installs",
+        "detail": "A published app fails with unapproved_scope if its scopes are in review or were never submitted.",
+        "claim_ids": [
+          "c10"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Non-distributed apps install only at home",
+        "detail": "Installing an undistributed app on another team gives invalid_team_for_non_distributed_app.",
+        "claim_ids": [
+          "c12"
+        ],
+        "scenario_ids": [
+          "s1",
+          "s3"
+        ]
+      },
+      {
+        "title": "Redirect URI mismatches",
+        "detail": "With several Redirect URLs, send the same redirect_uri in both Authorize and Access steps. Otherwise you get bad_redirect_uri.",
+        "claim_ids": [
+          "c25"
+        ]
+      },
+      {
+        "title": "Scope combination errors",
+        "detail": "Do not mix Sign in with Slack scopes with other scopes in one flow. Non-org-compatible scopes fail in Enterprise orgs.",
+        "claim_ids": [
+          "c26",
+          "c27"
+        ]
+      },
+      {
+        "title": "Short-lived authorization code",
+        "detail": "The temporary code expires after ten minutes, so exchange it promptly.",
+        "claim_ids": [
+          "c28"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Members cannot install the app; approval is required",
+        "what_it_means": "The workspace turned on Require App Approval, so non-pre-approved apps need admin approval.",
+        "what_to_do": "Ask the customer's admin to approve the app and choose permitted optional scopes.",
+        "agent_can_help": "Draft a request note explaining each scope.",
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c29"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "symptom": "Enterprise org upgrade shows an error asking to contact an admin",
+        "what_it_means": "Moving to org-level installation may need an Org Owner or Org Admin.",
+        "what_to_do": "Have an org owner or admin perform the install.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c30"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      }
+    ],
+    "open_questions": [
+      "How long does Slack Marketplace review take? Check Slack's Marketplace review process docs or ask Slack developer support.",
+      "What exactly do the undistributed, unlisted distributed and listed distributed categories require? Read Slack's Distribution guide.",
+      "Does a Slack Marketplace listing have to exist before unlisted distribution to outside workspaces works? Check the Distribution guide."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "OAuth allows a user in any Slack workspace to install your app.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "OAuth allows a user in any Slack workspace to install your app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "By default, any member can install an app.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/concepts/security.md",
+        "quote": "By default, any member can install an app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Redirecting a user to Slack to install the app can be done with a single link.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Redirecting a user to Slack can be done with a single link.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "Once an admin turns on Require App Approval, members can only install pre-approved apps; all others must be submitted for approval.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/concepts/security.md",
+        "quote": "Once enabled, members can only install apps that have been pre-approved; all other apps must be submitted for approval.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Admins can pre-approve apps that members can install freely and restrict high-risk or unapproved apps.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/concepts/security.md",
+        "quote": "Admins can proactively pre-approve apps that members can install freely and restrict high-risk or unapproved apps to prevent installation requests.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "Listing an app in the Slack Marketplace involves a review after submission, and the app must meet prerequisites before review.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace.md",
+        "quote": "What happens after you submit your app, including the prerequisites your app needs to meet before review and how to prepare for a smooth submission.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Distributing through the Slack Marketplace involves a security review process the developer agrees to.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace.md",
+        "quote": "The policies, agreements, and security review process you agree to when you distribute your app through the Slack Marketplace.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "Marketplace review checks the app against guidelines covering suitability, functionality, security, design and listing details.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace.md",
+        "quote": "The guidelines we check your app against during review, covering app suitability, functionality, security, design, and the details of your listing.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "Apps must demonstrate usage of all scopes, both required and optional, and handle missing optional scopes gracefully.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Apps must demonstrate usage of all scopes (both required and optional) and handle the absence of optional scopes gracefully.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "Installing a published app fails with unapproved_scope if the requested scopes are still in review or were never submitted for review.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Occurs if attempting to install a published app for which the requested scopes aren't approved either because they're still in review for that app, or they weren't yet submitted for review by the app developer.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote describes the condition but doesn't name the unapproved_scope error."
+      },
+      {
+        "id": "c11",
+        "text": "An app that does not support org-wide installation can only be installed on the workspace that owns it.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Your app does not support org-wide installation. Your app can only be installed on the workspace that owns it.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "Installing an undistributed app on a team where it was not created produces the invalid_team_for_non_distributed_app error.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Occurs when attempting to install/authorize an undistributed Slack API app on a team where the app was not created.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote describes the condition but doesn't name the error invalid_team_for_non_distributed_app."
+      },
+      {
+        "id": "c13",
+        "text": "Slack apps can be created through the Slack app settings page at api.slack.com/apps.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/app-management.md",
+        "quote": "Follow [this guide](https://docs.slack.dev/app-management/quickstart-app-settings.md) to create an app via the [app settings](https://api.slack.com/apps) that can send messages using webhooks.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "An app can be created through the Slack app settings page at api.slack.com/apps.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/app-management.md",
+        "quote": "Follow [this guide](https://docs.slack.dev/app-management/quickstart-app-settings.md) to create an app via the [app settings](https://api.slack.com/apps) that can send messages using webhooks.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "The client ID is found on the App Management page.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Include both your app's client ID, which is found in the App Management page,",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "Token exchange requires both the temporary authorization code and the app's client secret.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "You have to prove both that you have the right temporary authorization code, and that you have your app's client secret.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "A Redirect URL can be configured in the App Management page under OAuth & Permissions.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Alternatively, you can configure a Redirect URL in the App Management page under OAuth & Permissions",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "A Redirect URL must use HTTPS.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "A Redirect URL must also use HTTPS.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "A Redirect URL cannot contain an anchor (#).",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "A Redirect URL can not contain an anchor ( # ).",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "Bot scopes are requested through the scope parameter and are for the app's bot user.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "The scope list requests scopes for your app's bot user.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote says the scope list requests bot user scopes but doesn't name the 'scope' parameter explicitly."
+      },
+      {
+        "id": "c21",
+        "text": "User scopes are requested through the user_scope parameter, instead of or in addition to bot scopes.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "If you have specific need for a user token (for example, so that you can act on behalf of a user), provide a user_scope parameter with requested user scopes instead of, or in addition to, the scope parameter.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "Developers can mark individual scopes as optional so users choose which permissions to grant.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Optional scopes allow you to mark certain permissions as optional during app configuration, giving users more control over what data your app can access while reducing installation abandonment.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "A developer can bring their own OAuth app by creating a custom auth config in Composio.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "**Custom auth configs**: You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "The redirect_uri must match, or be a subdirectory of, a Redirect URL configured under App Management.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Your redirect_uri must match or be a subdirectory of a Redirect URL configured under App Management .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "With multiple Redirect URLs, redirect_uri must be sent and be the same in both Authorize and Access steps, or bad_redirect_uri occurs.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "When there are multiple Redirect URL values configured, the redirect_url parameter must be sent in both the Authorize and Access steps described below, and the parameter value must be the same for both steps",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "A scope conflict occurs when Sign in with Slack user scopes are combined with other scopes in the same OAuth flow.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "A scope conflict occurs when attempting to combine Sign in with Slack (SIWS) user scopes with non-Sign in with Slack scopes in the same OAuth flow",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c27",
+        "text": "Installing an app in an Enterprise org with scopes that are not org-compatible produces the scope_not_allowed_on_enterprise error.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Occurs when attempting to install an app in an Enterprise org containing scopes that are not org-compatible.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote describes the condition but doesn't name scope_not_allowed_on_enterprise."
+      },
+      {
+        "id": "c28",
+        "text": "The temporary authorization code expires after ten minutes.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "That's your temporary authorization code, which expires after ten minutes.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c29",
+        "text": "Admins can approve app installations, including choosing which optional scopes to permit.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/concepts/security.md",
+        "quote": "Admins can approve app installations, including selecting which optional scopes to permit, from either the Slack system DM or the App Management page.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c30",
+        "text": "Upgrading to an org-level installation may require an Org Owner or Org Admin; other members are directed elsewhere or shown an error asking them to contact an admin.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "When the app is already installed on individual workspaces in that org, upgrading to an org-level installation may require an Org Owner or Org Admin: other members are either directed to a workspace where they can install the app, or shown an error asking them to contact an admin.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T20:28:28.512Z",
+    "generated_by": "agent v2 (v2.9-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-sonnet-5-5 · anthropic_web_search",
+    "duration_ms": 142607,
+    "query": "Slack",
+    "partial": false,
+    "warnings": [
+      "\"Slack Marketplace listing\": the path (\"app_review\") is not backed by a verified source, so it is shown as unconfirmed.",
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 30,
+      "quotes_checked": 30,
+      "quotes_verified": 30,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 100071,
+      "output_tokens": 44358,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:30.915Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:30.915Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:30.915Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/slack",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:30.915Z",
+        "via": "direct",
+        "chars": 5219
+      },
+      {
+        "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "title": "Installing via OAuth authorization code flow | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:26:36.852Z",
+        "via": "direct",
+        "chars": 21041
+      },
+      {
+        "url": "https://docs.slack.dev/",
+        "title": "Slack developer docs | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:26:36.895Z",
+        "via": "direct",
+        "chars": 1226
+      },
+      {
+        "url": "https://slack.com/",
+        "title": "Slack | AI Work Platform & Productivity Tools",
+        "fetched_at": "2026-10-21T20:26:42.331Z",
+        "via": "direct",
+        "chars": 5731
+      },
+      {
+        "url": "https://slack.com/intl/en-in//",
+        "title": "Slack | AI work platform and productivity tools",
+        "fetched_at": "2026-10-21T20:26:42.346Z",
+        "via": "direct",
+        "chars": 5812
+      },
+      {
+        "url": "https://docs.slack.dev/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:42.367Z",
+        "via": "direct",
+        "chars": 4418
+      },
+      {
+        "url": "https://docs.slack.dev/authentication.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:42.382Z",
+        "via": "direct",
+        "chars": 2168
+      },
+      {
+        "url": "https://docs.slack.dev/reference.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:42.399Z",
+        "via": "direct",
+        "chars": 1425
+      },
+      {
+        "url": "https://docs.slack.dev/app-management.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:42.399Z",
+        "via": "direct",
+        "chars": 1716
+      },
+      {
+        "url": "https://docs.slack.dev/slack-marketplace.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:42.401Z",
+        "via": "direct",
+        "chars": 2912
+      },
+      {
+        "url": "https://docs.slack.dev/concepts/security.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:26:42.402Z",
+        "via": "direct",
+        "chars": 26933
+      },
+      {
+        "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+        "title": "Getting Started | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:26:42.420Z",
+        "via": "direct",
+        "chars": 17854
+      },
+      {
+        "url": "https://docs.slack.dev/apis/web-api/rate-limits/",
+        "title": "Rate limits | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:27:31.063Z",
+        "via": "direct",
+        "chars": 9312
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.9-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-sonnet-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E51"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E3",
+            "E7",
+            "E8",
+            "E52",
+            "E53",
+            "E54",
+            "E55",
+            "E56",
+            "E57"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E4",
+            "E58"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E35",
+            "E36",
+            "E59",
+            "E60",
+            "E61",
+            "E62"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E63",
+            "E64",
+            "E65"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-review-guidelines",
+            "https://api.slack.com/slack-marketplace/review-process",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guidelines/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-review/"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guidelines/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-review/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-review.md"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E6",
+            "E14",
+            "E15",
+            "E16",
+            "E17",
+            "E18",
+            "E19",
+            "E20",
+            "E21",
+            "E22",
+            "E66",
+            "E67",
+            "E68"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E23",
+            "E33",
+            "E34",
+            "E69",
+            "E70",
+            "E71",
+            "E72",
+            "E73",
+            "E74",
+            "E84",
+            "E85",
+            "E86",
+            "E87",
+            "E88",
+            "E89",
+            "E90"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://slack.com/intl/en-in//"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E5",
+            "E24",
+            "E25",
+            "E26",
+            "E27",
+            "E28",
+            "E29",
+            "E30",
+            "E31",
+            "E32",
+            "E75",
+            "E76",
+            "E77",
+            "E78",
+            "E79",
+            "E80"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E81",
+            "E82",
+            "E83"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/reference.md",
+            "https://docs.slack.dev/",
+            "https://docs.slack.dev/app-management.md",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.com/intl/en-in//",
+            "https://slack.com/",
+            "https://docs.slack.dev/apis/web-api/rate-limits/"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-review-guidelines",
+            "https://api.slack.com/slack-marketplace/review-process",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-process.md",
+            "https://docs.slack.dev/llms.txt",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-review-guidelines.md"
+          ]
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E38",
+            "E39",
+            "E40",
+            "E41",
+            "E42",
+            "E43",
+            "E44",
+            "E45",
+            "E46",
+            "E47",
+            "E48",
+            "E49",
+            "E50",
+            "E91",
+            "E92",
+            "E93",
+            "E94"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication.md",
+          "quote": "These are added in the app settings when building an app.",
+          "answer": "OAuth scopes for a Slack app are added in the app settings when building the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.382Z",
+          "page_hash": "5d99f576b8c067a1",
+          "offsets": [
+            936,
+            993
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace.md",
+          "quote": "What happens after you submit your app, including the prerequisites your app needs to meet before review and how to prepare for a smooth submission.",
+          "answer": "Listing an app in the Slack Marketplace involves a review that happens after you submit the app, and the app must meet prerequisites before that review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.401Z",
+          "page_hash": "984fe6ef7c5f76df",
+          "offsets": [
+            2229,
+            2377
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace.md",
+          "quote": "The policies, agreements, and security review process you agree to when you distribute your app through the Slack Marketplace.",
+          "answer": "Distributing an app through the Slack Marketplace involves a security review process that the developer agrees to.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.401Z",
+          "page_hash": "984fe6ef7c5f76df",
+          "offsets": [
+            2785,
+            2911
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace.md",
+          "quote": "The guidelines we check your app against during review, covering app suitability, functionality, security, design, and the details of your listing.",
+          "answer": "The Slack Marketplace review checks the app against guidelines covering app suitability, functionality, security, design, and the details of the listing.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.401Z",
+          "page_hash": "984fe6ef7c5f76df",
+          "offsets": [
+            2528,
+            2675
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G10",
+          "url": "https://docs.slack.dev/app-management.md",
+          "quote": "Follow [this guide](https://docs.slack.dev/app-management/quickstart-app-settings.md) to create an app via the [app settings](https://api.slack.com/apps) that can send messages using webhooks.",
+          "answer": "The page says an app can be created through the Slack app settings page at api.slack.com/apps, using a linked quickstart guide. That app is one that can send messages using webhooks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.399Z",
+          "page_hash": "43e440bf5fabc358",
+          "offsets": [
+            312,
+            504
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G8",
+          "url": "https://docs.slack.dev/app-management.md",
+          "quote": "If you're looking for more specialized admin functions to manage apps across an Enterprise organization (multiple Slack workspaces within the same organization), including app approvals, invite requests, and setting up allowlists, head over to [Admin resources](https://docs.slack.dev/admins.md).",
+          "answer": "For Enterprise organizations (multiple workspaces within one organization), admin functions include app approvals, invite requests, and allowlists. These are handled in the separate Admin resources, not on this page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.399Z",
+          "page_hash": "43e440bf5fabc358",
+          "offsets": [
+            1419,
+            1715
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G2",
+          "url": "https://docs.slack.dev/app-management.md",
+          "quote": "Learn about undistributed, unlisted distributed, and listed distributed apps, along with the implications of each in the guide to [Distribution](https://docs.slack.dev/app-management/distribution.md).",
+          "answer": "The page names three distribution categories (undistributed, unlisted distributed, listed distributed) and says their implications are covered in a separate Distribution guide. It does not state what each requires.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.399Z",
+          "page_hash": "43e440bf5fabc358",
+          "offsets": [
+            553,
+            753
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G2",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "By default, any member can install an app.",
+          "answer": "By default, in a Slack workspace any member can install an app. The page does not mention any provider review for this.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            7923,
+            7965
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Always allowed: Low-risk scopes that can be used without special approval (e.g., `commands`, `chat:write`).",
+          "answer": "The page suggests a developer-side scope policy with three tiers. Low-risk scopes (example: commands, chat:write) are always allowed without special approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            4145,
+            4252
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Requires approval: Higher-risk scopes that require manual review (e.g., `channels:history`, `users:read`).",
+          "answer": "Under that suggested policy, higher-risk scopes (example: channels:history, users:read) require manual review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            4261,
+            4367
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Restricted: High-risk scopes that are forbidden or only allowed in exceptional circumstances (e.g., `admin`).",
+          "answer": "Under that suggested policy, high-risk scopes (example: admin) are forbidden or allowed only in exceptional circumstances.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            4376,
+            4485
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Create and document a clear policy that categorizes scopes.",
+          "answer": "The page's suggested scope policy is something the developer should create and document, and the tiers above are part of it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            4077,
+            4136
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Automatically approved and always granted upon installation.",
+          "answer": "Required scopes are automatically approved and always granted when the app is installed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            9818,
+            9878
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Once enabled, members can only install apps that have been pre-approved; all other apps must be submitted for approval.",
+          "answer": "An admin can turn on a Require App Approval setting. Once it is on, members can only install pre-approved apps, and all other apps must be submitted for approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8244,
+            8363
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Enable an approval requirement: Navigate to your organization dashboard → **Workspaces** → Select the workspace → **Manage** → **Manage apps** → **App Management Settings** and toggle on **Require App Approval**.",
+          "answer": "The Require App Approval toggle is found under the workspace's Manage apps and App Management Settings.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8031,
+            8243
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Admins can proactively pre-approve apps that members can install freely and restrict high-risk or unapproved apps to prevent installation requests.",
+          "answer": "Admins can pre-approve apps that members may install freely, and can restrict high-risk or unapproved apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8386,
+            8533
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Designate specific \"App Managers\" (either individual members or entire user groups) to help review and process app requests to avoid administrative bottlenecks.",
+          "answer": "Admins can designate App Managers (individual members or user groups) to review and process app requests.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8559,
+            8719
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Admins can approve app installations, including selecting which optional scopes to permit, from either the Slack system DM or the App Management page.",
+          "answer": "Admins can approve app installations, including choosing which optional scopes to permit, from the Slack system DM or the App Management page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            9413,
+            9563
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Presented as checkboxes during the approval flow. Admins select which optional scopes users are allowed to grant.",
+          "answer": "During approval, optional scopes appear as checkboxes, and the admin selects which optional scopes users are allowed to grant.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            9904,
+            10017
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Members can only choose from the optional scopes that the admin has pre-approved.",
+          "answer": "Members can only choose from the optional scopes the admin has pre-approved.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            10042,
+            10123
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Create rules that automatically approve or restrict apps based on various conditions, such as their requested scopes, whether they are internal or from the Marketplace, or specific app IDs.",
+          "answer": "Admins can set automation rules that automatically approve or restrict apps based on requested scopes, whether the app is internal or from the Marketplace, or specific app IDs.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            10599,
+            10788
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Admins can manage whether members are permitted to use their Slack credentials to sign into third-party services.",
+          "answer": "Admins can control whether members may use their Slack credentials to sign into third-party services (Sign in with Slack).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8815,
+            8928
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G9",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Ensure the redirect URIs defined in your app are limited only to domain names in your direct control.",
+          "answer": "The page advises that an app's redirect URIs should be limited only to domain names the developer directly controls, to prevent authorization codes from being redirected to malicious sites.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            2226,
+            2327
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G10",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Select the **OAuth & Permissions** section from the left-hand navigation.",
+          "answer": "The page's only console steps are for the IP allowlist (Restrict API Token Usage), not for creating the app or getting its client ID and secret: open app management, select the app, then open the OAuth & Permissions section.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.402Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            6124,
+            6197
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "To issue a bot token, install your Slack app that has a bot user to your development workspace.",
+          "answer": "To get a bot token, install the Slack app that has a bot user into your development workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            8897,
+            8992
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "go to Settings > Install App on the left pane",
+          "answer": "The bot token is found in the app settings: choose the app, then go to Settings > Install App.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            9067,
+            9112
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "go to Settings > Basic Information on the left pane, and find App Credentials > Signing Secret on the page.",
+          "answer": "The signing secret is found in the app settings under Settings > Basic Information, in App Credentials > Signing Secret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            9710,
+            9817
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "Go to Settings > Socket Mode on the left pane",
+          "answer": "For Socket Mode apps, turn on Enable Socket Mode under Settings > Socket Mode.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            12301,
+            12346
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "Go to Features > Slash Commands on the left pane",
+          "answer": "A slash command is created under Features > Slash Commands by clicking Create New Command.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            12380,
+            12428
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "Request URL : https://{your domain here}/slack/events - if you use ngrok for development, the URL would be https://{random}.ngrok.io/slack/events",
+          "answer": "For HTTP apps, the slash command's Request URL is entered as https://{your domain here}/slack/events.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            13008,
+            13153
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "Go to Settings > Install App and click Reinstall App button",
+          "answer": "After changing the command configuration, click Reinstall App under Settings > Install App.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            13219,
+            13278
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G10",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "add an app-level token with connections:write scope",
+          "answer": "For Socket Mode, the setup checklist requires creating an app-level token with the connections:write scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            11246,
+            11297
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G9",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "A well-known way is to use ngrok - install it and run ngrok http 3000 on another terminal",
+          "answer": "For local HTTP development, the guide suggests exposing the app with ngrok, for example by running ngrok http 3000.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            12670,
+            12759
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G9",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "Request URL : https://{your domain here}/slack/events - if you use ngrok for development, the URL would be https://{random}.ngrok.io/slack/events",
+          "answer": "The slash command Request URL in the HTTP setup is an HTTPS address on the developer's domain ending in /slack/events.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            13008,
+            13153
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G4",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "add app_mentions:read bot scope, install the app to your development workspace",
+          "answer": "The example HTTP app in this guide adds the app_mentions:read bot scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            11863,
+            11941
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G4",
+          "url": "https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "quote": "add commands bot scope, add an app-level token with connections:write scope , and install the app to your development workspace",
+          "answer": "The example Socket Mode app in this guide adds the commands bot scope plus an app-level token with connections:write.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:42.420Z",
+          "page_hash": "5d89484df81c0eb6",
+          "offsets": [
+            11222,
+            11349
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Slack](/toolkits/slack.md) | `SLACK` |",
+          "answer": "Slack is listed under 'Composio-managed OAuth available', so Composio supplies a managed OAuth app for Slack.",
+          "kind": "composio_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            6150,
+            6191
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "A toolkit is listed under 'Composio-managed OAuth available' when Composio manages at least one of its OAuth methods; each method must be checked on the toolkit's own page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1000,
+            1153
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app.",
+          "answer": "Composio provides the OAuth app for a toolkit when the toolkit's composio_managed_auth_schemes field (from the toolkit endpoint) contains that toolkit's OAuth method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            824
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Some toolkits support more than one authentication method.",
+          "answer": "Some toolkits support more than one authentication method, so the managed status can differ per method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            941,
+            999
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack, so the developer does not need to register their own OAuth app for those managed toolkits.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available. Use them when:",
+          "answer": "Managed apps are the default when they are available, and Composio requests sensible default scopes for each toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            494
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Composio requests sensible default scopes for each toolkit, and those defaults may not include everything a developer needs.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With a managed app, users see the consent screen text \"Composio wants to access your account\" during OAuth instead of the developer's app name.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+          "answer": "Managed apps share their API quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1511
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for triggers; a developer's own app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Use your own credentials for toolkits where users see consent screens (GitHub, Google, Slack) and Composio managed auth for the rest.",
+          "answer": "The page names Slack as a toolkit where users see consent screens, and suggests using your own credentials for it rather than Composio managed auth.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2168,
+            2301
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "**Custom auth configs**: You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "A developer can bring their own OAuth app by creating a custom auth config, which provides their own OAuth app credentials to Composio for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            204,
+            349
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+          "answer": "A developer can create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1996,
+            2112
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "Managed-app availability for a given toolkit is checked on the separate Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G1",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Slack apps are installed with a v2 OAuth 2.0 flow.",
+          "answer": "Slack apps are installed using the v2 OAuth 2.0 flow, which the page describes as the current version.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            32,
+            82
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "OAuth allows a user in any Slack workspace to install your app.",
+          "answer": "Any user in any Slack workspace can install the app through OAuth; the page does not mention a provider review before this.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            456,
+            519
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Redirecting a user to Slack can be done with a single link.",
+          "answer": "Redirecting a user to Slack to install the app can be done with a single link, which the page gives as an example.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            1066,
+            1125
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your app does not support org-wide installation. Your app can only be installed on the workspace that owns it.",
+          "answer": "For an app not publicly distributed that does not support org-wide installation, it can only be installed on the workspace that owns it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            7204,
+            7314
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs when attempting to install/authorize an undistributed Slack API app on a team where the app was not created.",
+          "answer": "Installing or authorizing an undistributed app on a team where the app was not created produces the invalid_team_for_non_distributed_app error.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            19830,
+            19945
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs if attempting to install a published app for which the requested scopes aren't approved either because they're still in review for that app, or they weren't yet submitted for review by the app developer.",
+          "answer": "For a published app, installation fails with unapproved_scope if the requested scopes are still in review or were never submitted for review by the developer.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            20142,
+            20352
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your app is created inside an Enterprise org that supports org-wide installation. Your app can be installed on any workspace in the same org, and team can select among them.",
+          "answer": "An app created inside an Enterprise org that supports org-wide installation can be installed on any workspace in the same org.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            7439,
+            7612
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G3",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Apps must demonstrate usage of all scopes (both required and optional) and handle the absence of optional scopes gracefully.",
+          "answer": "The page says apps must demonstrate usage of all scopes, both required and optional, and handle missing optional scopes gracefully.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            13213,
+            13337
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "The scope list requests scopes for your app's bot user.",
+          "answer": "Bot scopes are requested through the scope parameter and are for the app's bot user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            3404,
+            3459
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "If you have specific need for a user token (for example, so that you can act on behalf of a user), provide a user_scope parameter with requested user scopes instead of, or in addition to, the scope parameter.",
+          "answer": "User scopes are requested through the user_scope parameter, either instead of or in addition to bot scopes, for example to act on behalf of a user.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            3460,
+            3668
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Also note that each installation can result in additive scopes.",
+          "answer": "Each installation can add scopes to the token, and scopes cannot be removed from an existing token without revoking it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            3670,
+            3733
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Optional scopes allow you to mark certain permissions as optional during app configuration, giving users more control over what data your app can access while reducing installation abandonment.",
+          "answer": "Developers can mark individual scopes as optional so users can choose which permissions to grant, which the page says can reduce installation abandonment.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            9120,
+            9313
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G5",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "That's your temporary authorization code, which expires after ten minutes.",
+          "answer": "The temporary authorization code returned to the redirect URL expires after ten minutes; the page does not describe a testing-mode limit.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            11572,
+            11646
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G5",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "OAuth tokens do not expire.",
+          "answer": "OAuth access tokens do not expire on their own; they stay valid until revoked.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            18182,
+            18209
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G5",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your app can only be installed on the workspace that owns it.",
+          "answer": "A non-distributed app is restricted to installation on the workspace that owns it, as described for apps not supporting org-wide installation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            7253,
+            7314
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G8",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "During installation, users are presented with the optional scopes the admin has pre-approved and can choose which ones to grant.",
+          "answer": "During installation, users are shown the optional scopes an admin has pre-approved and choose which to grant.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            10936,
+            11064
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G8",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "When the app is already installed on individual workspaces in that org, upgrading to an org-level installation may require an Org Owner or Org Admin: other members are either directed to a workspace where they can install the app, or shown an error asking them to contact an admin.",
+          "answer": "Upgrading an app already installed on individual workspaces to an org-level installation may require an Org Owner or Org Admin; other members are directed to a workspace or shown an error asking them to contact an admin.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            6776,
+            7057
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G8",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Enterprise administrators expect that when they install your app on their workspace, employees will connect using corporate-managed accounts.",
+          "answer": "The page states that enterprise administrators expect employees to connect using corporate-managed accounts when the app is installed on their workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            17163,
+            17304
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "The redirect_uri must use HTTPS.",
+          "answer": "The redirect_uri must use HTTPS.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4347,
+            4379
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "A Redirect URL must also use HTTPS.",
+          "answer": "A Redirect URL configured in the app settings must also use HTTPS.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4483,
+            4518
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your redirect_uri must match or be a subdirectory of a Redirect URL configured under App Management .",
+          "answer": "The redirect_uri must match, or be a subdirectory of, a Redirect URL configured under App Management.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            5718,
+            5819
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "A Redirect URL can not contain an anchor ( # ).",
+          "answer": "A Redirect URL cannot contain an anchor (#).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            5820,
+            5867
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "When there are multiple Redirect URL values configured, the redirect_url parameter must be sent in both the Authorize and Access steps described below, and the parameter value must be the same for both steps",
+          "answer": "When multiple Redirect URLs are configured, the redirect_uri value must be sent and must be the same in both the Authorize and Access steps, or a bad_redirect_uri error occurs.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4520,
+            4727
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "If there are multiple Redirect URL values configured, but no redirect_uri parameter is sent, the OAuth flow will use the first Redirect URL listed on the App Management page.",
+          "answer": "If multiple Redirect URLs are configured and no redirect_uri is sent, the flow uses the first Redirect URL listed on the App Management page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            5392,
+            5566
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Include both your app's client ID, which is found in the App Management page,",
+          "answer": "The client ID is found on the App Management page and is included in the authorization request along with the scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            3090,
+            3167
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Alternatively, you can configure a Redirect URL in the App Management page under OAuth & Permissions",
+          "answer": "A Redirect URL can be configured in the App Management page under OAuth & Permissions.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4380,
+            4480
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "In the app settings, uncheck the checkbox next to any scope you want to mark as optional.",
+          "answer": "In the app settings, a scope is marked optional by unchecking the checkbox next to it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            9425,
+            9514
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Add optional scopes to the bot_optional or user_optional fields within the oauth_config.scopes object.",
+          "answer": "In an app manifest, optional scopes are added to the bot_optional or user_optional fields within oauth_config.scopes, and must also be listed in the bot or user fields.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            9533,
+            9635
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "You have to prove both that you have the right temporary authorization code, and that you have your app's client secret.",
+          "answer": "Token exchange requires both the temporary authorization code and the app's client secret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            2335,
+            2455
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "If you're developing a GovSlack app for use by public sector customers, redirect users to https://slack-gov.com/oauth/v2/authorize",
+          "answer": "For GovSlack apps used by public sector customers, users are redirected to the slack-gov.com authorize endpoint instead.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            2745,
+            2875
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G11",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "A scope conflict occurs when attempting to combine Sign in with Slack (SIWS) user scopes with non-Sign in with Slack scopes in the same OAuth flow",
+          "answer": "A scope conflict occurs when Sign in with Slack user scopes are combined with non-Sign in with Slack scopes in one OAuth flow, so each set must be requested in a separate flow.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            2879,
+            3025
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G11",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs when attempting to install an app in an Enterprise org containing scopes that are not org-compatible.",
+          "answer": "Installing an app in an Enterprise org that contains scopes not org-compatible produces the scope_not_allowed_on_enterprise error.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            19983,
+            20091
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G11",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "The following is a list of scopes that are not org-compatible:",
+          "answer": "The page begins a list of scopes that are not org-compatible, with bot shown as the first entry before the page content ends.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:36.852Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            20383,
+            20445
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "When proxying, you set the authorized redirect URI in your own OAuth app's settings to your own endpoint, such as https://yourdomain.com/api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example redirect URI uses an https domain you control (yourdomain.com).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "The proxy endpoint receives the OAuth callback and immediately 302-redirects it to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.",
+          "answer": "The proxy endpoint must return a 302 redirect, and must not follow the redirect server-side or make a fetch call to Composio, so the user's browser completes the OAuth flow.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3494
+          ]
+        },
+        {
+          "id": "E88",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "By default, the browser briefly redirects through backend.composio.dev during OAuth so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E89",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits display the Composio callback URL on the consent screen; routing through your own domain is an option only if you need to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E90",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "You can proxy the redirect through your own domain if you need to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E91",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "| [**OAuth consent screen**](#using-your-own-oauth-apps)                | \"Composio wants to access your account\" on Google, GitHub, etc. | Use your own OAuth app                               |",
+          "answer": "On the default flow, the OAuth consent screen on providers such as Google and GitHub says 'Composio wants to access your account'; using your own OAuth app is the fix for this. (General page content, not specific to Slack.)",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            585,
+            779
+          ]
+        },
+        {
+          "id": "E92",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "You should add your own OAuth app only for toolkits where the provider consent screen must show your brand. (General guidance, not specific to Slack.)",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E93",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "The Composio callback URL that the redirect proxy forwards to is https://backend.composio.dev/api/v3/toolkits/auth/callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E94",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "When you use your own domain as a proxy, the redirect URI you register in your OAuth app is your own endpoint, not Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:26:30.915Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 36340
+        },
+        {
+          "name": "extract https://docs.slack.dev/authentication.md",
+          "stop": "ok (1 facts)",
+          "ms": 5498
+        },
+        {
+          "name": "extract https://docs.slack.dev/slack-marketplace.md",
+          "stop": "ok (3 facts)",
+          "ms": 7663
+        },
+        {
+          "name": "extract https://docs.slack.dev/reference.md",
+          "stop": "ok (0 facts)",
+          "ms": 3317
+        },
+        {
+          "name": "extract https://docs.slack.dev/",
+          "stop": "ok (0 facts)",
+          "ms": 6276
+        },
+        {
+          "name": "extract https://docs.slack.dev/app-management.md",
+          "stop": "ok (3 facts)",
+          "ms": 8560
+        },
+        {
+          "name": "extract https://docs.slack.dev/concepts/security.md",
+          "stop": "ok (17 facts)",
+          "ms": 24672
+        },
+        {
+          "name": "extract https://docs.slack.dev/tools/java-slack-sdk/guides/getting-started-with-bolt/",
+          "stop": "ok (12 facts)",
+          "ms": 15387
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (3 facts)",
+          "ms": 6927
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (10 facts)",
+          "ms": 9066
+        },
+        {
+          "name": "extract https://docs.slack.dev/authentication/installing-with-oauth/",
+          "stop": "ok (33 facts)",
+          "ms": 35828
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (11 facts)",
+          "ms": 13125
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 17830
+        },
+        {
+          "name": "gap: important details",
+          "stop": "finished",
+          "ms": 19316
+        },
+        {
+          "name": "extract https://slack.com/intl/en-in//",
+          "stop": "ok (0 facts)",
+          "ms": 4019
+        },
+        {
+          "name": "extract https://slack.com/",
+          "stop": "ok (0 facts)",
+          "ms": 4333
+        },
+        {
+          "name": "extract https://docs.slack.dev/apis/web-api/rate-limits/",
+          "stop": "ok (0 facts)",
+          "ms": 4367
+        }
+      ],
+      "judge": {
+        "checked": 37,
+        "supported": 22,
+        "partial": 13,
+        "unsupported": 2,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "Quotes show any workspace user can install via OAuth, but say nothing about whether the provider reviews the app."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "unsupported",
+            "reason": "Quotes don't list the ordered steps (create app, set redirect URL and scopes)."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "supported",
+            "reason": "With approval required, non-pre-approved apps must be submitted for admin approval."
+          },
+          {
+            "id": "s1.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote says once enabled, apps must be pre-approved or submitted for approval."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "partial",
+            "reason": "Quotes mention a security review process and review of submissions, but don't explicitly say the provider approves or that it is required."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "partial",
+            "reason": "A review process is mentioned for Marketplace distribution, but 'always' isn't stated."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "Quotes mention prerequisites, submission and review, but not the ordered steps explicitly."
+          },
+          {
+            "id": "s2.checks",
+            "verdict": "partial",
+            "reason": "Quotes don't list what review checks; the listed items (why data, working demo) aren't stated."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "partial",
+            "reason": "Install fails when scopes are unapproved, which is a limit, but it's an install failure, not limited working."
+          },
+          {
+            "id": "s2.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote says installs of published apps fail when requested scopes aren't approved."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "Admins with approval required must pre-approve apps or approve submissions."
+          },
+          {
+            "id": "s2.mod1.note",
+            "verdict": "supported",
+            "reason": "Quote states members can only install pre-approved apps once enabled."
+          },
+          {
+            "id": "s3.path",
+            "verdict": "unsupported",
+            "reason": "Quote is a guide to creating an app; says nothing about provider review."
+          },
+          {
+            "id": "s3.gates",
+            "verdict": "partial",
+            "reason": "Quote mentions creating an app in app settings but not installing to the owning workspace as an ordered step."
+          },
+          {
+            "id": "s3.mod0",
+            "verdict": "partial",
+            "reason": "Quotes show an installation limit to the owning workspace, though 'before approval' isn't addressed."
+          },
+          {
+            "id": "s3.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote says the app can only be installed on the workspace that owns it."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "Quotes support an unlisted app being installable by any workspace and Marketplace having review, but not timing like 'within hours' or the unknown wait."
+          },
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "Quote matches exactly."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "Quote matches exactly."
+          },
+          {
+            "id": "c3",
+            "verdict": "supported",
+            "reason": "Quote says redirecting a user to Slack can be done with a single link."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "Quote states this when enabled."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Quote mentions prerequisites before review and post-submission process."
+          },
+          {
+            "id": "c7",
+            "verdict": "supported",
+            "reason": "Quote mentions the security review process agreed to for Marketplace distribution."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "Quote lists the same areas."
+          },
+          {
+            "id": "c9",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c10",
+            "verdict": "partial",
+            "reason": "Quote describes the condition but doesn't name the unapproved_scope error."
+          },
+          {
+            "id": "c11",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c12",
+            "verdict": "partial",
+            "reason": "Quote describes the condition but doesn't name the error invalid_team_for_non_distributed_app."
+          },
+          {
+            "id": "c20",
+            "verdict": "partial",
+            "reason": "Quote says the scope list requests bot user scopes but doesn't name the 'scope' parameter explicitly."
+          },
+          {
+            "id": "c21",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c22",
+            "verdict": "supported",
+            "reason": "Quote says scopes can be marked optional giving users more control."
+          },
+          {
+            "id": "c26",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c27",
+            "verdict": "partial",
+            "reason": "Quote describes the condition but doesn't name scope_not_allowed_on_enterprise."
+          },
+          {
+            "id": "c28",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c29",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c30",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 36340,
+        "discover_read": 176,
+        "extract": 37810,
+        "gapfill": 19319,
+        "extract_late": 4377,
+        "write": 28774,
+        "verify": 15809
+      }
+    }
+  }
+}

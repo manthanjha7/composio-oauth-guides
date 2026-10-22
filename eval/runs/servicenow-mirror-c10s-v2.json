@@ -1,0 +1,2399 @@
+{
+  "slug": "servicenow",
+  "guide": {
+    "app": {
+      "name": "ServiceNow",
+      "website": "https://www.servicenow.com",
+      "developer_docs_url": "https://developer.servicenow.com"
+    },
+    "oauth_supported": "yes",
+    "summary": "Agent connecting to customers' instances (self-serve (no review step found in the docs), wait none); Listing on the ServiceNow Store (approval path unconfirmed, wait 3-5 weeks). Where the path is unconfirmed, the agent did not find it in the provider's docs.",
+    "verdict": "Agent connecting to customers' instances (self-serve (no review step found in the docs), wait none).",
+    "default_scenario": "s1",
+    "composio": {
+      "toolkit_slug": "servicenow",
+      "managed_oauth": "no",
+      "credential_guide_url": null,
+      "note": "Composio lists ServiceNow under 'Bring your own OAuth app', so you must supply your own client ID and secret."
+    },
+    "need_own_app": {
+      "answer": "Yes. Composio has no managed OAuth app for ServiceNow, so you must register an OAuth client (application registry record) on the customer's instance and give its client ID and secret to Composio.",
+      "reasons": [
+        "No Composio managed app exists for ServiceNow",
+        "Managed apps show Composio branding on the consent screen",
+        "Managed apps share quota; your own app gets dedicated quota",
+        "Self-hosted or instance-specific variants need their own app"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Agent connecting to customers' instances",
+        "when_this_applies": "Your agent connects to each customer's own ServiceNow instance through an OAuth client registered on that instance.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-3 hours per instance",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No provider review found in the docs for this setup; customer admin availability not documented.",
+          "max_days": null
+        },
+        "approval": "No ServiceNow review found. The customer instance issues tokens itself, and an admin with the right role registers the client.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c4",
+          "c5"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [],
+        "trigger": "none",
+        "modifiers": [],
+        "path_claim_ids": [
+          "c1",
+          "c2"
+        ],
+        "shortcut_claim_ids": [],
+        "path_basis": "inferred"
+      },
+      {
+        "id": "s2",
+        "label": "Listing on the ServiceNow Store",
+        "when_this_applies": "You publish an app on the ServiceNow Store, which requires certification.",
+        "difficulty": "unknown",
+        "hands_on": {
+          "estimate": "Unknown",
+          "basis": "No evidence on submission effort."
+        },
+        "waiting": {
+          "estimate": "3-5 weeks",
+          "basis": "c6 for certification; c7 for reported shorter reviews.",
+          "max_days": 35
+        },
+        "approval": "Store certification, separate from the OAuth client. Recertification can be required later.",
+        "claim_ids": [
+          "c6",
+          "c7",
+          "c8"
+        ],
+        "shortcut": null,
+        "extras": [
+          "Reviews repeat on changes or periodically"
+        ],
+        "modifiers": [
+          {
+            "kind": "recurring",
+            "qualifier": "required",
+            "note": "Reviews repeat on changes or periodically",
+            "claim_ids": [
+              "c8"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c6"
+        ],
+        "shortcut_claim_ids": []
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Admin role on the instance",
+        "detail": "Creating the OAuth entity needs oauth_admin; managing OAuth integration needs security_admin.",
+        "claim_ids": [
+          "c3",
+          "c4",
+          "c5"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "Valid TLS certificate",
+        "detail": "Instances must not use self-signed certificates for OAuth endpoints.",
+        "claim_ids": [
+          "c9",
+          "c10"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create OAuth client in Application Registry",
+        "owner": "you",
+        "detail": "In the instance go to System OAuth > Application Registry and create the OAuth record. The client ID is auto-generated.",
+        "inputs": [
+          "Instance admin login",
+          "Redirect URI from Composio dashboard"
+        ],
+        "done_when": "You have the client ID and client secret.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c3",
+          "c11",
+          "c12",
+          "c13"
+        ]
+      },
+      {
+        "title": "Copy redirect URI from Composio",
+        "owner": "agent",
+        "detail": "Take the redirect URI from the Composio dashboard and check it matches what is saved in the instance.",
+        "inputs": [
+          "Composio dashboard"
+        ],
+        "done_when": "Both redirect URIs match.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c14"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the servicenow auth config through Composio's API with your client ID and secret.",
+        "inputs": [
+          "Client ID",
+          "Client secret"
+        ],
+        "done_when": "Auth config exists.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c15"
+        ]
+      },
+      {
+        "title": "Submit Store certification",
+        "owner": "you",
+        "detail": "Submit the app for certification if listing on the Store.",
+        "inputs": [
+          "Finished app"
+        ],
+        "done_when": "Submission accepted.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c6"
+        ]
+      },
+      {
+        "title": "Wait for certification",
+        "owner": "waiting",
+        "detail": "Typically 3-5 weeks from submission.",
+        "inputs": [],
+        "done_when": "App ready for publishing.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c6"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Self-signed certificates fail",
+        "detail": "The OAuth client does not allow connections to endpoints using self-signed certificates.",
+        "claim_ids": [
+          "c9",
+          "c10"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "Each customer needs its own setup",
+        "detail": "The token endpoint is on each customer's instance hostname, so client setup happens per instance.",
+        "claim_ids": [
+          "c2"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "Managed app is not available",
+        "detail": "Do not plan on Composio's managed app for ServiceNow.",
+        "claim_ids": [
+          "c15"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Cannot see Application Registry or create OAuth records",
+        "what_it_means": "Your user lacks the required role.",
+        "what_to_do": "Ask the instance admin for oauth_admin or security_admin.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c3",
+          "c4"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Whether ServiceNow requires any review for third-party apps using OAuth on customer instances: ask ServiceNow developer support.",
+      "Scope limits, token lifetimes, and customer admin approval requirements were not found: check the instance's OAuth documentation.",
+      "Hands-on effort for Store certification: check the ServiceNow Store certification guide.",
+      "Not found: what each review or verification checks and what the developer must submit. Checked servicenow.com, servicenow.com.",
+      "Not found: limits before approval. Checked servicenow.com, servicenow.com.",
+      "Not found: customer side. Checked servicenow.com, servicenow.com.",
+      "Not found: scope or permission tiers. Checked servicenow.com, servicenow.com."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "The client uses a client ID and secret already configured in the application registry; the page does not describe automatic client registration.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+        "quote": "The consumer of the resource uses the client ID and client secret that is already configured in the application registry.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "The ServiceNow instance itself issues access tokens; the token request goes to the customer's instance endpoint (instancename.service-now.com/oauth_token.do).",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+        "quote": "https://instancename.service-now.com/oauth_token.do",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The token endpoint URL on the instance is shown, but the quote doesn't explicitly state the instance issues the tokens."
+      },
+      {
+        "id": "c3",
+        "text": "Creating the OAuth entity in ServiceNow requires the oauth_admin role.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+        "quote": "Role required: oauth_admin",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "Managing the OAuth integration on a ServiceNow instance requires the security_admin role.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+        "quote": "You must have the security_admin role to manage the OAuth integration.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Creating the OAuth JWT API endpoint requires the admin role.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+        "quote": "Role required: admin",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "ServiceNow Store certification typically takes 3-5 weeks from design complete and submission to ready for publishing.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/community/app-publisher-blog/guide-to-getting-your-app-certified-and-certification/ba-p/2477630",
+        "quote": "Certification, from design complete and submission for certification to ready for publishing on the store, typically requires 3-5 weeks.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "A community forum answer reports full Store reviews have taken up to 7 days.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/community/developer-forum/how-long-does-it-take-servicenow-to-approve-an-app-for-the-store/m-p/3608360",
+        "quote": "The former, 1-2 days. Full reviews I've seen taken up to 7 days depending on what checks are required",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "Store apps can require recertification after initial certification.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/community/app-publisher-blog/guide-to-getting-your-app-certified-and-certification/ba-p/2477630",
+        "quote": "In addition to the initial certification, ServiceNow Store apps can require recertification.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "The ServiceNow AI Platform does not support self-signed certificates for OAuth.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+        "quote": "The ServiceNow AI Platform does not support self-signed certificates.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "The OAuth client does not allow connection to OAuth endpoints that use a self-signed certificate.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+        "quote": "The OAuth client does not utilize the certificate trust store or allow connection to OAuth endpoints that incorporate a self-signed certificate.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "In the instance, go to System OAuth > Application Registry.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+        "quote": "Navigate to System OAuth > Application Registry.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "The client ID is auto-generated by the system.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+        "quote": "[Required] Auto-generated unique ID of the client application requesting the access token.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "The client secret is a shared secret string used by the instance and the OAuth application.",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+        "quote": "[Required] Shared secret string that the instance and the OAuth application use to authorize communications with one another.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "The redirect URL configured in ServiceNow must match the redirect URL registered with the other provider (example given for Google).",
+        "label": "provider_docs",
+        "source_url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+        "quote": "This URL must match the redirect URL provided to Google.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "ServiceNow is listed under 'Bring your own OAuth app' in Composio, so no managed OAuth app is supplied.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "| [ServiceNow](/toolkits/servicenow.md) | `SERVICENOW` |",
+        "probe_id": null,
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T14:31:56.917Z",
+    "generated_by": "agent v2 (v2.9-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-sonnet-5-5 · composio_search",
+    "duration_ms": 131562,
+    "query": "ServiceNow",
+    "partial": true,
+    "warnings": [
+      "\"Listing on the ServiceNow Store\": the path (\"app_review\") is not backed by a verified source, so it is shown as unconfirmed.",
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 15,
+      "quotes_checked": 15,
+      "quotes_verified": 15,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 115781,
+      "output_tokens": 38848,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T14:29:45.619Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T14:29:45.619Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T14:29:45.619Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/servicenow",
+        "title": null,
+        "fetched_at": "2026-10-21T14:29:45.619Z",
+        "via": "direct",
+        "chars": 374
+      },
+      {
+        "url": "https://www.servicenow.com",
+        "title": "ServiceNow - Put AI to Work",
+        "fetched_at": "2026-10-21T14:30:00.672Z",
+        "via": "composio_fetch",
+        "chars": 5143
+      },
+      {
+        "url": "https://developer.servicenow.com",
+        "title": "ServiceNow Developers",
+        "fetched_at": "2026-10-21T14:30:01.610Z",
+        "via": "composio_fetch",
+        "chars": 432
+      },
+      {
+        "url": "https://www.servicenow.com/llms.txt",
+        "title": "llms.txt",
+        "fetched_at": "2026-10-21T14:30:03.469Z",
+        "via": "composio_fetch",
+        "chars": 3415
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+        "title": "OAuth API request parameters",
+        "fetched_at": "2026-10-21T14:30:07.645Z",
+        "via": "composio_fetch",
+        "chars": 5747
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+        "title": "OAuth 2.0",
+        "fetched_at": "2026-10-21T14:30:07.660Z",
+        "via": "composio_fetch",
+        "chars": 7406
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+        "title": "OAuth API request parameters",
+        "fetched_at": "2026-10-21T14:30:08.220Z",
+        "via": "composio_fetch",
+        "chars": 6488
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+        "title": "Create a provider and profile",
+        "fetched_at": "2026-10-21T14:30:08.251Z",
+        "via": "composio_fetch",
+        "chars": 1690
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+        "title": "Manage OAuth tokens",
+        "fetched_at": "2026-10-21T14:30:08.267Z",
+        "via": "composio_fetch",
+        "chars": 2122
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+        "title": "Create an OAuth JWT API endpoint for external clients (machine to machine integration)",
+        "fetched_at": "2026-10-21T14:30:08.418Z",
+        "via": "composio_fetch",
+        "chars": 8590
+      },
+      {
+        "url": "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+        "title": "Partner-Led AI: Build Partner Program",
+        "fetched_at": "2026-10-21T14:30:08.674Z",
+        "via": "composio_fetch",
+        "chars": 5749
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+        "title": "Configure an OAuth OIDC provider for accepting third-party token",
+        "fetched_at": "2026-10-21T14:30:08.710Z",
+        "via": "composio_fetch",
+        "chars": 7873
+      },
+      {
+        "url": "https://www.servicenow.com/community/developer-articles/limit-the-access-granted-to-an-oauth-client-by-using-rest-api/ta-p/3173651",
+        "title": "Limit the access granted to an OAuth client by usi... - ServiceNow Community",
+        "fetched_at": "2026-10-21T14:30:55.089Z",
+        "via": "direct",
+        "chars": 7710
+      },
+      {
+        "url": "https://www.servicenow.com/community/app-publisher-blog/guide-to-getting-your-app-certified-and-certification/ba-p/2477630",
+        "title": "Guide to getting your App Certified And Certificat... - ServiceNow Community",
+        "fetched_at": "2026-10-21T14:30:55.741Z",
+        "via": "direct",
+        "chars": 5699
+      },
+      {
+        "url": "https://www.servicenow.com/community/developer-forum/how-long-does-it-take-servicenow-to-approve-an-app-for-the-store/m-p/3608360",
+        "title": "Solved: How long does it take ServiceNow to approve an app... - ServiceNow Community",
+        "fetched_at": "2026-10-21T14:30:55.759Z",
+        "via": "direct",
+        "chars": 2798
+      },
+      {
+        "url": "https://www.servicenow.com/docs/r/zurich/api-reference/web-services/t_SpecifyAnOAuthScope.html",
+        "title": "Specify a scope",
+        "fetched_at": "2026-10-21T14:30:56.134Z",
+        "via": "composio_fetch",
+        "chars": 1015
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.9-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-sonnet-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E14",
+            "E15",
+            "E29",
+            "E31",
+            "E32",
+            "E45",
+            "E46"
+          ],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E5",
+            "E6",
+            "E9",
+            "E10",
+            "E16",
+            "E17"
+          ],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+            "https://www.servicenow.com/community/developer-articles/limit-the-access-granted-to-an-oauth-client-by-using-rest-api/ta-p/3173651",
+            "https://www.servicenow.com/docs/r/zurich/api-reference/web-services/t_SpecifyAnOAuthScope.html"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E83",
+            "E84"
+          ],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+            "https://www.servicenow.com/community/app-publisher-blog/guide-to-getting-your-app-certified-and-certification/ba-p/2477630",
+            "https://www.servicenow.com/community/developer-forum/how-long-does-it-take-servicenow-to-approve-an-app-for-the-store/m-p/3608360"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E3",
+            "E4",
+            "E11",
+            "E58",
+            "E59",
+            "E60",
+            "E61",
+            "E62",
+            "E63",
+            "E64",
+            "E65"
+          ],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E7",
+            "E8",
+            "E12",
+            "E13",
+            "E18",
+            "E19",
+            "E20",
+            "E21",
+            "E22",
+            "E23",
+            "E24",
+            "E25",
+            "E26",
+            "E27",
+            "E28",
+            "E33",
+            "E34",
+            "E35",
+            "E36",
+            "E37",
+            "E38",
+            "E39",
+            "E40",
+            "E47",
+            "E48",
+            "E49",
+            "E50",
+            "E51",
+            "E52",
+            "E53",
+            "E54",
+            "E55",
+            "E56",
+            "E57"
+          ],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E30"
+          ],
+          "tried": [
+            "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+            "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+            "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+            "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+            "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+            "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "found",
+          "evidence": [
+            "E85"
+          ],
+          "tried": [
+            "https://www.servicenow.com/community/app-publisher-blog/guide-to-getting-your-app-certified-and-certification/ba-p/2477630",
+            "https://www.servicenow.com/community/developer-forum/how-long-does-it-take-servicenow-to-approve-an-app-for-the-store/m-p/3608360"
+          ]
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E41",
+            "E42",
+            "E43",
+            "E44",
+            "E66",
+            "E67",
+            "E68",
+            "E69",
+            "E70",
+            "E71",
+            "E72",
+            "E73",
+            "E74",
+            "E75",
+            "E76",
+            "E77",
+            "E78",
+            "E79",
+            "E80",
+            "E81",
+            "E82"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G1",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+          "quote": "You must have the security_admin role to manage the OAuth integration.",
+          "answer": "Managing the OAuth integration on a ServiceNow instance requires the security_admin role. This page does not describe a developer account, program, plan, or region for creating an app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.660Z",
+          "page_hash": "efc284a734b1d1b6",
+          "offsets": [
+            3089,
+            3159
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G2",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+          "quote": "The consumer of the resource uses the client ID and client secret that is already configured in the application registry.",
+          "answer": "For the client credentials grant, the client uses a client ID and secret already configured in the application registry. The page does not describe automatic or dynamic client registration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.660Z",
+          "page_hash": "efc284a734b1d1b6",
+          "offsets": [
+            6937,
+            7058
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G9",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+          "quote": "The ServiceNow AI Platform does not support self-signed certificates.",
+          "answer": "The ServiceNow AI Platform does not support self-signed certificates for OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.660Z",
+          "page_hash": "efc284a734b1d1b6",
+          "offsets": [
+            5837,
+            5906
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G9",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+          "quote": "The OAuth client does not utilize the certificate trust store or allow connection to OAuth endpoints that incorporate a self-signed certificate.",
+          "answer": "The OAuth client does not use the certificate trust store and does not allow connections to OAuth endpoints that use a self-signed certificate.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.660Z",
+          "page_hash": "efc284a734b1d1b6",
+          "offsets": [
+            5907,
+            6051
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G2",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "The instance verifies that the user is active, not currently locked out, and has an interactive session.",
+          "answer": "Tokens are issued by the ServiceNow instance itself, which checks the user before issuing them; the page does not say anything about app approval or review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.220Z",
+          "page_hash": "663b3184f4a75d01",
+          "offsets": [
+            4878,
+            4982
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G2",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "https://instancename.service-now.com/oauth_token.do",
+          "answer": "The example access token request is sent to an oauth_token.do endpoint on the instance's own hostname.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.220Z",
+          "page_hash": "663b3184f4a75d01",
+          "offsets": [
+            5573,
+            5624
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "Auto-generated unique ID of the client application requesting the access token.",
+          "answer": "The client ID is auto-generated by the system; the page does not say where in the console to find it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.220Z",
+          "page_hash": "663b3184f4a75d01",
+          "offsets": [
+            3868,
+            3947
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "Shared secret string that the instance and the OAuth application use to authorize communications with one another.",
+          "answer": "The client secret is a shared secret string used by the instance and the OAuth application to authorize communications; the page does not say where to get it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.220Z",
+          "page_hash": "663b3184f4a75d01",
+          "offsets": [
+            3979,
+            4093
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G2",
+          "url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "https://instancename.service-now.com/oauth_token.do",
+          "answer": "The ServiceNow instance itself issues access tokens; the token request is sent to the customer's instance token endpoint (instancename.service-now.com/oauth_token.do), so the instance acts as the OAuth server for the client.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.645Z",
+          "page_hash": "ec5f54251f473134",
+          "offsets": [
+            4832,
+            4883
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G2",
+          "url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "The instance requires clients to provide user login credentials when first authorizing the client or when authorizing the creation of a new refresh token.",
+          "answer": "The instance requires clients to supply user login credentials when first authorizing the client or when creating a new refresh token. This describes the instance's token flow, not a provider app review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.645Z",
+          "page_hash": "ec5f54251f473134",
+          "offsets": [
+            3896,
+            4050
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G9",
+          "url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "This type of authorization grant relies on TLS encryption to protect the user credentials during transmission.",
+          "answer": "The user-credentials (password) grant relies on TLS encryption to protect user credentials in transit.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.645Z",
+          "page_hash": "ec5f54251f473134",
+          "offsets": [
+            4436,
+            4546
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "[Required] Auto-generated unique ID of the client application requesting the access token.",
+          "answer": "The client_id is an auto-generated unique ID for the client application requesting the access token; it is a required token-request parameter.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.645Z",
+          "page_hash": "ec5f54251f473134",
+          "offsets": [
+            3116,
+            3206
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "quote": "[Required] Shared secret string that the instance and the OAuth application use to authorize communications with one another.",
+          "answer": "The client_secret is a required shared secret string that the instance and the OAuth application use to authorize communications with each other.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:07.645Z",
+          "page_hash": "ec5f54251f473134",
+          "offsets": [
+            3227,
+            3352
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G1",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Role required: admin",
+          "answer": "Creating the OAuth JWT API endpoint requires the admin role.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            1221,
+            1241
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G1",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Release version: Washingtondc Updated February 1, 2024 4 minutes to read",
+          "answer": "This page covers the Washingtondc release and was last updated February 1, 2024.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            179,
+            251
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G2",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Set up the configuration in your ServiceNow instance to verify the incoming JWT.",
+          "answer": "The JWT endpoint is configured inside the developer's own ServiceNow instance, which verifies incoming JWTs; the page describes no provider review step.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            1396,
+            1476
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G2",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "For example, you can develop an external application and use tokens to authenticate inbound requests to your ServiceNow instance.",
+          "answer": "The page describes using this JWT setup so an external application can authenticate inbound requests to a ServiceNow instance.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            1090,
+            1219
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Add the public key of the client app to the sys_certificate table.",
+          "answer": "First, add the client app's public key to the sys_certificate table.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            1326,
+            1392
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Navigate to System OAuth > Application Registry.",
+          "answer": "In the instance, go to System OAuth > Application Registry.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            1481,
+            1529
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Select Create an OAuth JWT API endpoint for external clients.",
+          "answer": "In the Application Registry, select the option to create an OAuth JWT API endpoint for external clients.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            1533,
+            1594
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "The auto-generated unique ID of the application.",
+          "answer": "The Client ID is an auto-generated unique ID of the application, and the system uses it to retrieve the public or shared key to validate the JWT.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            1826,
+            1874
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Leave this field empty to have the instance auto-generate a client secret.",
+          "answer": "Leaving the Client Secret field empty makes the instance auto-generate a client secret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            2223,
+            2297
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "To display existing client secrets, select the lock icon.",
+          "answer": "Existing client secrets can be displayed by selecting the lock icon.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            2298,
+            2355
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Note: If Public Client is selected, you can omit the Client Secret.",
+          "answer": "If the client is public (Public Client selected), the Client Secret can be omitted.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            2356,
+            2423
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Save the form.",
+          "answer": "Save the form after completing the OAuth JWT record.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            3842,
+            3856
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Add records to the JWT Verifier Maps related list to verify the JWT signature.",
+          "answer": "Add records to the JWT Verifier Maps related list to verify the JWT signature.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            3860,
+            3938
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "For certificates, you can add multiple verifier maps associated with multiple keys.",
+          "answer": "Multiple verifier maps can be added for certificates, associated with multiple keys.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            4619,
+            4702
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "quote": "Must match the value of the Client ID.",
+          "answer": "The JWT client must set the aud claim to match the Client ID; the page says the value of the Client ID is the match target.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.418Z",
+          "page_hash": "836757ab7f4f8965",
+          "offsets": [
+            577,
+            615
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G1",
+          "url": "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+          "quote": "A new Access level provides immediate access to training, tools, and development resources without full enrollment in the program, empowering partners to explore, innovate, and launch ideas quickly.",
+          "answer": "The Build Partner Program's new Access level gives partners immediate access to training, tools, and development resources without full enrollment in the program. This is about building on the ServiceNow platform, not about creating an OAuth app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.674Z",
+          "page_hash": "3e57ccfcd3aacf76",
+          "offsets": [
+            2543,
+            2741
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G11",
+          "url": "https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+          "quote": "Lowering barriers to joining the ServiceNow Partner Program, including simplified fees and program criteria",
+          "answer": "ServiceNow says it is lowering barriers to joining its Partner Program, including simplified fees and program criteria. The page gives no specific thresholds or numbers.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.674Z",
+          "page_hash": "3e57ccfcd3aacf76",
+          "offsets": [
+            832,
+            939
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G1",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "Role required: oauth_admin",
+          "answer": "Creating the OAuth entity in ServiceNow requires the oauth_admin role.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            376,
+            402
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G1",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "The ServiceNow AI Platform supports OpenID Connect (OIDC) through the external Single Sign-On (SSO) implementation in addition to inbound API calls.",
+          "answer": "The page describes the ServiceNow AI Platform, which supports OIDC through the external Single Sign-On implementation and inbound API calls.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            424,
+            572
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "Navigate to All > System OAuth > Application Registry.",
+          "answer": "The OIDC provider entity is created in the System OAuth Application Registry, reached via All > System OAuth > Application Registry.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            818,
+            872
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "Select New, then select Configure an OIDC provider to verify ID tokens, and then fill in the form.",
+          "answer": "To create it, select New, then choose the option to configure an OIDC provider to verify ID tokens, and fill in the form.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            876,
+            974
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "Alternately, you can select an existing template for an OIDC provider (ADFS, Auth0, Azure AD, Google, Okta), and then fill in the form.",
+          "answer": "Alternatively, an existing template for ADFS, Auth0, Azure AD, Google or Okta can be selected and then the form filled in.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            976,
+            1111
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "The client ID of the application registered in the third-party OAuth OIDC server. This value should be the same as the value of the `aud` claim in the JWT token.",
+          "answer": "The Client ID field takes the client ID of the application registered in the third-party OIDC server, and it should match the aud claim in the JWT token.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            1229,
+            1390
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "The record is saved in the Application Registries [oauth_entity] table.",
+          "answer": "The saved record is stored in the Application Registries [oauth_entity] table.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            2807,
+            2878
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "Go to the related list on the record OAuth Entity Scopes to define all available OAuth scopes for this OAuth provider.",
+          "answer": "Scopes are defined through the OAuth Entity Scopes related list on the record, and each scope must be taken from the provider's specification.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            3346,
+            3464
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "Each OAuth scope defined contains a name and a scope that you must get from the provider specification, such as a read-scope or a write-scope.",
+          "answer": "Each defined OAuth scope needs a name and a scope value taken from the provider specification, such as a read-scope or write-scope, and each scope is defined separately.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            3538,
+            3680
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "quote": "Register the app in the OpenID Connect Provider.",
+          "answer": "The app must first be registered in the OpenID Connect provider before the ServiceNow OIDC entity is configured.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.710Z",
+          "page_hash": "345fd64280de311a",
+          "offsets": [
+            4560,
+            4608
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [ServiceNow](/toolkits/servicenow.md) | `SERVICENOW` |",
+          "answer": "ServiceNow is listed under 'Bring your own OAuth app', so Composio does not supply a managed OAuth app for it on this page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            17988,
+            18044
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "## Bring your own OAuth app (219)",
+          "answer": "The page's 'Bring your own OAuth app' section is the list of toolkits that need the developer's own OAuth app; it has 219 toolkits.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            7756,
+            7789
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "For toolkits whose managed-OAuth field does not include the OAuth method, the developer must register their own OAuth app and supply its client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            825,
+            939
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "Some toolkits support more than one authentication method, and the developer should open the toolkit page to check each method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            941,
+            1153
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G1",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "Role required: oauth_admin",
+          "answer": "Creating the OAuth provider record in ServiceNow requires the oauth_admin role.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            413,
+            439
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G1",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "Updated September 10, 2026",
+          "answer": "The page is dated September 10, 2026.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            93,
+            119
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "You must have configured the Google service as an OAuth provider and recorded your Client ID and Client Secret values.",
+          "answer": "Before starting, the Google service must already be configured as an OAuth provider, and its Client ID and Client Secret must be recorded.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            293,
+            411
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "Navigate to All > System OAuth > Application Registry.",
+          "answer": "The provider is created in ServiceNow under All > System OAuth > Application Registry by clicking New.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            458,
+            512
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "Select Connect to a third party OAuth Provider.",
+          "answer": "A new OAuth provider is created by selecting 'Connect to a third party OAuth Provider'.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            530,
+            577
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "Enter the Client ID and Client Secret that you obtained from Google.",
+          "answer": "The Client ID and Client Secret obtained from Google are entered into the provider record.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            652,
+            720
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "Set the Default Grant type to Authorization Code.",
+          "answer": "The default grant type is set to Authorization Code.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            724,
+            773
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "In the Authorization URL field, enter https://accounts.google.com/o/oauth2/auth.",
+          "answer": "The example Authorization URL entered is https://accounts.google.com/o/oauth2/auth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            777,
+            857
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "In the Token URL field, enter https://www.googleapis.com/oauth2/v3/token.",
+          "answer": "The example Token URL entered is https://www.googleapis.com/oauth2/v3/token.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            861,
+            934
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "In the Token Revocation URL field, enter https://accounts.google.com/o/oauth2/revoke.",
+          "answer": "The example Token Revocation URL entered is https://accounts.google.com/o/oauth2/revoke.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            1077,
+            1162
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "A new OAuth Entity Profile record is created.",
+          "answer": "Saving the provider automatically creates an OAuth Entity Profile record.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            1213,
+            1258
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "In the OAuth Entity Scopes embedded list, add a new row with the Name and OAuth scope values set to https://www.googleapis.com/auth/contacts.readonly.",
+          "answer": "Scopes are configured by adding a row in the OAuth Entity Scopes embedded list with the Name and OAuth scope set (the page's example uses the Google contacts read-only scope).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            1263,
+            1413
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G10",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "In the OAuth Entity Profile Scopes embedded list, add a new row and select the Google contacts API read-only scope.",
+          "answer": "The scope is then added to the auto-created profile by adding a row in the OAuth Entity Profile Scopes embedded list and selecting the scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            1557,
+            1672
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G9",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "In the Redirect URL field, enter https://.service-now.com/oauth_redirect.do.",
+          "answer": "The example Redirect URL uses the form https://<instance>.service-now.com/oauth_redirect.do, on the ServiceNow instance domain.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            938,
+            1014
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G9",
+          "url": "https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "quote": "This URL must match the redirect URL provided to Google.",
+          "answer": "The redirect URL configured in ServiceNow must match the redirect URL registered with Google.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:30:08.251Z",
+          "page_hash": "5a5e8444f4d5574b",
+          "offsets": [
+            1016,
+            1072
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "In your OAuth app's settings, you set the authorized redirect URI to your own endpoint (example given: your own domain's /api/composio-redirect path).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example redirect URI uses an HTTPS URL on your own domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "Your proxy endpoint receives the OAuth callback and immediately sends a 302 redirect to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.",
+          "answer": "The proxy endpoint must return a 302 redirect to the browser; it must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3494
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token. Some toolkits also display this URL on the consent screen.",
+          "answer": "During OAuth the browser briefly redirects through Composio's backend.composio.dev domain so Composio can capture the auth token; some toolkits also display this URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2141
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "You can hide Composio's domain by proxying the redirect through your own domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "Composio's callback URL that the proxy redirects to is https://backend.composio.dev/api/v3/toolkits/auth/callback (shown in the example code, not specific to ServiceNow).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "The page's OAuth consent screen row shows the default consent text as 'Composio wants to access your account' on providers such as Google and GitHub, and the fix is to use your own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add a redirect proxy only when the browser must stay on your domain during the OAuth callback.",
+          "answer": "The page says a redirect proxy is needed only when the browser must stay on your domain during the OAuth callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1342,
+            1436
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack.",
+          "answer": "Composio registers and maintains its own OAuth apps for popular toolkits (examples given: GitHub, Gmail, Slack). This page does not mention ServiceNow specifically.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            153
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You do not need to register your own OAuth app.",
+          "answer": "For a Composio managed app, the developer does not need to register their own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            154,
+            201
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "With a custom auth config, the developer supplies their own OAuth app, API key, bearer token, or other credentials for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "Limit of managed apps: users see a consent screen saying Composio wants access, not the developer's app name.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "In production, users should see your app name, not \"Composio.\" This is the most common reason to switch.",
+          "answer": "Limit of managed apps: in production, users see the developer's app name only with their own app, and this is the most common reason to switch.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1145,
+            1249
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+          "answer": "Limit of managed apps: quota is shared across all Composio users, while a custom app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1511
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Limit of managed apps: managed auth enforces a 15-minute minimum polling interval; a custom app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Limit of managed apps: Composio's default scopes may not include everything needed, so custom scopes may require your own app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio requests sensible defaults for each toolkit.",
+          "answer": "Composio's managed apps request sensible default scopes for each toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            673,
+            726
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.",
+          "answer": "Self-hosted or regional variants of an app, such as a private Salesforce subdomain, need their own OAuth app rather than the managed one.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1722,
+            1819
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Enterprise customers require your branding end-to-end.",
+          "answer": "Enterprise customers who require the developer's branding end-to-end are a reason to use a custom app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1824,
+            1878
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You don't have to pick one approach for all toolkits.",
+          "answer": "Managed and custom approaches can be mixed: each toolkit gets its own auth config independently.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            2114,
+            2167
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "To check whether Composio provides the OAuth app for a toolkit, consult the Managed OAuth apps reference page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T14:29:45.619Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G6",
+          "url": "https://www.servicenow.com/community/app-publisher-blog/guide-to-getting-your-app-certified-and-certification/ba-p/2477630",
+          "quote": "Certification, from design complete and submission for certification to ready for publishing on the store, typically requires 3-5 weeks.",
+          "answer": "ServiceNow Store certification (not the OAuth app itself) typically takes 3-5 weeks from design complete and submission to ready for publishing, per an official ServiceNow Community guide dated 2023.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T14:30:55.741Z",
+          "page_hash": "3cc49f37f2e866c9"
+        },
+        {
+          "id": "E84",
+          "question": "G6",
+          "url": "https://www.servicenow.com/community/app-publisher-blog/guide-to-getting-your-app-certified-and-certification/ba-p/2477630",
+          "quote": "In addition to the initial certification, ServiceNow Store apps can require recertification.",
+          "answer": "Store apps can be re-reviewed: the guide points to separate recertification processes for new ServiceNow releases and for code changes. It gives no fixed yearly cycle, and no waiver policy was found.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T14:30:55.741Z",
+          "page_hash": "3cc49f37f2e866c9"
+        },
+        {
+          "id": "E85",
+          "question": "R1",
+          "url": "https://www.servicenow.com/community/developer-forum/how-long-does-it-take-servicenow-to-approve-an-app-for-the-store/m-p/3608360",
+          "quote": "The former, 1-2 days. Full reviews I've seen taken up to 7 days depending on what checks are required",
+          "answer": "Reported in a community forum answer (Store context): no-code-change family release revalidation takes 1-2 days, while full Store reviews have taken up to 7 days.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T14:30:55.759Z",
+          "page_hash": "e3603bae561821b7"
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 14768
+        },
+        {
+          "name": "extract https://www.servicenow.com/docs/r/platform-security/authentication/c_OAuthApplications.html",
+          "stop": "ok (4 facts)",
+          "ms": 11463
+        },
+        {
+          "name": "extract https://www.servicenow.com/docs/r/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "stop": "ok (4 facts)",
+          "ms": 12515
+        },
+        {
+          "name": "extract https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/r_OAuthAPIRequestParameters.html",
+          "stop": "ok (5 facts)",
+          "ms": 13302
+        },
+        {
+          "name": "extract https://www.servicenow.com/docs/r/yokohama/platform-security/authentication/t_ManageTokens.html",
+          "stop": "ok (0 facts)",
+          "ms": 4945
+        },
+        {
+          "name": "extract https://www.servicenow.com/docs/r/washingtondc/platform-security/authentication/create-jwt-endpoint.html",
+          "stop": "ok (15 facts)",
+          "ms": 19581
+        },
+        {
+          "name": "extract https://www.servicenow.com/blogs/2026/partner-led-ai-build-partner-program",
+          "stop": "ok (2 facts)",
+          "ms": 8651
+        },
+        {
+          "name": "extract https://www.servicenow.com/docs/r/platform-security/authentication/add-OIDC-entity.html",
+          "stop": "ok (10 facts)",
+          "ms": 12303
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (4 facts)",
+          "ms": 5689
+        },
+        {
+          "name": "extract https://www.servicenow.com/docs/r/api-reference/web-services/t_OAuthDemoCreateProvider.html",
+          "stop": "ok (15 facts)",
+          "ms": 11713
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (10 facts)",
+          "ms": 9740
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (14 facts)",
+          "ms": 10543
+        },
+        {
+          "name": "gap: official docs",
+          "stop": "finished",
+          "ms": 13678
+        },
+        {
+          "name": "gap: official docs (2)",
+          "stop": "finished",
+          "ms": 18454
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 30685
+        }
+      ],
+      "judge": {
+        "checked": 15,
+        "supported": 7,
+        "partial": 7,
+        "unsupported": 1,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "Quotes show a preconfigured client ID/secret in the app registry, but say nothing about whether provider review is needed."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "partial",
+            "reason": "Quotes mention a preconfigured client in the registry, but not the ordered steps or copying into Composio."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "partial",
+            "reason": "Roles are required to manage OAuth integration (admin action in the instance), but the quotes don't explicitly say the customer admin must approve or set up the app."
+          },
+          {
+            "id": "s1.mod0.note",
+            "verdict": "supported",
+            "reason": "Quotes state oauth_admin or security_admin role is required to manage OAuth."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "supported",
+            "reason": "Certification is required before publishing on the store."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "unsupported",
+            "reason": "The quote gives certification duration, not whether review is always required."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "Quote mentions design complete, submission for certification, and publishing, but not the ordered steps in full."
+          },
+          {
+            "id": "s2.wait",
+            "verdict": "supported",
+            "reason": "Quote states certification typically requires 3-5 weeks."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "Apps can require recertification after initial certification."
+          },
+          {
+            "id": "s2.mod0.note",
+            "verdict": "partial",
+            "reason": "Recertification is mentioned, but not the triggers of new releases or code changes."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "3-5 weeks for Store certification is supported, but 'in hours' for OAuth client setup is not stated, and the 1-2 days quote doesn't establish it."
+          },
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "Quote says the client ID and secret are already configured in the application registry."
+          },
+          {
+            "id": "c2",
+            "verdict": "partial",
+            "reason": "The token endpoint URL on the instance is shown, but the quote doesn't explicitly state the instance issues the tokens."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Quote states exactly 3-5 weeks typical."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "Quote states Store apps can require recertification."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 14768,
+        "discover_read": 8587,
+        "extract": 34309,
+        "gapfill": 30692,
+        "write": 20491,
+        "verify": 22714
+      }
+    }
+  }
+}

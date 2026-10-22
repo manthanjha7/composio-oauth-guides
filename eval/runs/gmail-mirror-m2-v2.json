@@ -1,0 +1,2079 @@
+{
+  "slug": "gmail",
+  "guide": {
+    "app": {
+      "name": "Gmail",
+      "website": "https://mail.google.com",
+      "developer_docs_url": "https://developers.google.com/workspace/gmail/api/guides"
+    },
+    "oauth_supported": "yes",
+    "summary": "Internal tool, same organization only (self-serve, wait none); Public agent, restricted Gmail scopes (app review, wait several weeks, no fixed figure); Public app, only sensitive scopes (app review, wait 3-5 business days typical).",
+    "verdict": "Easiest: Internal tool, same organization only (self-serve, wait none). Hardest: Public agent, restricted Gmail scopes (app review, wait several weeks, no fixed figure).",
+    "default_scenario": "s2",
+    "composio": {
+      "toolkit_slug": "gmail",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio's managed Gmail app works for prototypes. For production, create an auth config with your own client ID and secret."
+    },
+    "need_own_app": {
+      "answer": "For production, yes. The managed app shows Composio's name on the consent screen, uses default scopes and shares quota across all Composio users.",
+      "reasons": [
+        "Consent screen shows your brand, not Composio",
+        "Custom scopes instead of Composio's defaults",
+        "Own rate-limit quota, not shared",
+        "Shorter polling intervals than the 15-minute managed minimum"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Internal tool, same organization only",
+        "when_this_applies": "Only users in your own Google Workspace domain and Cloud Organization connect.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "c1 says internal apps skip verification",
+          "max_days": null
+        },
+        "approval": "No verification for internal apps in the same organization.",
+        "claim_ids": [
+          "c1"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "trigger": "none",
+        "modifiers": [],
+        "path_claim_ids": [
+          "c1"
+        ],
+        "path_basis": "stated",
+        "extras": []
+      },
+      {
+        "id": "s2",
+        "label": "Public agent, restricted Gmail scopes",
+        "when_this_applies": "Outside customers connect and the agent reads, composes or modifies mail on your servers.",
+        "difficulty": "hard",
+        "hands_on": {
+          "estimate": "2-4 days",
+          "basis": "estimate from steps: brand setup, demo video, scope justification, assessor work"
+        },
+        "waiting": {
+          "estimate": "Several weeks, no fixed figure",
+          "basis": "c9; the restricted-scope review includes the security assessment",
+          "max_days": null
+        },
+        "approval": "Brand verification, restricted-scope verification and a yearly security assessment by a Google-approved assessor.",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4",
+          "c5",
+          "c6",
+          "c7",
+          "c8",
+          "c9"
+        ],
+        "path": "app_review",
+        "shortcut": null,
+        "modifiers": [
+          {
+            "kind": "limited_before_approval",
+            "qualifier": "required",
+            "note": "Unverified apps capped at 100 new users",
+            "claim_ids": [
+              "c10",
+              "c11"
+            ]
+          },
+          {
+            "kind": "recurring",
+            "qualifier": "required",
+            "note": "Reviews repeat on changes or periodically",
+            "claim_ids": [
+              "c12",
+              "c13"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "path_basis": "stated",
+        "extras": [
+          "Unverified apps capped at 100 new users",
+          "Reviews repeat on changes or periodically"
+        ]
+      },
+      {
+        "id": "s3",
+        "label": "Public app, only sensitive scopes",
+        "when_this_applies": "Outside customers connect and you request only sensitive scopes such as gmail.send, with no restricted scopes.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-2 days",
+          "basis": "estimate from steps: brand setup, demo video, scope justification"
+        },
+        "waiting": {
+          "estimate": "3-5 business days typical",
+          "basis": "c14",
+          "max_days": 7
+        },
+        "approval": "Brand verification plus sensitive-scope verification; no security assessment is stated for sensitive-only scopes.",
+        "claim_ids": [
+          "c2",
+          "c14",
+          "c15"
+        ],
+        "path": "app_review",
+        "shortcut": null,
+        "modifiers": [
+          {
+            "kind": "limited_before_approval",
+            "qualifier": "required",
+            "note": "Unverified apps capped at 100 new users",
+            "claim_ids": [
+              "c10",
+              "c11"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c2",
+          "c3"
+        ],
+        "path_basis": "stated",
+        "extras": [
+          "Unverified apps capped at 100 new users"
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Verified domain for app homepage",
+        "detail": "The homepage must be on a domain you own and have verified, and must link the privacy policy.",
+        "claim_ids": [
+          "c16"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Demo video and scope justification",
+        "detail": "Prepare a video of the full flow including the OAuth grant, and a justification for each scope explaining why narrower scopes won't work.",
+        "claim_ids": [
+          "c17",
+          "c18",
+          "c19"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create Google OAuth app, internal type",
+        "owner": "you",
+        "detail": "Create the app in your Google Cloud project tied to your organization.",
+        "inputs": [
+          "Google Cloud Organization"
+        ],
+        "done_when": "Client ID and secret exist",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c1"
+        ]
+      },
+      {
+        "title": "Verify homepage domain and privacy policy",
+        "owner": "you",
+        "detail": "Host the homepage on a domain you have verified and link the privacy policy.",
+        "inputs": [
+          "Domain access",
+          "Privacy policy"
+        ],
+        "done_when": "Brand verification passes",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c16",
+          "c8"
+        ]
+      },
+      {
+        "title": "Draft scope justifications",
+        "owner": "agent",
+        "detail": "Write per-scope justification and why narrower scopes are insufficient.",
+        "inputs": [
+          "Scope list",
+          "Agent feature description"
+        ],
+        "done_when": "Justification text is ready",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c18",
+          "c19"
+        ]
+      },
+      {
+        "title": "Prepare demo script",
+        "owner": "agent",
+        "detail": "Draft a script showing the end-to-end flow including the OAuth grant.",
+        "inputs": [
+          "Working app build"
+        ],
+        "done_when": "Script is ready to record",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c17"
+        ]
+      },
+      {
+        "title": "Record demo and submit verification",
+        "owner": "you",
+        "detail": "Record the video and click submit in Google Cloud.",
+        "inputs": [
+          "Script",
+          "Justifications"
+        ],
+        "done_when": "Submission is accepted by Google",
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c17"
+        ]
+      },
+      {
+        "title": "Wait for sensitive-scope verification",
+        "owner": "waiting",
+        "detail": "Google reviews the submission.",
+        "inputs": [],
+        "done_when": "Google approves the scopes",
+        "scenario_ids": [
+          "s3"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c14"
+        ]
+      },
+      {
+        "title": "Complete security assessment with assessor",
+        "owner": "you",
+        "detail": "Engage a Google-approved assessor and complete the assessment.",
+        "inputs": [
+          "Assessor contract",
+          "Security documentation"
+        ],
+        "done_when": "Letter of Assessment issued",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c5",
+          "c6"
+        ]
+      },
+      {
+        "title": "Wait for restricted-scope verification",
+        "owner": "waiting",
+        "detail": "Google says this can take several weeks.",
+        "inputs": [],
+        "done_when": "Google approves the restricted scopes",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c9"
+        ]
+      },
+      {
+        "title": "Create Composio auth config via API",
+        "owner": "agent",
+        "detail": "Use your own client ID and secret, and copy the redirect URI from the Composio dashboard into your Google OAuth app.",
+        "inputs": [
+          "Client ID",
+          "Client secret",
+          "Composio redirect URI"
+        ],
+        "done_when": "Auth config created and a test connection works",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c20",
+          "c21"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Gmail mail-access scopes are restricted",
+        "detail": "Reading, composing and modifying mail all sit in the restricted tier. Only gmail.send is sensitive and only gmail.labels is non-sensitive.",
+        "claim_ids": [
+          "c7"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Security assessment repeats yearly",
+        "detail": "Google emails you when recertification is due. Reverification and a new assessment are needed at least every 12 months.",
+        "claim_ids": [
+          "c12",
+          "c13",
+          "c22"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "100 new user cap while unverified",
+        "detail": "An app showing the unverified screen is capped at 100 new users in total.",
+        "claim_ids": [
+          "c10",
+          "c11"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "title": "Managed app shows Composio branding",
+        "detail": "Users see Composio on the consent screen, not your app. Not suited to production.",
+        "claim_ids": [
+          "c23",
+          "c24"
+        ]
+      },
+      {
+        "title": "Testing status allows test users only",
+        "detail": "An app in Testing is available only to test users you add manually.",
+        "claim_ids": [
+          "c25"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "CASA instruction email never arrives",
+        "what_it_means": "The security-assessment step is stuck; developers report this in forums (not official).",
+        "what_to_do": "Check spam, then ask in Google's developer community or support channels.",
+        "agent_can_help": "Draft a clear support request with project details.",
+        "claim_ids": [
+          "c26",
+          "c27"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "symptom": "Unverified app warning screen before consent",
+        "what_it_means": "Sensitive or restricted scopes are not configured and verified.",
+        "what_to_do": "Configure the scopes on the consent screen and request verification.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c11"
+        ],
+        "scenario_ids": [
+          "s2",
+          "s3"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Exact wait for restricted-scope verification and assessment: ask Google through the verification submission or an assessor for a quote.",
+      "Assessor cost: not found; request quotes from Google-approved assessors.",
+      "Whether Composio's callback domain needs verifying for Google: not confirmed; check in the Google Cloud console and Composio docs.",
+      "Not found: customer side. Checked google.com, google.com."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Internal apps for users in the same G Suite domain, associated with a Cloud Organization that all users belong to, don't need to go through verification.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/7454865?hl=en",
+        "quote": "Internal apps: if your app is an internal web app for users in the same G Suite domain and the app is associated with a Cloud Organization that all of your users belong to, you don't need to go through verification.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "Apps requesting sensitive or restricted scopes must complete further requirements in addition to Brand Verification Requirements.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/13464321?hl=en",
+        "quote": "Apps requesting access to sensitive or restricted scopes must complete the following requirements in addition to Brand Verification Requirements",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Restricted scopes require a scope verification process unless the app qualifies for an exception.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "Restricted scopes provide wide access to Google user data and require a scope verification process unless the app qualifies for an exception.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "Apps accessing restricted data from or through a third-party server must undergo an annual security assessment by a Google-approved third party.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "Apps accessing restricted data from or through a third-party server must undergo an annual security assessment by a Google-approved third party.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Restricted-scope apps must pass an annual security assessment by a Google-empanelled group of security assessors.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/13464321?hl=en",
+        "quote": "submitting to an annual security assessment from a Google empanelled group of security assessors.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "Security assessments must be renewed every 12 months after the assessor's Letter of Assessment approval date.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "every 12 months after your assessor's Letter of Assessment (LOA) approval date.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Gmail mail-access scopes such as gmail.readonly, gmail.compose and gmail.modify are in the Restricted tier, and gmail.send is Sensitive.",
+        "label": "unknown",
+        "source_url": "https://developers.google.com/workspace/gmail/api/auth/scopes",
+        "quote": "The following Gmail API scopes are recommended for most use cases:",
+        "probe_id": null,
+        "note": "The quote does not support this claim: Quote only says scopes are recommended; no tiers listed."
+      },
+      {
+        "id": "c8",
+        "text": "Brand verification is an automated check that usually completes in a few minutes.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "The automated review usually completes in a few minutes.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote says an automated review completes in minutes, but doesn't name brand verification."
+      },
+      {
+        "id": "c9",
+        "text": "Restricted-scope verification, which includes the security assessment, can take several weeks.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "the restricted scopes verification process can potentially take several weeks to",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Several weeks is supported, but the quote doesn't say it includes the security assessment."
+      },
+      {
+        "id": "c10",
+        "text": "Unverified apps that show the unverified app screen are capped at 100 new users in total.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/7454865?hl=en",
+        "quote": "100 new users in total, after the app presents the unverified app screen",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "An app with sensitive or restricted scopes that is not configured and verified shows an unverified app warning screen.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/7454865?hl=en",
+        "quote": "Your app uses sensitive or restricted scopes and you haven't configured them in your OAuth consent screen configuration page and requested verification.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote gives the condition for the warning, but the warning screen is only implied."
+      },
+      {
+        "id": "c12",
+        "text": "Restricted-scope access must be re-verified and the security assessment repeated at least every 12 months.",
+        "label": "unknown",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "must be reverified for compliance and complete a security assessment at least",
+        "probe_id": null,
+        "note": "The claim states 12, which the quote does not contain."
+      },
+      {
+        "id": "c13",
+        "text": "Google emails the developer when it is time to recertify the app.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "The Google review team emails you when it is time to recertify your app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "Sensitive-scope verification typically takes 3-5 business days.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+        "quote": "The sensitive scope verification process typically takes 3-5 business days to complete.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "No verification is required during development, testing or staging.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+        "quote": "Therefore, if your app is in the development, testing, or staging phases, verification isn't required.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "The app homepage must be hosted on a verified domain you own.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/13464321?hl=en",
+        "quote": "The homepage must be hosted on a verified domain you own",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "The demo video must show the end-to-end flow of the app including the OAuth grant process.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/13464321?hl=en",
+        "quote": "Must show the end-to-end flow of your app including the OAuth grant process",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "You must provide a detailed justification for each requested scope.",
+        "label": "provider_docs",
+        "source_url": "https://support.google.com/cloud/answer/13464321?hl=en",
+        "quote": "You must provide a detailed justification for your requested scope(s) which should include",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "Restricted-scope submissions must describe scope use and why more limited scopes aren't sufficient.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "Describe how you will use the restricted scopes in your app and why more limited scopes aren't sufficient.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "A custom auth config lets the developer supply their own OAuth app credentials to Composio for a toolkit.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21",
+        "text": "A developer can create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "Restricted-scope verification must be repeated yearly, with Google sending the notice.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "The Google review team emails you when it is time to recertify your app.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote shows Google emails for recertification, but not that it is yearly or specific to restricted scopes."
+      },
+      {
+        "id": "c23",
+        "text": "With the managed app, users see Composio's name on the OAuth consent screen.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "In production, users should see your app name, not Composio.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "In production, users should see your app name, not \"Composio.\"",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "In Testing publishing status the app is available only to users you add to the test user list.",
+        "label": "provider_docs",
+        "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "quote": "This setting means that your app is still in development and is only available to users you add to the list of test users.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "Developers report being stuck in the CASA security assessment step because the instruction email never arrives (forum report, not official).",
+        "label": "provider_docs",
+        "source_url": "https://discuss.google.dev/t/casa-assessment-required-but-instruction-email-not-received/266520?page=2",
+        "quote": "Anyone solved this problem? We also have the same issue and we are stuck.",
+        "probe_id": null,
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      },
+      {
+        "id": "c27",
+        "text": "A developer waited days for the CASA instruction email with no way to reach support (forum report, not official).",
+        "label": "provider_docs",
+        "source_url": "https://discuss.google.dev/t/casa-assessment-required-but-instruction-email-not-received/266520?page=2",
+        "quote": "same issue, I’ve been waiting for 2 days this mail, and i cant contact anyone, how long it usually takes to arrive?",
+        "probe_id": null,
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T20:01:06.613Z",
+    "generated_by": "agent v2 (v2.9-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-sonnet-5-5 · composio_search",
+    "duration_ms": 184215,
+    "query": "Gmail",
+    "partial": true,
+    "warnings": [
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 27,
+      "quotes_checked": 27,
+      "quotes_verified": 26,
+      "downgraded": 2
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 133689,
+      "output_tokens": 40040,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T19:58:03.871Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T19:58:03.871Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T19:58:03.871Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/gmail",
+        "title": null,
+        "fetched_at": "2026-10-21T19:58:03.871Z",
+        "via": "direct",
+        "chars": 4749
+      },
+      {
+        "url": "https://developers.google.com/workspace/gmail/api/guides",
+        "title": "Gmail API overview  |  Google for Developers",
+        "fetched_at": "2026-10-21T19:58:08.891Z",
+        "via": "direct",
+        "chars": 4559
+      },
+      {
+        "url": "https://mail.google.com",
+        "title": "Gmail",
+        "fetched_at": "2026-10-21T19:58:41.282Z",
+        "via": "composio_fetch",
+        "chars": 614
+      },
+      {
+        "url": "https://developers.google.com/identity/protocols/oauth2/scopes",
+        "title": "OAuth 2.0 Scopes for Google APIs  |  Google for Developers",
+        "fetched_at": "2026-10-21T19:59:12.955Z",
+        "via": "direct",
+        "chars": 121294
+      },
+      {
+        "url": "https://developers.google.com/workspace/gmail/api/auth/scopes",
+        "title": "Choose Gmail API scopes  |  Google for Developers",
+        "fetched_at": "2026-10-21T19:59:20.114Z",
+        "via": "direct",
+        "chars": 6004
+      },
+      {
+        "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "title": "Restricted scope verification  |  App verification to use Google Authorization APIs  |  Google for Developers",
+        "fetched_at": "2026-10-21T19:59:20.172Z",
+        "via": "direct",
+        "chars": 18669
+      },
+      {
+        "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+        "title": "Verification requirements - Google Cloud Platform Console Help",
+        "fetched_at": "2026-10-21T19:59:32.491Z",
+        "via": "direct",
+        "chars": 10135
+      },
+      {
+        "url": "https://support.google.com/cloud/answer/7454865?hl=en",
+        "title": "Unverified apps - Google Cloud Platform Console Help",
+        "fetched_at": "2026-10-21T19:59:32.523Z",
+        "via": "direct",
+        "chars": 6896
+      },
+      {
+        "url": "https://discuss.google.dev/t/casa-assessment-required-but-instruction-email-not-received/266520?page=2",
+        "title": "CASA Assessment Required, but Instruction Email Not Received - Page 2 - Cloud Foundations & Onboarding - Google Developer forums",
+        "fetched_at": "2026-10-21T19:59:33.498Z",
+        "via": "direct",
+        "chars": 2216
+      },
+      {
+        "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+        "title": "Sensitive scope verification  |  App verification to use Google Authorization APIs  |  Google for Developers",
+        "fetched_at": "2026-10-21T19:59:33.503Z",
+        "via": "direct",
+        "chars": 15776
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.9-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-sonnet-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E38",
+            "E39",
+            "E40",
+            "E43"
+          ],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/overview",
+            "https://support.google.com/cloud/answer/13465431?hl=en",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+            "https://support.google.com/cloud/answer/13464321?hl=en",
+            "https://support.google.com/cloud/answer/7454865?hl=en"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E44",
+            "E45",
+            "E46",
+            "E47",
+            "E48",
+            "E49",
+            "E50"
+          ],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/overview",
+            "https://support.google.com/cloud/answer/13465431?hl=en",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+            "https://support.google.com/cloud/answer/13464321?hl=en",
+            "https://support.google.com/cloud/answer/7454865?hl=en"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E30"
+          ],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides",
+            "https://developers.google.com/identity/protocols/oauth2/scopes",
+            "https://developers.google.com/workspace/gmail/api/auth/scopes",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+            "https://support.google.com/a/answer/7281227?hl=en",
+            "https://support.google.com/a/answer/9352843?hl=en"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E51",
+            "E52",
+            "E53",
+            "E54"
+          ],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/overview",
+            "https://support.google.com/cloud/answer/13465431?hl=en",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+            "https://support.google.com/cloud/answer/13464321?hl=en",
+            "https://support.google.com/cloud/answer/7454865?hl=en"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E31",
+            "E32",
+            "E33",
+            "E34",
+            "E35"
+          ],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+            "https://discuss.google.dev/t/casa-assessment-required-but-instruction-email-not-received/266520?page=2",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides",
+            "https://developers.google.com/identity/protocols/oauth2/scopes",
+            "https://developers.google.com/workspace/gmail/api/auth/scopes",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+            "https://support.google.com/a/answer/7281227?hl=en",
+            "https://support.google.com/a/answer/9352843?hl=en"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "not_found",
+          "evidence": [
+            "E17",
+            "E18",
+            "E19",
+            "E20",
+            "E21",
+            "E22",
+            "E23",
+            "E24"
+          ],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://developers.google.com/workspace/gmail/api/guides"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "found",
+          "evidence": [
+            "E36",
+            "E37"
+          ],
+          "tried": [
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+            "https://discuss.google.dev/t/casa-assessment-required-but-instruction-email-not-received/266520?page=2",
+            "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification"
+          ]
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14",
+            "E15",
+            "E16",
+            "E25",
+            "E26",
+            "E27",
+            "E28"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Gmail](/toolkits/gmail.md) | `GMAIL` |",
+          "answer": "Gmail is listed under toolkits where Composio supplies the OAuth app (Composio-managed OAuth available), so Gmail does not require the developer to register their own OAuth app.",
+          "kind": "composio_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            3088,
+            3129
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "Composio can provide the OAuth app that users authorize when they connect a toolkit, and the developer does not need to register an OAuth app or supply a client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app.",
+          "answer": "To check whether Composio provides the OAuth app for a toolkit, call the toolkit endpoint and read the composio_managed_auth_schemes field; if it contains the toolkit's OAuth method, Composio provides the app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            824
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "If composio_managed_auth_schemes does not contain the toolkit's OAuth method, the developer must register their own OAuth app and supply its client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            825,
+            939
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "Some toolkits support more than one authentication method; a toolkit is listed under Composio-managed OAuth when Composio manages at least one OAuth method, so each method must be checked on the toolkit page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            941,
+            1153
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app.md) for setup steps and trade-offs.",
+          "answer": "The page refers readers to a separate Managed vs custom auth page for setup steps and trade-offs of managed versus custom apps.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1155,
+            1266
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits such as Gmail, so you do not need to register your own OAuth app for those.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            153
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Composio managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With the managed app, users see the Composio name on the OAuth consent screen, not the developer's app name.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "In production, users should see your app name, not \"Composio.\"",
+          "answer": "Managed apps are not suited to production where users should see the developer's app name, since users would see Composio instead.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1145,
+            1207
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio requests sensible defaults for each toolkit.",
+          "answer": "Managed apps use Composio's default scopes for each toolkit, so custom scopes need the developer's own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            673,
+            726
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users.",
+          "answer": "Managed apps share their rate-limit quota across all Composio users.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1474
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for polling triggers; the developer's own app can use shorter intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "A custom auth config lets the developer supply their own OAuth app or other credentials to Composio for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+          "answer": "A developer can create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1996,
+            2112
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Use your own credentials for toolkits where users see consent screens (GitHub, Google, Slack) and Composio managed auth for the rest.",
+          "answer": "Developers can mix approaches: their own credentials for toolkits with consent screens such as Google and GitHub, and managed auth for the rest.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            2168,
+            2301
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "During OAuth, the browser briefly redirects through Composio's backend.composio.dev domain so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also display Composio's backend URL on the OAuth consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "To hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add a redirect proxy only when the browser must stay on your domain during the OAuth callback.",
+          "answer": "Only add a redirect proxy when the browser must stay on your domain during the OAuth callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1342,
+            1436
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "In your OAuth app's settings, you set the authorized redirect URI to your own endpoint, given as an example URL on your domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example authorized redirect URI on your own domain is https://yourdomain.com/api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "The proxy endpoint on your domain receives the OAuth callback and immediately sends a 302 redirect to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy endpoint must return a 302 redirect; it must not follow the redirect server-side or make a fetch call to Composio, because the user's browser needs to be redirected.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3413
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+          "answer": "Composio's OAuth callback URL that the proxy forwards to is https://backend.composio.dev/api/v3/toolkits/auth/callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            2734,
+            2792
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, the provider's OAuth consent screen shows \"Composio wants to access your account\" on Google, GitHub, etc. (the page does not say this applies to Gmail specifically).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Use your own OAuth app",
+          "answer": "To change the consent screen branding, use your own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            725,
+            747
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:58:03.871Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G4",
+          "url": "https://developers.google.com/workspace/gmail/api/auth/scopes",
+          "quote": "The following Gmail API scopes are recommended for most use cases:",
+          "answer": "Gmail's non-sensitive scopes are limited to add-on scopes and gmail.labels; the mail-access scopes an agent would typically need (gmail.readonly, gmail.compose, gmail.modify, gmail.metadata, gmail.insert, gmail.settings.basic, and mail.google.com) sit in the Restricted tier, and gmail.send is Sensitive.",
+          "kind": "provider_docs",
+          "status": "rejected",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.114Z",
+          "page_hash": "e0528b27b2939f94"
+        },
+        {
+          "id": "E30",
+          "question": "G4",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "Apps accessing restricted data from or through a third-party server must undergo an annual security assessment by a Google-approved third party.",
+          "answer": "Apps that request restricted Gmail scopes and access that data through a third-party server must complete an annual security assessment by a Google-approved assessor, in addition to scope verification.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E31",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "The sensitive scope verification process typically takes 3-5 business days to complete.",
+          "answer": "Google's published typical turnaround for sensitive-scope verification is 3-5 business days.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:33.503Z",
+          "page_hash": "c5c33956197f303a"
+        },
+        {
+          "id": "E32",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "the restricted scopes verification process can potentially take several weeks to",
+          "answer": "Google says restricted-scope verification, which includes the security assessment, can take several weeks, with no fixed published figure.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E33",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "must be reverified for compliance and complete a security assessment at least",
+          "answer": "Restricted-scope access must be re-verified and the security assessment repeated at least every 12 months after the assessor's Letter of Assessment approval date.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E34",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "The Google review team emails you when it is time to recertify your app.",
+          "answer": "Google emails the developer when recertification is due, so the yearly re-review is triggered by Google's notice.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E35",
+          "question": "G6",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+          "quote": "Therefore, if your app is in the development, testing, or staging phases, verification isn't required.",
+          "answer": "No verification is required during development, testing, or staging; Google calls this an exception, not a waiver.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:33.503Z",
+          "page_hash": "c5c33956197f303a"
+        },
+        {
+          "id": "E36",
+          "question": "R1",
+          "url": "https://discuss.google.dev/t/casa-assessment-required-but-instruction-email-not-received/266520?page=2",
+          "quote": "Anyone solved this problem? We also have the same issue and we are stuck.",
+          "answer": "Developers report getting stuck in the CASA security-assessment step because the Trust & Safety instruction email never arrives (forum report, not official).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:33.498Z",
+          "page_hash": "9600ad89755604a6"
+        },
+        {
+          "id": "E37",
+          "question": "R1",
+          "url": "https://discuss.google.dev/t/casa-assessment-required-but-instruction-email-not-received/266520?page=2",
+          "quote": "same issue, I’ve been waiting for 2 days this mail, and i cant contact anyone, how long it usually takes to arrive?",
+          "answer": "A developer waited days for the CASA instruction email with no way to reach support, a reported blocker (forum report, not official).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:33.498Z",
+          "page_hash": "9600ad89755604a6"
+        },
+        {
+          "id": "E38",
+          "question": "G2",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "Apps requesting access to sensitive or restricted scopes must complete the following requirements in addition to Brand Verification Requirements",
+          "answer": "Brand verification applies to every app before outside users connect; a further scope review is triggered only when sensitive or restricted scopes are requested.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E39",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "Restricted scopes provide wide access to Google user data and require a scope verification process unless the app qualifies for an exception.",
+          "answer": "Restricted-scope apps must pass scope verification unless they fall under a listed exception.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E40",
+          "question": "G2",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "Apps accessing restricted data from or through a third-party server must undergo an annual security assessment by a Google-approved third party.",
+          "answer": "Restricted-scope apps that access data through a third-party server must complete an annual third-party security assessment.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E41",
+          "question": "G2",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "if your app is in the development, testing, or staging phases, verification isn't required.",
+          "answer": "Verification is not needed while the app is in development, testing or staging; it is needed to make the app available to any Google Account user.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E42",
+          "question": "G2",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "One use case is if you are the only user of your app or if your app is used by only a few users, all of whom are known personally to you.",
+          "answer": "Use by a few personally known users is an exception to verification; outside organizations generally need review.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E43",
+          "question": "G2",
+          "url": "https://support.google.com/cloud/answer/7454865?hl=en",
+          "quote": "Internal apps: if your app is an internal web app for users in the same G Suite domain and the app is associated with a Cloud Organization that all of your users belong to, you don't need to go through verification.",
+          "answer": "Internal apps used only by users of the same organization do not need verification; this does not cover outside customers.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.523Z",
+          "page_hash": "b5aa1abb1ef377ca"
+        },
+        {
+          "id": "E44",
+          "question": "G3",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "The homepage must be hosted on a verified domain you own",
+          "answer": "Brand verification checks the app homepage, which must be on a domain the developer has verified and must link the privacy policy.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E45",
+          "question": "G3",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "Must show the end-to-end flow of your app including the OAuth grant process",
+          "answer": "Sensitive/restricted-scope review requires a demonstration video showing the full flow including the OAuth grant.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E46",
+          "question": "G3",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "You must provide a detailed justification for your requested scope(s) which should include",
+          "answer": "The developer must submit a detailed justification for each requested scope, including why narrower scopes would not work.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E47",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "Describe how you will use the restricted scopes in your app and why more limited scopes aren't sufficient.",
+          "answer": "Restricted-scope submissions must describe scope use and why narrower scopes are insufficient.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E48",
+          "question": "G3",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "submitting to an annual security assessment from a Google empanelled group of security assessors.",
+          "answer": "Restricted-scope apps must pass an annual security assessment by a Google-empanelled assessor.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E49",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "every 12 months after your assessor's Letter of Assessment (LOA) approval date.",
+          "answer": "Security assessments must be renewed at least every 12 months after the assessor's Letter of Assessment approval date.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E50",
+          "question": "G3",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "The automated review usually completes in a few minutes.",
+          "answer": "Brand verification is an automated check that usually completes in minutes; manual review applies if it fails.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E51",
+          "question": "G5",
+          "url": "https://support.google.com/cloud/answer/7454865?hl=en",
+          "quote": "100 new users in total, after the app presents the unverified app screen",
+          "answer": "Unverified apps that show the unverified app screen are capped at 100 new users in total.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.523Z",
+          "page_hash": "b5aa1abb1ef377ca"
+        },
+        {
+          "id": "E52",
+          "question": "G5",
+          "url": "https://support.google.com/cloud/answer/7454865?hl=en",
+          "quote": "Your app uses sensitive or restricted scopes and you haven't configured them in your OAuth consent screen configuration page and requested verification.",
+          "answer": "An app with sensitive or restricted scopes that has not been verified shows an unverified app warning screen before consent.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.523Z",
+          "page_hash": "b5aa1abb1ef377ca"
+        },
+        {
+          "id": "E53",
+          "question": "G5",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+          "quote": "This setting means that your app is still in development and is only available to users you add to the list of test users.",
+          "answer": "In Testing publishing status the app is available only to manually added test users.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:20.172Z",
+          "page_hash": "790886b0e483d042"
+        },
+        {
+          "id": "E54",
+          "question": "G5",
+          "url": "https://support.google.com/cloud/answer/7454865?hl=en",
+          "quote": "your app will be limited to 100 new users until it is verified.",
+          "answer": "If a policy change leaves an app unverified after the grace period, it is limited to 100 new users until verified.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.523Z",
+          "page_hash": "b5aa1abb1ef377ca"
+        },
+        {
+          "id": "E55",
+          "question": "G5",
+          "url": "https://support.google.com/cloud/answer/7454865?hl=en",
+          "quote": "A user cap restricts the number of Google Accounts able to grant access to your unverified app.",
+          "answer": "The user cap limits how many Google Accounts can authorize an unverified app.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.523Z",
+          "page_hash": "b5aa1abb1ef377ca"
+        },
+        {
+          "id": "E56",
+          "question": "G2",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "Therefore, if your app is in the development, testing, or staging phases, verification isn't required.",
+          "answer": "Verification is not required while the app is in development, testing or staging; it is needed before making the app available to any Google Account user.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        },
+        {
+          "id": "E57",
+          "question": "G5",
+          "url": "https://support.google.com/cloud/answer/7454865?hl=en",
+          "quote": "A user cap restricts the number of Google Accounts able to grant access to your unverified app",
+          "answer": "The user cap limits how many Google Accounts can authorize an unverified app.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.523Z",
+          "page_hash": "b5aa1abb1ef377ca"
+        },
+        {
+          "id": "E58",
+          "question": "G2",
+          "url": "https://support.google.com/cloud/answer/13464321?hl=en",
+          "quote": "if your app is used by only a few users, all of whom are known personally to you",
+          "answer": "Use by a handful of personally known users is an exception to verification; broader outside use generally requires review.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T19:59:32.491Z",
+          "page_hash": "ce8020f083039721"
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 34945
+        },
+        {
+          "name": "extract https://developers.google.com/workspace/gmail/api/guides",
+          "stop": "ok (0 facts)",
+          "ms": 4154
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (5 facts)",
+          "ms": 8594
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (10 facts)",
+          "ms": 11087
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (12 facts)",
+          "ms": 11658
+        },
+        {
+          "name": "gap: official docs (2)",
+          "stop": "finished",
+          "ms": 40994
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 49181
+        },
+        {
+          "name": "gap: official docs",
+          "stop": "finished",
+          "ms": 77006
+        }
+      ],
+      "judge": {
+        "checked": 39,
+        "supported": 25,
+        "partial": 10,
+        "unsupported": 2,
+        "contradicted": 2,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "s1.path",
+            "verdict": "supported",
+            "reason": "Internal apps in same org don't need verification."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "partial",
+            "reason": "Quote says no verification needed; the 'create OAuth app as internal' step is only loosely implied."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "supported",
+            "reason": "Restricted scopes require scope verification."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "contradicted",
+            "reason": "Review is required for sensitive or restricted scopes, not only sensitive (and restricted needs more)."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "Brand verification, scope verification and security assessment are supported; demo video/justification step and ordering are not stated in these quotes."
+          },
+          {
+            "id": "s2.checks",
+            "verdict": "partial",
+            "reason": "Quotes mention scope verification and security assessment but not identity, demo, or listing checks."
+          },
+          {
+            "id": "s2.wait",
+            "verdict": "supported",
+            "reason": "Restricted verification can take several weeks."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "Unverified apps are capped at 100 new users and show an unverified app screen."
+          },
+          {
+            "id": "s2.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote states 100 new users cap for unverified app screen."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "Reverification and recertification recur."
+          },
+          {
+            "id": "s2.mod1.note",
+            "verdict": "partial",
+            "reason": "Quote says reverified and assessed 'at least' (truncated); 12 months is not shown in these quotes."
+          },
+          {
+            "id": "s3.path",
+            "verdict": "supported",
+            "reason": "Sensitive scopes require completing verification requirements."
+          },
+          {
+            "id": "s3.trigger",
+            "verdict": "contradicted",
+            "reason": "Quotes say review applies to sensitive or restricted scopes; 'only sensitive' misstates it."
+          },
+          {
+            "id": "s3.gates",
+            "verdict": "partial",
+            "reason": "Verification is required in addition to brand verification, but the specific steps and order are not detailed."
+          },
+          {
+            "id": "s3.checks",
+            "verdict": "unsupported",
+            "reason": "Quotes don't describe what the review checks."
+          },
+          {
+            "id": "s3.wait",
+            "verdict": "supported",
+            "reason": "Sensitive verification typically takes 3-5 business days."
+          },
+          {
+            "id": "s3.mod0",
+            "verdict": "supported",
+            "reason": "Unverified apps are capped at 100 new users and show warnings."
+          },
+          {
+            "id": "s3.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote states the 100 new users cap."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "Internal and restricted verification, annual assessment and several weeks are supported, but the quotes tie the annual assessment to third-party server access, and 'public agent' is assumed."
+          },
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c3",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote states annual assessment by Google empanelled assessors."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Renewal every 12 months after LOA approval date."
+          },
+          {
+            "id": "c7",
+            "verdict": "unsupported",
+            "reason": "Quote only says scopes are recommended; no tiers listed."
+          },
+          {
+            "id": "c8",
+            "verdict": "partial",
+            "reason": "Quote says an automated review completes in minutes, but doesn't name brand verification."
+          },
+          {
+            "id": "c9",
+            "verdict": "partial",
+            "reason": "Several weeks is supported, but the quote doesn't say it includes the security assessment."
+          },
+          {
+            "id": "c10",
+            "verdict": "supported",
+            "reason": "Stated cap of 100 new users."
+          },
+          {
+            "id": "c11",
+            "verdict": "partial",
+            "reason": "Quote gives the condition for the warning, but the warning screen is only implied."
+          },
+          {
+            "id": "c13",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c14",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c15",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c17",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c18",
+            "verdict": "supported",
+            "reason": "Directly stated; the quote says justification for requested scope(s)."
+          },
+          {
+            "id": "c19",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          },
+          {
+            "id": "c22",
+            "verdict": "partial",
+            "reason": "Quote shows Google emails for recertification, but not that it is yearly or specific to restricted scopes."
+          },
+          {
+            "id": "c25",
+            "verdict": "supported",
+            "reason": "Directly stated."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 34945,
+        "discover_read": 15941,
+        "extract": 11668,
+        "gapfill": 77008,
+        "write": 28754,
+        "verify": 15898
+      }
+    }
+  }
+}

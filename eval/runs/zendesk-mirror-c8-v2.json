@@ -1,0 +1,4073 @@
+{
+  "slug": "zendesk",
+  "guide": {
+    "app": {
+      "name": "Zendesk",
+      "website": "https://www.zendesk.com/",
+      "developer_docs_url": "https://developer.zendesk.com/"
+    },
+    "oauth_supported": "yes",
+    "summary": "Internal use, your own Zendesk account (self-serve (no review step found in the docs), wait none); Multi-customer app (global OAuth client) (approval path unconfirmed). Where the path is unconfirmed, the agent did not find it in the provider's docs.",
+    "verdict": "Internal use, your own Zendesk account (self-serve (no review step found in the docs), wait none).",
+    "default_scenario": "s2",
+    "composio": {
+      "toolkit_slug": "zendesk",
+      "managed_oauth": "yes",
+      "credential_guide_url": "https://composio.dev/auth/zendesk",
+      "note": "Composio lists a managed OAuth app for Zendesk, fine for prototypes. For launch use your own client ID and secret in a Composio auth config."
+    },
+    "need_own_app": {
+      "answer": "For a prototype, Composio's managed app works. For production across multiple Zendesk customers, you need your own client, and Zendesk requires a global OAuth client that it creates for you.",
+      "reasons": [
+        "Consent screen shows your brand instead of 'Composio wants to access your account'",
+        "Managed apps share rate-limit quota across all Composio users",
+        "Managed auth enforces a 15-minute minimum trigger polling interval",
+        "Default scopes may not cover what you need",
+        "Zendesk requires global OAuth tokens for apps used across multiple customers"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Internal use, your own Zendesk account",
+        "when_this_applies": "The agent only connects to your company's own Zendesk instance.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "30-90 min",
+          "basis": "estimate from step count, not measured; c3, c4"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No review described for internal use (c2).",
+          "max_days": null
+        },
+        "approval": "No review found for internal use; the global client requirement does not apply.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Zendesk account with admin access needed to create"
+        ],
+        "trigger": "none",
+        "modifiers": [
+          {
+            "kind": "builder_prerequisite",
+            "qualifier": "required",
+            "note": "Zendesk account with admin access needed to create a client",
+            "claim_ids": [
+              "c3",
+              "c4"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c2",
+          "c1"
+        ],
+        "path_basis": "inferred"
+      },
+      {
+        "id": "s2",
+        "label": "Multi-customer app (global OAuth client)",
+        "when_this_applies": "Your agent product connects to many customers' Zendesk accounts, listed publicly or as a preview app.",
+        "difficulty": "unknown",
+        "hands_on": {
+          "estimate": "1-2 days",
+          "basis": "estimate from step count, not measured; c9, c13, c20"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No verified source backs this timeline (the agent's estimate was \"1-3 weeks for a new app submission; global client request time unknown\").",
+          "max_days": null
+        },
+        "approval": "Zendesk must approve a global OAuth client request, and new apps are submitted to the Marketplace for review (or acceptance as a preview app).",
+        "claim_ids": [
+          "c5",
+          "c6",
+          "c7",
+          "c8",
+          "c9",
+          "c10",
+          "c11",
+          "c12",
+          "c13",
+          "c14",
+          "c15",
+          "c16",
+          "c17",
+          "c18",
+          "c19",
+          "c20"
+        ],
+        "shortcut": "Submit as a preview app and share a link with select customers instead of publishing publicly.",
+        "extras": [
+          "Global OAuth token cannot be used to build"
+        ],
+        "modifiers": [
+          {
+            "kind": "use_restrictions",
+            "qualifier": "required",
+            "note": "Global OAuth token cannot be used to build Sunshine Conversations bots",
+            "claim_ids": [
+              "c36"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c5",
+          "c6",
+          "c7",
+          "c8"
+        ],
+        "shortcut_claim_ids": [
+          "c14",
+          "c15",
+          "c16"
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Zendesk admin account",
+        "detail": "An admin must create the OAuth client.",
+        "claim_ids": [
+          "c3",
+          "c4"
+        ],
+        "scenario_ids": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "title": "Sponsored developer account (d3v-)",
+        "detail": "The global client request is only accepted from accounts with the d3v- prefix.",
+        "claim_ids": [
+          "c9",
+          "c10"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Registered organization on Marketplace portal",
+        "detail": "Register your organization at apps.zendesk.com before submitting.",
+        "claim_ids": [
+          "c18",
+          "c19"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create local OAuth client in Admin Center",
+        "owner": "you",
+        "detail": "Sign in as admin, set Client kind to Confidential, add the redirect URI copied from the Composio dashboard, and save the Identifier and Secret.",
+        "inputs": [
+          "Zendesk admin login",
+          "Redirect URI from Composio dashboard"
+        ],
+        "done_when": "You have the client Identifier and Secret saved securely.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c3",
+          "c21",
+          "c22",
+          "c23"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the Zendesk auth config through Composio's API using your client ID and secret.",
+        "inputs": [
+          "Client ID",
+          "Client secret"
+        ],
+        "done_when": "Auth config exists and a test connection works.",
+        "scenario_ids": [],
+        "link": "https://composio.dev/auth/zendesk",
+        "claim_ids": [
+          "c24"
+        ]
+      },
+      {
+        "title": "Limit scopes to what you need",
+        "owner": "agent",
+        "detail": "Draft the minimal scope list and set it as the client's allowed scopes.",
+        "inputs": [
+          "List of API calls the agent makes"
+        ],
+        "done_when": "Allowed scopes match the agent's needs.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c11",
+          "c12",
+          "c13"
+        ]
+      },
+      {
+        "title": "Request global OAuth client",
+        "owner": "you",
+        "detail": "Note the client secret and identifier first. In the Marketplace portal, choose Global OAuth, then Request new OAuth, and complete every field.",
+        "inputs": [
+          "d3v- account",
+          "Identifier prefixed zdg-",
+          "Scopes"
+        ],
+        "done_when": "You receive an email and ticket reference.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c9",
+          "c10",
+          "c25",
+          "c26",
+          "c27"
+        ]
+      },
+      {
+        "title": "Prepare and submit Marketplace app",
+        "owner": "you",
+        "detail": "Upload the source ZIP, answer the compliance question, and accept the terms. For an integration app, include marketing assets, translations and a manifest.",
+        "inputs": [
+          "ZIP file",
+          "Compliance answers"
+        ],
+        "done_when": "The form submits without automatic check errors.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c19",
+          "c28",
+          "c29",
+          "c30"
+        ]
+      },
+      {
+        "title": "Wait for Zendesk review",
+        "owner": "waiting",
+        "detail": "New submissions take 1-3 weeks. If rejected, resubmit a corrected ZIP with Submit Update.",
+        "inputs": [],
+        "done_when": "Approval notice received.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c17",
+          "c31"
+        ]
+      },
+      {
+        "title": "Share preview link or publish",
+        "owner": "you",
+        "detail": "For a preview app, add customer accounts on the Availability tab and share the link. To go public, submit an update asking for publication.",
+        "inputs": [
+          "Customer accounts"
+        ],
+        "done_when": "Customers can install the app.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c14",
+          "c15",
+          "c16"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Client access is lost after conversion",
+        "detail": "Once the local client becomes global, you lose the client admin page, so save the secret and identifier beforehand. The identifier should be the exact production value.",
+        "claim_ids": [
+          "c25",
+          "c26",
+          "c32"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Regular tokens are not allowed for multi-customer apps",
+        "detail": "Customers may not share regular API or OAuth tokens with you, so apps for many customers must use global tokens.",
+        "claim_ids": [
+          "c5",
+          "c6"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Scopes outside the allowed list fail",
+        "detail": "A requested scope outside the allowed scopes returns 400 invalid_scope and no token. Only Zendesk can edit a global client, so scope changes go through Zendesk Support.",
+        "claim_ids": [
+          "c33",
+          "c12",
+          "c13"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Optional fields are required",
+        "detail": "Even fields labeled optional must be completed for global clients, and non-d3v- submissions are rejected.",
+        "claim_ids": [
+          "c27",
+          "c10"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Global client does not cover Sell or bots",
+        "detail": "The process applies only to Zendesk Support and Chat (Agent Workspace enabled). Sell needs a Multi-User Application, and Sunshine Conversations bots need a separate token.",
+        "claim_ids": [
+          "c34",
+          "c35",
+          "c36"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Redirect URI must match exactly",
+        "detail": "The redirect URI in the authorization request must exactly match the client's registered value.",
+        "claim_ids": [
+          "c37"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "400 Bad Request with invalid_scope",
+        "what_it_means": "The app requested a scope not in the client's allowed scopes.",
+        "what_to_do": "Request only allowed scopes, or edit the client's allowed scopes (via Zendesk Support for global clients).",
+        "agent_can_help": "Compare requested scopes with the allowed list.",
+        "claim_ids": [
+          "c33",
+          "c12",
+          "c13"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "symptom": "Marketplace form will not submit",
+        "what_it_means": "The automatic check of the ZIP found errors.",
+        "what_to_do": "Fix the errors; warnings are only suggestions.",
+        "agent_can_help": "Review the ZIP contents and manifest against the errors.",
+        "claim_ids": [
+          "c29",
+          "c30"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "symptom": "App rejected",
+        "what_it_means": "Zendesk did not approve the submission.",
+        "what_to_do": "Upload a corrected ZIP with Submit Update under the original submission.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c31"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Which scopes, if any, trigger extra scrutiny? Ask Zendesk Support or see the OAuth scopes page.",
+      "How long does the global OAuth client request take? Not stated; ask Zendesk Support via the request ticket.",
+      "Is a Marketplace listing required to use a global client, or is preview-app acceptance enough? Confirm with Zendesk Support.",
+      "Does Zendesk verify redirect URI domains? Not found, so no proxy requirement is confirmed."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "The global-client requirement does not apply to apps or integrations built for internal use.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "This requirement doesn't apply if you're developing applications or integrations for internal use.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "The tutorial lets the developer repeat the authorization process with multiple browsers and Zendesk users; no review step for other organizations is described.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+        "quote": "If you wanted, you could repeat this process using multiple browsers and Zendesk users.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Creating an OAuth client requires being signed in as a Zendesk admin.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+        "quote": "You must be signed in as a Zendesk admin to create an OAuth client.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "The tutorial's prerequisite is a Zendesk account with admin access.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+        "quote": "A Zendesk account with admin access. If you don't have an account, you can get a 14-day free trial .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Apps distributed to multiple Zendesk customers, whether public or integration apps, must use global OAuth tokens.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "If you distribute a public app or an integration app to multiple Zendesk customers, you must use global OAuth tokens to authenticate requests.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "Regular API tokens and regular OAuth tokens may not be used for multi-customer apps, because customers may not share their API credentials with developers.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "You may not use regular API tokens or OAuth tokens because the Zendesk Developer Terms prohibits Zendesk customers from sharing their API credentials with you.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "A global OAuth client must be requested from Zendesk to create global OAuth tokens.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "You must request a global OAuth client from Zendesk to create global OAuth tokens.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "Developers cannot create their own global OAuth clients; Zendesk does not allow it for security reasons.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "For security reasons, Zendesk doesn't allow developers to create their own global OAuth clients.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "The app is first developed using a local OAuth client in the developer's own Zendesk account.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "Develop your app using a local OAuth client in your Zendesk account.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "Requests from accounts without the d3v- prefix are not accepted; a sponsored developer account is needed.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "Submissions from non-d3v- accounts aren't accepted.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "Zendesk may restrict the global client to the allowed scopes the app needs.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "Zendesk may configure allowed scopes on the client to restrict it to the scopes your app needs.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "Changes to scope requirements after approval require contacting Zendesk Support to update allowed scopes.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "If your app's scope requirements change after your global client has been approved, contact Zendesk Support to request an update to the client's allowed scopes.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "Only the Zendesk Marketplace operations team can edit global clients, so scope changes go through Zendesk Support.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "Because global clients can only be edited by the Zendesk Marketplace operations team, you'll need to contact Zendesk Support to request a change to your client's allowed scopes.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "A preview app can be made available only to select customers.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "You can also submit it as a preview app so that it's available only to select customers.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "A preview app is not published or discoverable in the Marketplace; the developer sends its link to select customers instead.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "The app won’t be published in Zendesk Marketplace and won’t be discoverable. Instead, you'll send a link to the app to select customers.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "To move a tested preview app to the public Marketplace, the developer must submit an update asking for publication.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "Once you’ve finished testing your app, submit an update letting us know that you want the app to be published to the Marketplace.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "A new Marketplace app submission takes 1-3 weeks, and an update to an existing app takes 1-2 weeks.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "You can expect a turnaround time of 1-3 weeks for new app submissions and 1-2 week for updates to existing apps.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "The developer must register their organization on the Marketplace developer portal before submitting an app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "Before submitting your app, make sure you have registered your organization on the Marketplace developer portal at apps.zendesk.com",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "Registering the organization lets Zendesk know who the developer is when apps are submitted for review.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+        "quote": "Registering your organization and users is important so we know who you are when you submit apps or themes for review.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "The global client request is submitted only once the app is finished and ready for use across multiple Zendesk accounts.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "When your app is finished and ready to use across multiple Zendesk accounts, submit your request as described below.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21",
+        "text": "The client's Client kind field should be set to Confidential.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+        "quote": "For the Client kind field, select Confidential.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "The redirect URI used by the app must be registered when configuring the client.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+        "quote": "When you configure the client, register the redirect URI that your app uses to receive the authorization response.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "After the client is created, the Identifier and Secret must be saved securely.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+        "quote": "After you create the client, securely save the client's Identifier and Secret values.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "With a custom auth config, the developer supplies their own OAuth app credentials and tells Composio to use them for a toolkit.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "Before submitting the request, the developer should write down the client secret and identifier.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "Make sure you note down the secret and the identifier before making your request.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "After conversion, the developer loses access to the client administration page.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "You will lose access to the client administration page after the local client is converted to a global client.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c27",
+        "text": "Even if a field is labeled optional, it is required for global clients.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "Even if a field is labeled optional, it is required for global clients.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c28",
+        "text": "The app's source code is uploaded as a ZIP file during submission.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "Upload your source code in a ZIP file.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c29",
+        "text": "Errors found in the automatic check block form submission until corrected, while warnings are only suggestions.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "You won't be able to submit the form until you correct the errors.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote says the form can't be submitted until errors are corrected, but says nothing about warnings being only suggestions."
+      },
+      {
+        "id": "c30",
+        "text": "An integration app submission requires a zip of marketing assets, translation files, and a manifest file.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "If you want to submit an integration app to the Zendesk Marketplace, provide the following files:",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote says integration apps require listed files, but the list is not shown, so the zip contents can't be confirmed."
+      },
+      {
+        "id": "c31",
+        "text": "A rejected app can be resubmitted with a corrected ZIP file using the Submit Update button.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "quote": "If your app is rejected, you may submit a corrected ZIP file by clicking the Submissions tab in the Apps section of the Marketplace developer portal, and clicking on the Submit Update button beneath the original submission.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c32",
+        "text": "The client identifier should be the exact value intended for production.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "The client identifier should be the exact value intended for production.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c33",
+        "text": "If an app requests a scope outside the client's allowed scopes, authorization fails with a 400 Bad Request and an invalid_scope error, and no token is issued.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "If your app requests a scope that is not included in the client's allowed scopes, the authorization request fails with a 400 Bad Request response and an invalid_scope error — no token is issued.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c34",
+        "text": "The global OAuth client process applies only to Zendesk Support and Chat (Agent Workspace enabled) accounts, not Zendesk Sell.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "No, these instructions only apply for Zendesk Support and Chat (Agent Workspace enabled) accounts.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c35",
+        "text": "Zendesk Sell requires registering a Multi-User Application as part of the authentication flow.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "For Zendesk Sell, you will need to register a Multi-User Application as part of the authentication flow.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c36",
+        "text": "A Zendesk Support global OAuth token cannot be used to build a bot using Sunshine Conversations.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "quote": "You cannot use a Zendesk Support global OAuth for building a bot using Sunshine Conversations.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c37",
+        "text": "The redirect URI in the authorization request must exactly match the value configured for the OAuth client.",
+        "label": "provider_docs",
+        "source_url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+        "quote": "The redirect URI in your request must match the value configured for your OAuth client.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T13:36:00.439Z",
+    "generated_by": "agent v2 (v2.9-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-haiku-5-5 · composio_search",
+    "duration_ms": 163345,
+    "query": "Zendesk",
+    "partial": false,
+    "warnings": [
+      "\"Multi-customer app (global OAuth client)\": the path (\"app_review\") is not backed by a verified source, so it is shown as unconfirmed.",
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 37,
+      "quotes_checked": 37,
+      "quotes_verified": 37,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 110421,
+      "output_tokens": 62352,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T13:33:18.194Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T13:33:18.195Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T13:33:18.195Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/zendesk",
+        "title": null,
+        "fetched_at": "2026-10-21T13:33:18.195Z",
+        "via": "direct",
+        "chars": 620
+      },
+      {
+        "url": "https://www.zendesk.com/",
+        "title": "AI-Powered Customer Service Platform | Zendesk",
+        "fetched_at": "2026-10-21T13:33:34.543Z",
+        "via": "direct",
+        "chars": 13059
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/",
+        "title": "Documentation Home | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:34.927Z",
+        "via": "direct",
+        "chars": 3863
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+        "title": "Register your organization | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:39.662Z",
+        "via": "direct",
+        "chars": 1397
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+        "title": "Create a Zendesk Marketplace profile | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:39.745Z",
+        "via": "direct",
+        "chars": 3204
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+        "title": "Submit your app | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:39.779Z",
+        "via": "direct",
+        "chars": 11173
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+        "title": "Using OAuth to authenticate API requests | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:40.027Z",
+        "via": "direct",
+        "chars": 12223
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+        "title": "Using PKCE to make Zendesk OAuth access tokens more secure | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:40.030Z",
+        "via": "direct",
+        "chars": 7373
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+        "title": "Set up a global OAuth client | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:40.033Z",
+        "via": "direct",
+        "chars": 7042
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+        "title": "Zendesk Partner Media Toolkit | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:40.069Z",
+        "via": "direct",
+        "chars": 5484
+      },
+      {
+        "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+        "title": "Using OAuth to authenticate Zendesk API requests in a web app | Zendesk Developer Docs",
+        "fetched_at": "2026-10-21T13:33:40.249Z",
+        "via": "direct",
+        "chars": 17505
+      },
+      {
+        "url": "https://community.zendesk.com/platform-and-developer-18/how-much-time-it-takes-to-review-list-app-in-the-zendesk-marketplace-11794",
+        "title": "How much time it takes to review & list app in the zendesk marketplace.. | The place for Zendesk users to come together and share",
+        "fetched_at": "2026-10-21T13:34:43.899Z",
+        "via": "direct",
+        "chars": 1248
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.9-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-haiku-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E16",
+            "E17",
+            "E18",
+            "E19",
+            "E20",
+            "E100",
+            "E101",
+            "E119"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E8",
+            "E9",
+            "E14",
+            "E21",
+            "E22",
+            "E23",
+            "E24",
+            "E25",
+            "E63",
+            "E64",
+            "E65",
+            "E66",
+            "E67",
+            "E68",
+            "E69",
+            "E70",
+            "E71",
+            "E72",
+            "E102",
+            "E103"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E5",
+            "E6",
+            "E7",
+            "E15",
+            "E26",
+            "E27",
+            "E28",
+            "E29",
+            "E30",
+            "E73",
+            "E74",
+            "E75",
+            "E76",
+            "E77",
+            "E78",
+            "E79"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E31",
+            "E32",
+            "E33",
+            "E34",
+            "E35",
+            "E36",
+            "E37",
+            "E104",
+            "E105",
+            "E106",
+            "E118",
+            "E120",
+            "E121"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E38"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E10",
+            "E80",
+            "E81",
+            "E82",
+            "E83",
+            "E84",
+            "E85"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "found",
+          "evidence": [
+            "E86",
+            "E87",
+            "E88",
+            "E89"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E39",
+            "E40",
+            "E107",
+            "E108",
+            "E122",
+            "E123",
+            "E124"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E109",
+            "E110",
+            "E111",
+            "E125",
+            "E126",
+            "E127",
+            "E128",
+            "E136",
+            "E137",
+            "E138",
+            "E139",
+            "E140",
+            "E141",
+            "E142"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E41",
+            "E42",
+            "E43",
+            "E44",
+            "E45",
+            "E46",
+            "E47",
+            "E48",
+            "E54",
+            "E55",
+            "E56",
+            "E57",
+            "E58",
+            "E90",
+            "E91",
+            "E92",
+            "E112",
+            "E113",
+            "E114",
+            "E115",
+            "E116",
+            "E117",
+            "E129",
+            "E130",
+            "E131",
+            "E132",
+            "E133",
+            "E134",
+            "E135"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E11",
+            "E12",
+            "E13",
+            "E49",
+            "E50",
+            "E51",
+            "E52",
+            "E53",
+            "E93",
+            "E94",
+            "E95",
+            "E96",
+            "E97",
+            "E98",
+            "E99"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+            "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+            "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+            "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "found",
+          "evidence": [
+            "E157",
+            "E158",
+            "E159"
+          ],
+          "tried": [
+            "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+            "https://community.zendesk.com/platform-and-developer-18/how-much-time-it-takes-to-review-list-app-in-the-zendesk-marketplace-11794"
+          ]
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E59",
+            "E60",
+            "E61",
+            "E62",
+            "E143",
+            "E144",
+            "E145",
+            "E146",
+            "E147",
+            "E148",
+            "E149",
+            "E150",
+            "E151",
+            "E152",
+            "E153",
+            "E154",
+            "E155",
+            "E156"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "A Zendesk Marketplace profile is a place to tell users more about your company, location, and services.",
+          "answer": "This page covers the Zendesk Marketplace profile, a company profile that lists the apps and themes a developer published on the Zendesk Marketplace; it is not an OAuth app review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.745Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            81,
+            184
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "A profile is optional and is only published once your app or theme has been approved and published on the Zendesk Marketplace.",
+          "answer": "The Marketplace profile is optional, and it is published only after the app or theme has been approved and published on the Zendesk Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.745Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            397,
+            523
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "All Zendesk Marketplace profiles are reviewed by Zendesk.",
+          "answer": "Zendesk reviews every Marketplace profile (the review applies to all profiles, not only sensitive scopes or a user threshold).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.745Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            525,
+            582
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "If you’re submitting an app or theme for the first time, we’ll review your profile in conjunction with your app or theme.",
+          "answer": "A developer submitting an app or theme for the first time has the profile reviewed together with that app or theme.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.745Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            583,
+            704
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "The profile section consists of the following fields:",
+          "answer": "The profile review covers a profile section with fields the developer fills in, including partner type, short and long descriptions, regions, number of certifications, and a Zendesk point of contact.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.745Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            953,
+            1006
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "Number of certifications : Enter the number of Zendesk certifications you or your company have completed.",
+          "answer": "The developer must enter the number of Zendesk certifications they or their company have completed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.745Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            2850,
+            2955
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "quote": "Zendesk point of contact : Enter your company contact that the Zendesk team can get in touch to escalate anything to your sales or support team.",
+          "answer": "The developer must give a company contact that the Zendesk team can reach to escalate matters to sales or support.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.745Z",
+          "page_hash": "5f5bc556051ec6ff",
+          "offsets": [
+            2957,
+            3101
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "As part of becoming a Zendesk Marketplace partner, Zendesk offers the following benefits:",
+          "answer": "Zendesk lists partner apps in the Zendesk Marketplace as a benefit of becoming a Zendesk Marketplace partner. The page does not say this listing is required before outside customers can connect.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.069Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            2883,
+            2972
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "We'll list your app in the Zendesk Marketplace .",
+          "answer": "Zendesk will list the partner's app in the Zendesk Marketplace, as one of the partner benefits.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.069Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            3006,
+            3054
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "We’ll do our best to turn around approvals in 2-3 business days.",
+          "answer": "Zendesk aims to turn around approvals of press release drafts in 2-3 business days. This applies to press releases, not to app reviews.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.069Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            355,
+            419
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "Zendesk must not be referenced as announcing the news of an app, partnership, or integration.",
+          "answer": "In press releases, Zendesk must not be referenced as announcing the news of an app, partnership, or integration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.069Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            1700,
+            1793
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "On the first mention, refer to Zendesk as Zendesk, Inc. Do not capitalize the “D” in Zendesk or use Zendesk.com.",
+          "answer": "In press releases, Zendesk must be referred to as Zendesk, Inc. on first mention, and the company name must not be written with a lowercase or altered form such as Zendesk.com.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.069Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            446,
+            558
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "quote": "Zendesk’s corporate boilerplate and contact information should not be included in the press release or other materials.",
+          "answer": "Zendesk's corporate boilerplate and contact information should not be included in press releases or other press materials.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.069Z",
+          "page_hash": "d39240ea0a87b2cb",
+          "offsets": [
+            2128,
+            2247
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+          "quote": "Registering your organization and users is important so we know who you are when you submit apps or themes for review.",
+          "answer": "Apps and themes are submitted to Zendesk for review. The page does not say what triggers the review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.662Z",
+          "page_hash": "f0093e8430cbd36e",
+          "offsets": [
+            61,
+            179
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+          "quote": "Registering your organization and users is important so we know who you are when you submit apps or themes for review.",
+          "answer": "Registering the organization and its users lets Zendesk know who the developer is when apps or themes are submitted for review (identity). The page does not list other review checks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.662Z",
+          "page_hash": "f0093e8430cbd36e",
+          "offsets": [
+            61,
+            179
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "For security reasons, Zendesk doesn't allow developers to create their own global OAuth clients.",
+          "answer": "Developers cannot create their own global OAuth clients; Zendesk does not allow it for security reasons.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            552,
+            648
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "You must request a global OAuth client from Zendesk to create global OAuth tokens.",
+          "answer": "A global OAuth client must be requested from Zendesk to create global OAuth tokens.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            469,
+            551
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Develop your app using a local OAuth client in your Zendesk account.",
+          "answer": "The app is first developed using a local OAuth client in the developer's own Zendesk account.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            724,
+            792
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "To request a sponsored developer account, see Getting a trial or sponsored account for development.",
+          "answer": "A sponsored developer account is needed for the request, and the account must carry the d3v- prefix; the page links to instructions for getting one.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            0,
+            99
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Submissions from non-d3v- accounts aren't accepted.",
+          "answer": "Requests from accounts without the d3v- prefix are not accepted.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            2239,
+            2290
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "If you distribute a public app or an integration app to multiple Zendesk customers, you must use global OAuth tokens to authenticate requests.",
+          "answer": "Apps distributed to multiple Zendesk customers, whether public or integration apps, must use global OAuth tokens.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            65,
+            207
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "You may not use regular API tokens or OAuth tokens because the Zendesk Developer Terms prohibits Zendesk customers from sharing their API credentials with you.",
+          "answer": "Regular API tokens and regular OAuth tokens may not be used for multi-customer apps, because Zendesk customers may not share their API credentials with developers under the Developer Terms.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            208,
+            367
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "This requirement doesn't apply if you're developing applications or integrations for internal use.",
+          "answer": "The global-client requirement does not apply to apps or integrations built for internal use.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            369,
+            467
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "When your app is finished and ready to use across multiple Zendesk accounts, submit your request as described below.",
+          "answer": "The global client request is submitted only once the app is finished and ready for use across multiple Zendesk accounts.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1699,
+            1815
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "If the request is approved, Zendesk converts your local OAuth client to a global OAuth client.",
+          "answer": "After approval, Zendesk converts the developer's local OAuth client into a global OAuth client.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            3079,
+            3173
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "The form may ask you to specify the scopes your app requires.",
+          "answer": "The request form asks for the scopes the app requires.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            2521,
+            2582
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Provide only the scopes your app genuinely needs.",
+          "answer": "The developer should provide only the scopes the app genuinely needs, and Zendesk uses this to configure allowed scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            2583,
+            2632
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Ensure the subdomain includes the prefix d3v- .",
+          "answer": "The developer must enter a subdomain that includes the d3v- prefix in the request form.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            2191,
+            2238
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "You'll receive an email and a ticket reference with updates on your submission.",
+          "answer": "After submitting, the developer receives an email and a ticket reference with updates on the request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            2865,
+            2944
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "When a Zendesk account owner uses OAuth to authorize your service, they're authorizing the service for their subdomain.",
+          "answer": "The subdomain is needed because Zendesk keeps separate logins per account or subdomain, and OAuth authorizes the service for the customer's subdomain.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            5512,
+            5631
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Zendesk may configure allowed scopes on the client to restrict it to the scopes your app needs.",
+          "answer": "Zendesk may restrict the global client to a set of allowed scopes matching what the app needs, applying least privilege.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            3262,
+            3357
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Allowed scopes define the maximum set of scopes your global client is permitted to request during the OAuth authorization flow.",
+          "answer": "Allowed scopes are the maximum set of scopes the global client may request during OAuth authorization.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            3570,
+            3697
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "For example, if your app only reads ticket data and user profiles, Zendesk may configure your client with tickets:read users:read as its allowed scopes.",
+          "answer": "An example given: an app that only reads ticket data and user profiles may be configured with the tickets:read and users:read scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            3698,
+            3850
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "During development with your local OAuth client, request only the scopes your app actually uses.",
+          "answer": "The developer should request only the scopes the app actually uses during development, and should request scopes covering exactly the needed resources and access types.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            4454,
+            4550
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "For the full list of available scopes and their descriptions, see OAuth scopes .",
+          "answer": "The full list of available scopes is documented on a separate OAuth scopes page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            5063,
+            5143
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "If your app's scope requirements change after your global client has been approved, contact Zendesk Support to request an update to the client's allowed scopes.",
+          "answer": "Changes to scope requirements after approval require contacting Zendesk Support to update allowed scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            4860,
+            5020
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Because global clients can only be edited by the Zendesk Marketplace operations team, you'll need to contact Zendesk Support to request a change to your client's allowed scopes.",
+          "answer": "Only the Zendesk Marketplace operations team can edit global clients, so scope changes go through Zendesk Support.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            6180,
+            6357
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G5",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "If your app requests a scope that is not included in the client's allowed scopes, the authorization request fails with a 400 Bad Request response and an invalid_scope error — no token is issued.",
+          "answer": "If an app requests a scope outside the client's allowed scopes, authorization fails with a 400 Bad Request and an invalid_scope error, and no token is issued.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            4062,
+            4256
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G8",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Customers who install your app will only be asked to grant the specific permissions your client is restricted to, which reduces friction during installation and builds trust.",
+          "answer": "Customers who install the app are asked only to grant the specific permissions the global client is restricted to.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            4260,
+            4434
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G8",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Zendesk maintains separate logins for each Zendesk account or subdomain.",
+          "answer": "Each Zendesk account or subdomain has its own login, and an account owner authorizes the service for their subdomain through OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            5334,
+            5406
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Make sure you note down the secret and the identifier before making your request.",
+          "answer": "Before submitting the request, the developer should write down the client secret and identifier, because access to the client administration page is lost after conversion.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1824,
+            1905
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "You will lose access to the client administration page after the local client is converted to a global client.",
+          "answer": "After conversion, the developer loses access to the client administration page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1906,
+            2016
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Select Global OAuth from the menu on the left side, and then click the Request new OAuth button.",
+          "answer": "In the Zendesk Marketplace portal, the developer selects Global OAuth in the left menu and clicks Request new OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            2064,
+            2160
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "The d3v- and the zdg- values are pre-filled in the form.",
+          "answer": "The request form pre-fills the d3v- and zdg- values.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            2298,
+            2354
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Ensure your Unique Identifier is prefixed with the string \"zdg-\".",
+          "answer": "The client's unique identifier must be prefixed with zdg-.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            961,
+            1026
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Even if a field is labeled optional, it is required for global clients.",
+          "answer": "All fields of the local client must be completed, including fields labeled optional.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1154,
+            1225
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "The client identifier should be the exact value intended for production.",
+          "answer": "The client identifier should be the exact value intended for production.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1431,
+            1503
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "We strongly encourage creating a separate client identifier for each app or integration.",
+          "answer": "A separate client identifier is strongly encouraged for each app or integration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1534,
+            1622
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "Sharing a single OAuth client between different apps is not recommended.",
+          "answer": "Sharing one OAuth client across different apps is not recommended.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1623,
+            1695
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "For example, \"zdg-zendesk is acceptable\" but \"zdg-global_client1\" is not.",
+          "answer": "The client name should represent the product or business; the page gives 'zdg-zendesk is acceptable' as acceptable and 'zdg-global_client1' as not acceptable.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            1329,
+            1402
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "No, these instructions only apply for Zendesk Support and Chat (Agent Workspace enabled) accounts.",
+          "answer": "The global OAuth client process applies only to Zendesk Support and Chat (Agent Workspace enabled) accounts, not Zendesk Sell.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            6812,
+            6910
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "For Zendesk Sell, you will need to register a Multi-User Application as part of the authentication flow.",
+          "answer": "Zendesk Sell requires registering a Multi-User Application as part of the authentication flow.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            6911,
+            7015
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "quote": "You cannot use a Zendesk Support global OAuth for building a bot using Sunshine Conversations.",
+          "answer": "A Zendesk Support global OAuth token cannot be used to build a bot using Sunshine Conversations; a separate OAuth token must be requested for a bot.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.033Z",
+          "page_hash": "21951f4c3e419ed7",
+          "offsets": [
+            6661,
+            6755
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+          "quote": "Zendesk Ticketing OAuth clients feature a kind property that can be set to either Public or Confidential .",
+          "answer": "Zendesk Ticketing OAuth clients have a kind property that can be set to Public or Confidential.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.030Z",
+          "page_hash": "ed263ab5d00db177",
+          "offsets": [
+            6906,
+            7012
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+          "quote": "Public OAuth clients operate in environments where credentials cannot be securely stored, such as mobile and web applications, and must use PKCE.",
+          "answer": "Public OAuth clients (for environments where credentials cannot be securely stored, such as mobile and web apps) must use PKCE.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.030Z",
+          "page_hash": "ed263ab5d00db177",
+          "offsets": [
+            7013,
+            7158
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+          "quote": "Confidential OAuth clients run on secure servers that can safely store credentials, allowing them to use PKCE, a client secret, or both.",
+          "answer": "Confidential OAuth clients run on secure servers and may use PKCE, a client secret, or both.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.030Z",
+          "page_hash": "ed263ab5d00db177",
+          "offsets": [
+            7159,
+            7295
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+          "quote": "The scope parameter in the authorization URL must only include scopes that are within the OAuth client's configured allowed scopes, if any are set.",
+          "answer": "The scope requested in the authorization URL must be within the OAuth client's configured allowed scopes, if any are set.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.030Z",
+          "page_hash": "ed263ab5d00db177",
+          "offsets": [
+            1535,
+            1682
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+          "quote": "If the requested scope is not included in the client's allowed scopes, the authorization request fails with a 400 Bad Request response and an invalid_scope error.",
+          "answer": "If a requested scope is not in the client's allowed scopes, the authorization request fails with a 400 Bad Request response and an invalid_scope error.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.030Z",
+          "page_hash": "ed263ab5d00db177",
+          "offsets": [
+            1683,
+            1845
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Zendesk](/toolkits/zendesk.md) | `ZENDESK` |",
+          "answer": "Zendesk is listed under Composio-managed OAuth available, so Composio manages at least one OAuth method for it.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.194Z",
+          "page_hash": "",
+          "offsets": [
+            7230,
+            7277
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "A toolkit appears under Composio-managed OAuth available when Composio manages at least one OAuth method, and the toolkit page should be opened to check each method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.194Z",
+          "page_hash": "",
+          "offsets": [
+            1000,
+            1153
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "Composio can provide the OAuth app for listed OAuth toolkits, so the developer does not need to register an OAuth app or supply a client ID and secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.194Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "Whether Composio provides the OAuth app for a toolkit is determined by checking whether the toolkit endpoint's composio_managed_auth_schemes field contains the toolkit's OAuth method; if not, the developer must register their own app and supply its client ID and secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.194Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            939
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You can expect a turnaround time of 1-3 weeks for new app submissions and 1-2 week for updates to existing apps.",
+          "answer": "For Zendesk Marketplace apps, a new app submission has a turnaround of 1-3 weeks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            380,
+            492
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You must meet certain requirements if you plan on publishing a public app or an integration app in the Zendesk Marketplace.",
+          "answer": "Publishing a public app or an integration app to the Zendesk Marketplace requires meeting certain requirements, which are set out on a separate page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            512,
+            635
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "The app won’t be published in Zendesk Marketplace and won’t be discoverable. Instead, you'll send a link to the app to select customers.",
+          "answer": "A preview app is not published or discoverable in the Marketplace; the developer sends its link to select customers instead.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            1133,
+            1269
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You can also submit it as a preview app so that it's available only to select customers.",
+          "answer": "A preview app can be made available only to select customers.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            112,
+            200
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "After the app is accepted, return to the Marketplace developer portal",
+          "answer": "A preview app must be accepted before the developer can add customers and share its link.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            4752,
+            4821
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Add the customers that can access the app by selecting the Availability tab and clicking Add Accounts",
+          "answer": "The developer adds the customers who may access a preview app on the Availability tab.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            4925,
+            5026
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Click Copy link and share the link with the customer.",
+          "answer": "The developer copies a link to the preview app and shares it with the customer; clicking it takes the customer directly to the app installation process.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            5032,
+            5085
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "When the customer clicks the link, they'll be taken directly to the app installation process.",
+          "answer": "Clicking the shared link takes the customer directly to the app installation process.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            5087,
+            5180
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Once you’ve finished testing your app, submit an update letting us know that you want the app to be published to the Marketplace.",
+          "answer": "To move a tested preview app to the public Marketplace, the developer must submit an update asking for publication.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            5184,
+            5313
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If your app is approved, you will receive notification of the approval and the listing will be published in the Zendesk Marketplace by 10am PST the next day.",
+          "answer": "After a submission, Zendesk's team reviews the app and it is published only if approved; the listing goes live the next day at 10am PST after approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            10400,
+            10557
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "After you upload the zip file, the contents are automatically checked.",
+          "answer": "When the zip file is uploaded, its contents are checked automatically.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            1423,
+            1493
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You won't be able to submit the form until you correct the errors.",
+          "answer": "Errors found in the automatic check block form submission until corrected, while warnings are only suggestions.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            1531,
+            1597
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "The content of the zip file is also checked for compliance with the Branding guidelines.",
+          "answer": "The zip file contents are also checked for compliance with the Branding guidelines.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            1695,
+            1783
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You must provide an accurate response to the compliance question to ensure Zendesk’s compliance requirements are met.",
+          "answer": "The developer must give an accurate answer to the compliance question, and all mandatory compliance questions must be answered.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            3341,
+            3458
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "The link is optional but helps Zendesk review your app.",
+          "answer": "Adding a GitHub repository link is optional but helps Zendesk review the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            1827,
+            1882
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If you have a privacy policy, enter the full URL here.",
+          "answer": "The developer can enter a privacy policy URL during submission if they have one.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            2087,
+            2141
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G3",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If you want to submit an integration app to the Zendesk Marketplace, provide the following files:",
+          "answer": "An integration app submission (for apps built for a third-party product) requires a zip of marketing assets, translation files, and a manifest file.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            5529,
+            5626
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You can expect a turnaround time of 1-3 weeks for new app submissions and 1-2 week for updates to existing apps.",
+          "answer": "Review of a new Marketplace app submission takes 1-3 weeks, and review of an update to an existing app takes 1-2 weeks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            380,
+            492
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If your app is approved, you will receive notification of the approval and the listing will be published in the Zendesk Marketplace by 10am PST the next day.",
+          "answer": "An approved app is published on the Marketplace by 10am PST the day after approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            10400,
+            10557
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If your app is rejected, you may submit a corrected ZIP file by clicking the Submissions tab in the Apps section of the Marketplace developer portal, and clicking on the Submit Update button beneath the original submission.",
+          "answer": "A rejected app can be resubmitted with a corrected ZIP file using the Submit Update button under the original submission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            10559,
+            10782
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Select Submit Update on the app tile you wish to update and upload the new ZIP file.",
+          "answer": "Changes to a published Marketplace app are submitted again as an update, which is then reviewed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            6608,
+            6692
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Update the compliance response if there are any changes in compliance.",
+          "answer": "The developer must update the compliance response when compliance changes in an update.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            6823,
+            6893
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "G6",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Publishing may fail if the submission does not meet current compliance requirements or creates a breaking change.",
+          "answer": "Publishing an earlier approved submission may fail if it does not meet current compliance requirements or creates a breaking change.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            8711,
+            8824
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "G7",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If you want to charge for your app, toggle the Paid Apps option, select the billing type for your app, and enter the Stripe Plan id for your app.",
+          "answer": "To charge for a Marketplace app, the developer enables Paid Apps, selects a billing type, and enters a Stripe Plan id.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            2145,
+            2290
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G7",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Before selecting this option, make sure you connected your Stripe account to the Zendesk Stripe account.",
+          "answer": "Before enabling paid apps, the developer must connect their Stripe account to the Zendesk Stripe account.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            2292,
+            2396
+          ]
+        },
+        {
+          "id": "E88",
+          "question": "G7",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Enter a URL that contains related pricing details.",
+          "answer": "If the app requires a subscription or purchase outside Zendesk, the developer must enter a URL with related pricing details.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            3287,
+            3337
+          ]
+        },
+        {
+          "id": "E89",
+          "question": "G7",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You can use the paid apps feature to charge for the app or invoice the customers directly.",
+          "answer": "A preview app can be charged for through the paid apps feature or customers can be invoiced directly.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            4530,
+            4620
+          ]
+        },
+        {
+          "id": "E90",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Before submitting your app, make sure you have registered your organization on the Marketplace developer portal at apps.zendesk.com",
+          "answer": "The developer must register their organization on the Marketplace developer portal before submitting an app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            711,
+            842
+          ]
+        },
+        {
+          "id": "E91",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "In the Marketplace developer portal, navigate to the Apps section and click Submit a new app",
+          "answer": "To create a Marketplace app submission, go to the Apps section of the Marketplace developer portal and click Submit a new app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            902,
+            994
+          ]
+        },
+        {
+          "id": "E92",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Upload your source code in a ZIP file.",
+          "answer": "The app's source code is uploaded as a ZIP file during submission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            1315,
+            1353
+          ]
+        },
+        {
+          "id": "E93",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If you want to set a free trial, you can create a trial period (between 1 and 90 days) in the Free Trial duration field.",
+          "answer": "A free trial period can be set between 1 and 90 days.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            2646,
+            2766
+          ]
+        },
+        {
+          "id": "E94",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Check the box and enter a value between 1 and 999 days in the Cooldown period field.",
+          "answer": "The optional trial cool-down period can be set between 1 and 999 days.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            2939,
+            3023
+          ]
+        },
+        {
+          "id": "E95",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "The Cooldown period applies only to plans with per_agent and per_account billing types.",
+          "answer": "The trial cool-down period applies only to plans with per_agent and per_account billing types.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            3098,
+            3185
+          ]
+        },
+        {
+          "id": "E96",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You may have up to 4 active plans at a time.",
+          "answer": "A Marketplace app may have up to 4 active plans at a time.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            9304,
+            9348
+          ]
+        },
+        {
+          "id": "E97",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You can select up to two categories",
+          "answer": "The developer can select up to two Marketplace categories for the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            1965,
+            2000
+          ]
+        },
+        {
+          "id": "E98",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Read and agree to the Zendesk Terms & Conditions.",
+          "answer": "The developer must agree to the Zendesk Terms & Conditions during submission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            3515,
+            3564
+          ]
+        },
+        {
+          "id": "E99",
+          "question": "G11",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "Read and agree to the Zendesk Partner and Developer Terms.",
+          "answer": "When submitting an update, the developer must agree to the Zendesk Partner and Developer Terms.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f",
+          "offsets": [
+            6897,
+            6955
+          ]
+        },
+        {
+          "id": "E100",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "You must be signed in as a Zendesk admin to create an OAuth client.",
+          "answer": "Creating an OAuth client requires being signed in as a Zendesk admin.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            0,
+            67
+          ]
+        },
+        {
+          "id": "E101",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "A Zendesk account with admin access. If you don't have an account, you can get a 14-day free trial .",
+          "answer": "The tutorial's prerequisite is a Zendesk account with admin access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            2666,
+            2766
+          ]
+        },
+        {
+          "id": "E102",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "To create an OAuth client, follow the instructions in Registering your application with Zendesk in Zendesk help.",
+          "answer": "The page describes registering the app by manually creating an OAuth client in Zendesk; it does not describe dynamic client registration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            0,
+            112
+          ]
+        },
+        {
+          "id": "E103",
+          "question": "G2",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "If you wanted, you could repeat this process using multiple browsers and Zendesk users.",
+          "answer": "In the tutorial's testing section, the developer may repeat the authorization process with multiple browsers and Zendesk users; the page does not describe any review step for other organizations.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            0,
+            87
+          ]
+        },
+        {
+          "id": "E104",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "For this tutorial, select \"users:read\".",
+          "answer": "For the tutorial, the scope selected for the client is users:read.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            3826,
+            3865
+          ]
+        },
+        {
+          "id": "E105",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "Specifically, this app makes a call to the Show Self endpoint to retrieve the user's name and role.",
+          "answer": "The tutorial app calls the Show Self endpoint to get the user's name and role, which is the reason it uses users:read.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            0,
+            99
+          ]
+        },
+        {
+          "id": "E106",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "For the full list of available scopes, see OAuth scopes .",
+          "answer": "The page does not state which scopes trigger extra review; it points to a separate OAuth scopes list for the full set of available scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            4330,
+            4387
+          ]
+        },
+        {
+          "id": "E107",
+          "question": "G8",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "Click Allow .",
+          "answer": "End users authorize the app by signing in to Zendesk and clicking Allow on the Zendesk OAuth page; the page does not mention admin approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            15782,
+            15795
+          ]
+        },
+        {
+          "id": "E108",
+          "question": "G8",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "If the user has previously authorized a token with the same scopes for your app, and that token is still valid and has not been removed from the Zendesk system, they won't need to re-authorize the app.",
+          "answer": "A user who already authorized the app with the same scopes does not need to re-authorize while that token is valid and not removed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            2221,
+            2422
+          ]
+        },
+        {
+          "id": "E109",
+          "question": "G9",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "For the Redirect URLs field, specify http://localhost:3000/zendesk/oauth/callback .",
+          "answer": "The redirect URI for the tutorial is http://localhost:3000/zendesk/oauth/callback, entered in the client's Redirect URLs field.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            3546,
+            3629
+          ]
+        },
+        {
+          "id": "E110",
+          "question": "G9",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "For example, if your Zendesk address is https://mondocam.zendesk.com , then your subdomain is \"mondocam\".",
+          "answer": "The tutorial's Zendesk base address pattern is https://{subdomain}.zendesk.com, and the subdomain is taken from the Zendesk address.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            4687,
+            4792
+          ]
+        },
+        {
+          "id": "E111",
+          "question": "G9",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "If the refresh process fails or there is no refresh token linked to the access token, the app should redirect the user to https://{subdomain}.zendesk.com/oauth/authorizations/new to re-authorize your application.",
+          "answer": "The app is directed to re-authorize at the https://{subdomain}.zendesk.com/oauth/authorizations/new URL when refresh fails.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            1954,
+            2166
+          ]
+        },
+        {
+          "id": "E112",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "For the Name and Identifier fields, provide any name and identifier you want.",
+          "answer": "For the client's Name and Identifier fields, the developer may enter any values they want.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            3465,
+            3542
+          ]
+        },
+        {
+          "id": "E113",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "For the Client kind field, select Confidential.",
+          "answer": "For the client, the Client kind field should be set to Confidential.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            3679,
+            3726
+          ]
+        },
+        {
+          "id": "E114",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "(Optional) For the Allowed scopes field, select the scopes this client is permitted to request.",
+          "answer": "The Allowed scopes field is optional and lists the scopes the client may request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            3730,
+            3825
+          ]
+        },
+        {
+          "id": "E115",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "If you leave this blank, the client can request any available scope.",
+          "answer": "If the Allowed scopes field is left blank, the client can request any available scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            3866,
+            3934
+          ]
+        },
+        {
+          "id": "E116",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "After you create the client, securely save the client's Identifier and Secret values.",
+          "answer": "After the client is created, the Identifier (client ID) and Secret values must be saved securely.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            0,
+            85
+          ]
+        },
+        {
+          "id": "E117",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "In Admin Center, edit the OAuth client and add \"users:read\" to its allowed scopes.",
+          "answer": "To add scopes to an existing client, edit the OAuth client in Admin Center and add the scope to its allowed scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            16994,
+            17076
+          ]
+        },
+        {
+          "id": "E118",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "quote": "Requesting a scope not included in the client's allowed scopes fails with a 400 Bad Request response and an invalid_scope error.",
+          "answer": "Requesting a scope that is not in the client's allowed scopes fails with a 400 Bad Request response and an invalid_scope error.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.249Z",
+          "page_hash": "dd5c5ee6410c1d88",
+          "offsets": [
+            4201,
+            4329
+          ]
+        },
+        {
+          "id": "E119",
+          "question": "G1",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "A Zendesk account with admin access if you need to set up a new client for your integration.",
+          "answer": "Creating a new OAuth client for an integration requires a Zendesk account with admin access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            1420,
+            1512
+          ]
+        },
+        {
+          "id": "E120",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Supports fine-grained permissions through scopes, so you can limit a token to only the access your integration actually needs",
+          "answer": "OAuth supports fine-grained permissions through scopes, so a token can be limited to the access the integration needs.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            536,
+            661
+          ]
+        },
+        {
+          "id": "E121",
+          "question": "G4",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Send a POST request to the token endpoint with your client id, client secret, and the required scope.",
+          "answer": "The client credentials flow requires a scope to be sent with the token request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            9117,
+            9218
+          ]
+        },
+        {
+          "id": "E122",
+          "question": "G8",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "The user signs in and approves access.",
+          "answer": "In the authorization code flow, the signed-in user approves access for the app; the page does not describe an admin approval step.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            2456,
+            2494
+          ]
+        },
+        {
+          "id": "E123",
+          "question": "G8",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Is tied to a user account, so tokens inherit that user's permissions and can't be used to access resources beyond what the authorizing user can access",
+          "answer": "The access token inherits the permissions of the Zendesk user who authorized it and cannot reach resources beyond that user's access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            382,
+            532
+          ]
+        },
+        {
+          "id": "E124",
+          "question": "G8",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Your integration authenticates on behalf of the user who created the OAuth client, with no user interaction at runtime.",
+          "answer": "In the client credentials flow, the integration acts for the user who created the OAuth client, with no user interaction at runtime.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            1865,
+            1984
+          ]
+        },
+        {
+          "id": "E125",
+          "question": "G9",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "The redirect URI in your request must match the value configured for your OAuth client.",
+          "answer": "The redirect URI in the authorization request must match the value configured for the OAuth client.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            3341,
+            3428
+          ]
+        },
+        {
+          "id": "E126",
+          "question": "G9",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Must exactly match the value configured for your OAuth client.",
+          "answer": "The redirect_uri parameter must exactly match the value configured for the OAuth client.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            4370,
+            4432
+          ]
+        },
+        {
+          "id": "E127",
+          "question": "G9",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Make sure the redirect_uri exactly matches the value configured for your OAuth client.",
+          "answer": "The redirect URI must exactly match the registered value (authorization code flow only).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            10668,
+            10754
+          ]
+        },
+        {
+          "id": "E128",
+          "question": "G9",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "https : / / { your_subdomain } . zendesk . com / oauth / authorizations / new ? response_type = code & client_id = YOUR_CLIENT_ID & redirect_uri = YOUR_REDIRECT_URI & state = RANDOM_STRING",
+          "answer": "The authorization request is sent to the authorization endpoint on the customer's own Zendesk subdomain.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            3844,
+            4032
+          ]
+        },
+        {
+          "id": "E129",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Before you start the authorization flow, create or configure an OAuth client in Zendesk.",
+          "answer": "Before starting the authorization flow, the developer creates or configures an OAuth client in Zendesk.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            2858,
+            2946
+          ]
+        },
+        {
+          "id": "E130",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "When you configure the client, register the redirect URI that your app uses to receive the authorization response.",
+          "answer": "When configuring the client, the developer registers the redirect URI the app uses to receive the authorization response.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            3226,
+            3340
+          ]
+        },
+        {
+          "id": "E131",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Your Zendesk OAuth client id.",
+          "answer": "The client_id is the Zendesk OAuth client ID that the app uses in the authorization request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            4253,
+            4282
+          ]
+        },
+        {
+          "id": "E132",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "This guide assumes you are using a confidential client, one where the client secret can be stored securely on a server.",
+          "answer": "The authorization code flow guide assumes a confidential client whose secret is stored securely on a server.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            2948,
+            3067
+          ]
+        },
+        {
+          "id": "E133",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "If your integration runs in an environment where the secret can't be kept confidential, such as a browser-based or mobile app, you should use PKCE instead .",
+          "answer": "Apps where the secret cannot be kept confidential, such as browser-based or mobile apps, should use PKCE instead.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            3068,
+            3224
+          ]
+        },
+        {
+          "id": "E134",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "Create or configure an OAuth client in Zendesk as a confidential client. Only use this flow in server-side applications or other trusted environments where the client secret can be protected. No redirect URI is required for this flow.",
+          "answer": "The client credentials flow requires creating the OAuth client in Zendesk as a confidential client, and no redirect URI is required.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            8844,
+            9078
+          ]
+        },
+        {
+          "id": "E135",
+          "question": "G10",
+          "url": "https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "quote": "This flow requires a confidential client, one where the client secret can be kept secure on the server.",
+          "answer": "The client credentials flow requires a confidential client whose secret can be kept secure on the server.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:40.027Z",
+          "page_hash": "93ab77f4d8cb5a19",
+          "offsets": [
+            7913,
+            8016
+          ]
+        },
+        {
+          "id": "E136",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "When you proxy the redirect through your own domain, you set the authorized redirect URI in your OAuth app's settings to your own endpoint.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E137",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example redirect URI for the proxy is a path on your own domain (https://yourdomain.com/api/composio-redirect).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E138",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "Your proxy endpoint receives the OAuth callback and immediately forwards it to Composio with a redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E139",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy endpoint must return a 302 redirect, not follow the redirect server-side or fetch Composio itself.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            3341,
+            3413
+          ]
+        },
+        {
+          "id": "E140",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "The user's browser needs to be redirected so the OAuth flow completes correctly.",
+          "answer": "The browser must be redirected (not the server) so the OAuth flow completes correctly.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            3414,
+            3494
+          ]
+        },
+        {
+          "id": "E141",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "Proxying through your own domain is an option to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E142",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "By default, during OAuth the browser briefly redirects through backend.composio.dev so Composio can capture the auth token, and some toolkits show this URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E143",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "Without a proxy, the OAuth callback goes through Composio's backend domain, backend.composio.dev, so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E144",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "The Composio callback URL that the proxy forwards to is https://backend.composio.dev/api/v3/toolkits/auth/callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E145",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "Bringing your own OAuth app is recommended only for toolkits where the provider's consent screen must show your brand.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E146",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, the provider's consent screen shows the message \"Composio wants to access your account\" (for example on Google or GitHub).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E147",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add a redirect proxy only when the browser must stay on your domain during the OAuth callback.",
+          "answer": "A redirect proxy should be added only when the browser must stay on your domain during the OAuth callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            1342,
+            1436
+          ]
+        },
+        {
+          "id": "E148",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "Composio registers and maintains its own OAuth apps for popular toolkits such as GitHub, Gmail, and Slack (the page does not name Zendesk).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E149",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Composio managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E150",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio requests sensible defaults for each toolkit.",
+          "answer": "Managed apps request sensible default scopes for each toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            673,
+            726
+          ]
+        },
+        {
+          "id": "E151",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Composio's default scopes may not include everything a developer needs, such as write access to a specific Google API.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E152",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With a managed app, users see the consent-screen text 'Composio wants to access your account' during OAuth.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E153",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users.",
+          "answer": "Managed apps share their rate-limit quota across all Composio users.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1474
+          ]
+        },
+        {
+          "id": "E154",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for triggers.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E155",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "With a custom auth config, the developer supplies their own OAuth app, API key, bearer token, or other credentials and tells Composio to use them for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E156",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "To check whether Composio provides the OAuth app for a toolkit, see the Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:33:18.195Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E157",
+          "question": "R1",
+          "url": "https://community.zendesk.com/platform-and-developer-18/how-much-time-it-takes-to-review-list-app-in-the-zendesk-marketplace-11794",
+          "quote": "Our latest submission took around a week to be published",
+          "answer": "Developer report (forum, Aug 2023, one commenter): a Marketplace app submission took about a week to be published. Single anecdote, not a systematic sample.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T13:34:43.899Z",
+          "page_hash": "3497c5612f6b4d54"
+        },
+        {
+          "id": "E158",
+          "question": "R1",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "You can expect a turnaround time of 1-3 weeks for new app submissions and 1-2 week for updates to existing apps.",
+          "answer": "Official Zendesk docs state expected review turnaround of 1-3 weeks for new Marketplace app submissions and 1-2 weeks for updates.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f"
+        },
+        {
+          "id": "E159",
+          "question": "R1",
+          "url": "https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "quote": "If your app is rejected, you may submit a corrected ZIP file by clicking the Submissions tab in the Apps section of the Marketplace developer portal, and clicking on the Submit Update button beneath the original submission.",
+          "answer": "Rejected Marketplace submissions are fixed by resubmitting a corrected ZIP via Submit Update; the upload also runs automatic checks that block submission until errors are fixed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T13:33:39.779Z",
+          "page_hash": "52b4105258f1e54f"
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 17363
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/create-a-zendesk-marketplace-profile/",
+          "stop": "ok (7 facts)",
+          "ms": 9640
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/zendesk-partner-media-toolkit/",
+          "stop": "ok (6 facts)",
+          "ms": 14009
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/register-your-organization/",
+          "stop": "ok (2 facts)",
+          "ms": 7753
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/marketplace/building-a-marketplace-app/set-up-a-global-oauth-client/",
+          "stop": "ok (39 facts)",
+          "ms": 26830
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/authentication/oauth-pkce/",
+          "stop": "ok (5 facts)",
+          "ms": 11821
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (4 facts)",
+          "ms": 6440
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/marketplace/publishing-to-the-marketplace/submit-your-app/",
+          "stop": "ok (37 facts)",
+          "ms": 40080
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/authentication/using-oauth-to-authenticate-zendesk-api-requests-in-a-web-app/",
+          "stop": "ok (19 facts)",
+          "ms": 27899
+        },
+        {
+          "name": "extract https://developer.zendesk.com/documentation/authentication/api-tokens-to-oauth/",
+          "stop": "ok (17 facts)",
+          "ms": 21744
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (12 facts)",
+          "ms": 13658
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (9 facts)",
+          "ms": 10506
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 29584
+        }
+      ],
+      "judge": {
+        "checked": 37,
+        "supported": 24,
+        "partial": 11,
+        "unsupported": 2,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "The quote says the global-client requirement doesn't apply to internal use, but it doesn't explicitly state that no provider review is needed."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "unsupported",
+            "reason": "The quotes don't describe the ordered steps or mention an admin creating a local OAuth client as a gate."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "supported",
+            "reason": "The quotes state a Zendesk account with admin access is required, and a trial account is offered as the way to get one."
+          },
+          {
+            "id": "s1.mod0.note",
+            "verdict": "supported",
+            "reason": "The quote states that a Zendesk admin must be signed in to create an OAuth client."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "partial",
+            "reason": "The quotes require a global OAuth client from Zendesk, but they never say a provider review, verification or approval is required."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "partial",
+            "reason": "The quotes make global tokens required only for public or integration apps distributed to multiple customers, not an unconditional review."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "The quotes support requesting the global client, but they don't show the Marketplace submission or review steps in this order."
+          },
+          {
+            "id": "s2.checks",
+            "verdict": "unsupported",
+            "reason": "The quotes don't describe what the review checks."
+          },
+          {
+            "id": "s2.wait",
+            "verdict": "partial",
+            "reason": "The quote gives 1-3 weeks for new submissions, but nothing on global client request time, which the statement says is unknown."
+          },
+          {
+            "id": "s2.shortcut",
+            "verdict": "supported",
+            "reason": "The quotes state the app can be submitted as a preview app, shared by link with select customers, and not published publicly."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "partial",
+            "reason": "The quote says non-d3v- accounts aren't accepted for submission, which is an account requirement, but it doesn't concern building or testing."
+          },
+          {
+            "id": "s2.mod0.note",
+            "verdict": "partial",
+            "reason": "The quote requires a d3v- account for submissions, but doesn't say the account is sponsored."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "partial",
+            "reason": "The quote shows updates to existing apps have a turnaround time, implying re-review on change, but says nothing about periodic re-review."
+          },
+          {
+            "id": "s2.mod1.note",
+            "verdict": "supported",
+            "reason": "The quote gives a 1-2 week turnaround for updates to existing apps, which implies updates are reviewed again."
+          },
+          {
+            "id": "s2.mod2",
+            "verdict": "supported",
+            "reason": "The quote restricts the global OAuth token from being used to build Sunshine Conversations bots, which limits what the app may do."
+          },
+          {
+            "id": "s2.mod2.note",
+            "verdict": "supported",
+            "reason": "The quote states a Support global OAuth cannot be used to build a Sunshine Conversations bot."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "The quotes support the multi-customer path and the 1-3 week review, but not the 'about 1 hour, no wait' figure for internal use."
+          },
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "The quote states the global-client requirement doesn't apply to internal-use apps or integrations."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "The quote says the process can be repeated with multiple browsers and users, and no review step is described in it."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "The quote states public or integration apps distributed to multiple customers must use global OAuth tokens."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "The quote says regular API and OAuth tokens may not be used because customers may not share their API credentials."
+          },
+          {
+            "id": "c11",
+            "verdict": "supported",
+            "reason": "The quote states Zendesk may configure allowed scopes to restrict the client to the app's needed scopes."
+          },
+          {
+            "id": "c12",
+            "verdict": "supported",
+            "reason": "The quote states that after approval, scope changes require contacting Zendesk Support to update allowed scopes."
+          },
+          {
+            "id": "c13",
+            "verdict": "supported",
+            "reason": "The quote states only the Marketplace operations team can edit global clients, so scope changes go through Support."
+          },
+          {
+            "id": "c14",
+            "verdict": "supported",
+            "reason": "The quote states a preview app is available only to select customers."
+          },
+          {
+            "id": "c15",
+            "verdict": "supported",
+            "reason": "The quote states the preview app won't be published or discoverable and the developer sends a link to select customers."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "The quote states the developer must submit an update to request publication after testing."
+          },
+          {
+            "id": "c17",
+            "verdict": "supported",
+            "reason": "The quote gives 1-3 weeks for new submissions and 1-2 weeks for updates to existing apps."
+          },
+          {
+            "id": "c19",
+            "verdict": "supported",
+            "reason": "The quote states registration lets Zendesk know who the developer is when apps are submitted for review."
+          },
+          {
+            "id": "c20",
+            "verdict": "supported",
+            "reason": "The quote states the global client request is submitted once the app is finished and ready for use across multiple accounts."
+          },
+          {
+            "id": "c29",
+            "verdict": "partial",
+            "reason": "The quote says the form can't be submitted until errors are corrected, but says nothing about warnings being only suggestions."
+          },
+          {
+            "id": "c30",
+            "verdict": "partial",
+            "reason": "The quote says integration apps require listed files, but the list is not shown, so the zip contents can't be confirmed."
+          },
+          {
+            "id": "c31",
+            "verdict": "supported",
+            "reason": "The quote states a rejected app can be resubmitted with a corrected ZIP via the Submit Update button."
+          },
+          {
+            "id": "c33",
+            "verdict": "supported",
+            "reason": "The quote states a disallowed scope request fails with 400 Bad Request, invalid_scope, and no token issued."
+          },
+          {
+            "id": "c34",
+            "verdict": "supported",
+            "reason": "The quote states the instructions apply only to Support and Chat (Agent Workspace enabled) accounts, not Sell."
+          },
+          {
+            "id": "c35",
+            "verdict": "supported",
+            "reason": "The quote states Zendesk Sell requires registering a Multi-User Application as part of the authentication flow."
+          },
+          {
+            "id": "c36",
+            "verdict": "supported",
+            "reason": "The quote states a Support global OAuth cannot be used to build a Sunshine Conversations bot."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 17363,
+        "discover_read": 5793,
+        "extract": 50598,
+        "gapfill": 29585,
+        "write": 34728,
+        "verify": 25277
+      }
+    }
+  }
+}

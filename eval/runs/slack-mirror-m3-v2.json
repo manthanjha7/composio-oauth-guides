@@ -1,0 +1,4526 @@
+{
+  "slug": "slack",
+  "guide": {
+    "app": {
+      "name": "Slack",
+      "website": "https://slack.com",
+      "developer_docs_url": "https://docs.slack.dev"
+    },
+    "oauth_supported": "yes",
+    "summary": "Internal app on your own workspace (self-serve (no review step found in the docs), wait none); Public agent for many customer workspaces (app review).",
+    "verdict": "Easiest: Internal app on your own workspace (self-serve (no review step found in the docs), wait none). Hardest: Public agent for many customer workspaces (app review).",
+    "default_scenario": "s2",
+    "composio": {
+      "toolkit_slug": "slack",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio has a managed Slack OAuth app for prototypes. For production, use your own client ID and secret in a Composio auth config; copy the redirect URI from the Composio dashboard."
+    },
+    "need_own_app": {
+      "answer": "For prototypes, no: Composio's managed Slack app works. For production, yes, so users see your app name rather than Composio's, and you get your own scopes and a dedicated quota.",
+      "reasons": [
+        "Consent screen shows Composio with the managed app",
+        "Custom scopes need your own app",
+        "Managed apps share quota across all Composio users",
+        "Managed auth enforces a 15-minute minimum trigger polling interval",
+        "Marketplace listing requires your own app"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Internal app on your own workspace",
+        "when_this_applies": "The agent only acts in the workspace that owns the app, not for outside customers.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "30-60 min",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "No review is described for apps used only on the owning workspace.",
+          "max_days": null
+        },
+        "approval": "No Slack review for an app only installed on its owning workspace.",
+        "claim_ids": [
+          "c1",
+          "c2"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [],
+        "trigger": "none",
+        "modifiers": [],
+        "path_claim_ids": [
+          "c1",
+          "c3"
+        ],
+        "path_basis": "inferred"
+      },
+      {
+        "id": "s2",
+        "label": "Public agent for many customer workspaces",
+        "when_this_applies": "Customers in other workspaces connect your agent. This is the usual production setup.",
+        "difficulty": "hard",
+        "hands_on": {
+          "estimate": "2-5 days",
+          "basis": "estimate from many listing, privacy, support and scope-justification requirements (c9-c22)"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No verified source backs this timeline (the agent's estimate was \"About 4-6 months reported\").",
+          "max_days": null
+        },
+        "approval": "Slack Marketplace review is required for listing and commercial distribution; enhanced review applies to broad data scopes.",
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c6",
+          "c7",
+          "c8",
+          "c9",
+          "c10",
+          "c11"
+        ],
+        "path": "app_review",
+        "shortcut": "Share the app directly with people you know without listing it, but not for commercial distribution.",
+        "extras": [
+          "10 active workspaces, kept throughout the review",
+          "Workspaces with Require App Approval need admin approval",
+          "Substantial changes require resubmission and review"
+        ],
+        "modifiers": [
+          {
+            "kind": "threshold",
+            "qualifier": "required",
+            "note": "10 active workspaces, kept throughout the review",
+            "claim_ids": [
+              "c4",
+              "c5"
+            ]
+          },
+          {
+            "kind": "customer_admin",
+            "qualifier": "optional",
+            "note": "Workspaces with Require App Approval need admin approval",
+            "claim_ids": [
+              "c23",
+              "c24"
+            ]
+          },
+          {
+            "kind": "recurring",
+            "qualifier": "required",
+            "note": "Substantial changes require resubmission and review",
+            "claim_ids": [
+              "c25"
+            ]
+          },
+          {
+            "kind": "use_restrictions",
+            "qualifier": "required",
+            "note": "No LLM training on Slack data; other exclusions",
+            "claim_ids": [
+              "c19",
+              "c20"
+            ]
+          }
+        ],
+        "path_claim_ids": [
+          "c6",
+          "c7",
+          "c8"
+        ],
+        "shortcut_claim_ids": [
+          "c12",
+          "c13"
+        ],
+        "path_basis": "stated"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Slack workspace and app settings access",
+        "detail": "You create the app at api.slack.com/apps; scopes are added in its settings.",
+        "claim_ids": [
+          "c14",
+          "c15"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "10 active installs before submitting",
+        "detail": "Marketplace submission requires at least 10 active workspace installs, kept for the whole review. Real users on multiple workspaces are needed first.",
+        "claim_ids": [
+          "c4",
+          "c5",
+          "c16"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Listing assets and public pages",
+        "detail": "You need a public landing page, privacy policy with a contact method, support page and 1600x1000 listing images.",
+        "claim_ids": [
+          "c9",
+          "c10",
+          "c11",
+          "c17"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Create Slack app and add scopes",
+        "owner": "you",
+        "detail": "Create the app at api.slack.com/apps and add the minimum scopes. Mark scopes optional where possible.",
+        "inputs": [
+          "Slack account"
+        ],
+        "done_when": "App exists with client ID and secret.",
+        "scenario_ids": [],
+        "link": "https://api.slack.com/apps",
+        "claim_ids": [
+          "c14",
+          "c15",
+          "c18"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the auth config via Composio's API with your client ID and secret. Add the Composio redirect URI (must be HTTPS) to Slack's Redirect URLs.",
+        "inputs": [
+          "Client ID",
+          "Client secret",
+          "Composio redirect URI"
+        ],
+        "done_when": "OAuth connection completes for a test user.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c21",
+          "c28"
+        ]
+      },
+      {
+        "title": "Draft per-scope justifications",
+        "owner": "agent",
+        "detail": "Write a reason for each scope explaining how the app uses it. Remove scopes for unbuilt features.",
+        "inputs": [
+          "Scope list",
+          "Feature list"
+        ],
+        "done_when": "Every scope has a usage explanation.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c18",
+          "c22"
+        ]
+      },
+      {
+        "title": "Get 10 active workspace installs",
+        "owner": "you",
+        "detail": "Recruit real users across workspaces to install the app.",
+        "inputs": [
+          "Pilot customers"
+        ],
+        "done_when": "10 active workspaces installed.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c4",
+          "c16"
+        ]
+      },
+      {
+        "title": "Prepare listing, pages and security info",
+        "owner": "you",
+        "detail": "Publish the landing, privacy and support pages, produce images, and complete security and AI disclosures.",
+        "inputs": [
+          "Legal details",
+          "Images"
+        ],
+        "done_when": "Submission form is complete.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c9",
+          "c10",
+          "c11",
+          "c17"
+        ]
+      },
+      {
+        "title": "Submit and wait for review",
+        "owner": "waiting",
+        "detail": "Slack reviews the app. Fixes in the preliminary stage reportedly reset your place in the queue.",
+        "inputs": [],
+        "done_when": "App approved; you press publish.",
+        "scenario_ids": [
+          "s2"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c26",
+          "c27",
+          "c29"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "The temporary authorization code expires after ten minutes",
+        "detail": "The temporary authorization code expires after ten minutes.",
+        "claim_ids": [
+          "c35x"
+        ]
+      },
+      {
+        "title": "Support requests are expected to receive a response within",
+        "detail": "Support requests are expected to receive a response within 2 business days.",
+        "claim_ids": [
+          "c36x"
+        ]
+      },
+      {
+        "title": "Apps installed on fewer than 10 active workspaces and",
+        "detail": "Apps installed on fewer than 10 active workspaces and with fewer than 10 weekly active users are unsuitable for the Marketplace.",
+        "claim_ids": [
+          "c37x"
+        ]
+      },
+      {
+        "title": "Review can take 4-6 months",
+        "detail": "Docs give no duration. Developers report 152 days to first feedback and about four months total.",
+        "claim_ids": [
+          "c8",
+          "c26",
+          "c27"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Install count must hold during review",
+        "detail": "Falling below 10 installed workspaces during review breaks the requirement.",
+        "claim_ids": [
+          "c5"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Broad scopes get enhanced review or rejection",
+        "detail": "History, search and admin scopes are scrutinised or unlikely to be approved. User token scopes used unnecessarily are returned.",
+        "claim_ids": [
+          "c7",
+          "c30",
+          "c31"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Fixes reset queue place",
+        "detail": "Fixes during the preliminary stage reset your queue position, so polish before submitting.",
+        "claim_ids": [
+          "c29"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Unapproved scopes block install of published apps",
+        "detail": "A published app cannot be installed while its requested scopes are in review or unsubmitted.",
+        "claim_ids": [
+          "c32"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Non-listed app only works on its own workspace",
+        "detail": "An undistributed app can only be installed on the workspace that owns it.",
+        "claim_ids": [
+          "c2"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "title": "Managed app shows Composio name",
+        "detail": "Users see 'Composio wants to access your account' with the managed app.",
+        "claim_ids": [
+          "c33"
+        ]
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "Error unapproved_scope on install",
+        "what_it_means": "Requested scopes of a published app are still in review or were never submitted.",
+        "what_to_do": "Submit the scopes for review and wait for approval.",
+        "agent_can_help": "Draft scope justifications.",
+        "claim_ids": [
+          "c32"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "symptom": "Error invalid_team_for_non_distributed_app",
+        "what_it_means": "The app is not distributed and was installed on a workspace that does not own it.",
+        "what_to_do": "Install on the owning workspace, or distribute through the Marketplace.",
+        "agent_can_help": null,
+        "claim_ids": [
+          "c34"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      },
+      {
+        "symptom": "Members cannot install the app",
+        "what_it_means": "The workspace has Require App Approval on, so an admin must approve it.",
+        "what_to_do": "Ask the customer's admin to approve the app.",
+        "agent_can_help": "Draft an admin approval request.",
+        "claim_ids": [
+          "c24"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      }
+    ],
+    "open_questions": [
+      "How long does Marketplace review take officially? Docs give no number; ask Slack developer support.",
+      "Is a Marketplace listing needed to connect outside customers' workspaces at all? Docs say commercial distribution must be via the Marketplace; confirm with Slack for your case."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Any user in any Slack workspace can start an install of an app through OAuth.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "OAuth allows a user in any Slack workspace to install your app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "An app not publicly distributed can only be installed on the workspace that owns it.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Your app can only be installed on the workspace that owns it.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Slack advises caution with third-party apps not approved for the Marketplace, implying they can be used without that review.",
+        "label": "provider_docs",
+        "source_url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+        "quote": "Please exercise caution when using any third-party app that has not been approved for the Slack Marketplace.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote advises caution for unapproved apps; the implication of use without review is plausible but not stated."
+      },
+      {
+        "id": "c4",
+        "text": "As of July 2026, apps submitting to the Slack Marketplace must have at least 10 installations on active workspaces.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+        "quote": "As of July 2026, we require that apps submitting to the Slack Marketplace have at least 10 installations on active workspaces, up from the temporary lower threshold.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "Marketplace apps must keep at least 10 installed workspaces for the entire duration of the review.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+        "quote": "Your app needs to stay at 10 or more installed workspaces throughout the entire duration of the review .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "All apps submitted for Slack Marketplace listing undergo a review by the Slack Marketplace team.",
+        "label": "provider_docs",
+        "source_url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+        "quote": "All apps that submit for listing in the Slack Marketplace undergo a review by the Slack Marketplace team to check compliance with our guidelines and policies.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Apps requesting scopes that give extensive workspace data access, or let the bot add itself to private conversations, are subject to enhanced review.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "In addition to the above, if you’re requesting scopes that provide extensive access to workspace data or allow the bot to add itself to private conversations, your submission will be subject to an enhanced review, to reduce the risk of unexpected behavior.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "Docs give no specific review duration; they only say the review step takes time and can be shortened by submitting a quality app.",
+        "label": "provider_docs",
+        "source_url": "https://slack.dev/introducing-the-slack-marketplace/",
+        "quote": "Step 7 takes time. You can reduce the waiting time by submitting a quality app with no issues.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "All Marketplace apps must include a clear privacy policy accessible from the app's landing page, with at minimum an email address or webform as contact.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "All Slack Marketplace apps must include a clear privacy policy that details how third-party data is handled and this page should be accessible on your app’s landing page.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Privacy policy requirement is supported; the email or webform contact detail is not in the quote."
+      },
+      {
+        "id": "c10",
+        "text": "The landing page must be publicly accessible and be a web page created for the Slack app, not a PDF, document or code repository link.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "In addition your landing page needs to be publicly accessible (i.e. not behind a login) and should be an actual web page created specifically for your Slack app - not a link to a PDF, document or code repository.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "The support page must give a clear way to get in touch, and support requests are expected to get a response within 2 business days.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "We expect support requests to receive a response within 2 business days .",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: 2-business-day response is supported; the clear contact way is not in the quote."
+      },
+      {
+        "id": "c12",
+        "text": "Apps can be shared directly with friends and known people without being added to the Marketplace.",
+        "label": "provider_docs",
+        "source_url": "https://slack.dev/introducing-the-slack-marketplace/",
+        "quote": "You can share your app directly with friends and people you know without adding it to the Slack Marketplace.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "All commercial distribution of apps needs to happen via the Marketplace.",
+        "label": "provider_docs",
+        "source_url": "https://slack.dev/introducing-the-slack-marketplace/",
+        "quote": "However all commercial distribution of apps needs to happen via the Marketplace.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "OAuth scopes for a Slack app are added in the app settings while building the app.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication.md",
+        "quote": "These are added in the app settings when building an app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c15",
+        "text": "The client ID is found on the App Management page, and the token exchange also requires the client secret.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Include both your app's client ID, which is found in the App Management page",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "A developer must have real users on multiple workspaces before submitting an app for Marketplace review.",
+        "label": "provider_docs",
+        "source_url": "https://slack.dev/introducing-the-slack-marketplace/",
+        "quote": "Step 3 is a gate. You need real users on multiple workspaces before you can submit — this ensures your app works beyond your own environment.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "Marketplace listing images must be 1600px by 1000px (8:5 ratio).",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "Use a 1600px by 1000px size (8:5 ratio).",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "Developers must give a clear reason for each requested scope, explaining how the app uses it.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "DO provide clear reasons for each of the scopes you include in your submitted app. Don’t just tell us what the scope does (we know that already) but rather tell us how your app uses it",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "Apps that use Slack data to train Large Language Models are unsuitable for the Marketplace.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "use Slack data to train Large Language Models (LLMs).",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The quote only fragments the item; the 'unsuitable' framing is implied but the quote shows only the list item."
+      },
+      {
+        "id": "c20",
+        "text": "The Marketplace unsuitable-app list is not exhaustive, and the team may deny any app from being listed.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "The list below is not exhaustive-the Slack Marketplace team may use their judgment to deny any app from being listed.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21",
+        "text": "The redirect_uri must use HTTPS.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "The redirect_uri must use HTTPS.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c22",
+        "text": "Scopes for future, untested functionality must not be included; only scopes tied to testable functionality will be approved.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "DON’T include scopes in your submitted app intended for future functionality. We will only approve scopes related to functionality we can test",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "When the Require App Approval setting is on, members can only install pre-approved apps; all other apps must be submitted for approval.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/concepts/security.md",
+        "quote": "Once enabled, members can only install apps that have been pre-approved; all other apps must be submitted for approval.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "Admins can approve app installations, including choosing which optional scopes to permit.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/concepts/security.md",
+        "quote": "Admins can approve app installations, including selecting which optional scopes to permit, from either the Slack system DM or the App Management page.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c25",
+        "text": "Developers must resubmit the app for review when making substantial changes to its features, purpose or functionality.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "You must resubmit your app for review when you make substantial changes or updates to the features, purpose or functionality of your app.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c26",
+        "text": "One developer reported the Marketplace review alone took about four months, from early January to May.",
+        "label": "reported",
+        "source_url": "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+        "quote": "I submitted at the beginning of January and got approval in May — so the review alone took four months",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c27",
+        "text": "One developer reported Slack took 152 days to return round-1 feedback and expects at least about six months before publication.",
+        "label": "reported",
+        "source_url": "https://www.linkedin.com/posts/justin-butlion-54912129_just-an-fyi-for-anyone-building-a-slack-app-activity-7508503614974341120-tJK6",
+        "quote": "It took Slack 152 days to respond to me with feedback as part of round 1 of their marketplace submission process.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c28",
+        "text": "A Redirect URL can be configured in the App Management page under OAuth & Permissions.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Alternatively, you can configure a Redirect URL in the App Management page under OAuth & Permissions",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c29",
+        "text": "Fixes made during the preliminary stage reset the submission's place in the queue, per a developer report.",
+        "label": "reported",
+        "source_url": "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+        "quote": "Slack states plainly in the confirmation email that at this stage every fix resets your place in the queue.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c30",
+        "text": "Broad access to workspace message or file data (user token *:history scopes) is unlikely to be approved without a clear use case.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "We are unlikely to approve broad access to workspace message/file data (e.g. user token * :history scopes) without a clear use case that requires them, such as Real-time Search or MCP server functionality",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c31",
+        "text": "Using admin.* scopes is unlikely to be approved for Marketplace apps not in Slack's partner program.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "We are unlikely to approve use of admin* scopes by apps submitting to the Slack Marketplace who are not part of our partner program",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c32",
+        "text": "Installing a published app is blocked for requested scopes still in review or never submitted for review (error unapproved_scope).",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Occurs if attempting to install a published app for which the requested scopes aren't approved either because they're still in review for that app, or they weren't yet submitted for review by the app developer.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote describes the condition, but the error name unapproved_scope is not in the quote."
+      },
+      {
+        "id": "c33",
+        "text": "With the managed app, users see a consent screen that names Composio rather than the developer's app.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c34",
+        "text": "Installing an undistributed app on a team that did not create it produces the error invalid_team_for_non_distributed_app.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "Occurs when attempting to install/authorize an undistributed Slack API app on a team where the app was not created.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote describes the condition, but the error name is not in the quote."
+      },
+      {
+        "id": "c35x",
+        "text": "The temporary authorization code expires after ten minutes.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "quote": "That's your temporary authorization code, which expires after ten minutes.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c36x",
+        "text": "Support requests are expected to receive a response within 2 business days.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "We expect support requests to receive a response within 2 business days .",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c37x",
+        "text": "Apps installed on fewer than 10 active workspaces and with fewer than 10 weekly active users are unsuitable for the Marketplace.",
+        "label": "provider_docs",
+        "source_url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "quote": "are installed on less than 10 active workspaces and have less than 10 weekly active users.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T20:06:31.008Z",
+    "generated_by": "agent v2 (v2.9-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-sonnet-5-5 · composio_search",
+    "duration_ms": 275371,
+    "query": "Slack",
+    "partial": false,
+    "warnings": [
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups.",
+      "3 limits from the sources were missing from the written guide and were added under \"Watch out\"."
+    ],
+    "verification": {
+      "claims_total": 34,
+      "quotes_checked": 31,
+      "quotes_verified": 31,
+      "downgraded": 0
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 116121,
+      "output_tokens": 72120,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:02:08.643Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T20:02:08.645Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T20:02:08.645Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/slack",
+        "title": null,
+        "fetched_at": "2026-10-21T20:02:08.645Z",
+        "via": "direct",
+        "chars": 5219
+      },
+      {
+        "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "title": "Installing via OAuth authorization code flow | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:02:14.916Z",
+        "via": "direct",
+        "chars": 21041
+      },
+      {
+        "url": "https://docs.slack.dev/",
+        "title": "Slack developer docs | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:02:41.824Z",
+        "via": "direct",
+        "chars": 1226
+      },
+      {
+        "url": "https://slack.com/",
+        "title": "Slack | AI Work Platform & Productivity Tools",
+        "fetched_at": "2026-10-21T20:02:41.879Z",
+        "via": "direct",
+        "chars": 5731
+      },
+      {
+        "url": "https://docs.slack.dev/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T20:02:47.846Z",
+        "via": "direct",
+        "chars": 4418
+      },
+      {
+        "url": "https://docs.slack.dev/authentication.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:03:07.858Z",
+        "via": "direct",
+        "chars": 2168
+      },
+      {
+        "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+        "title": "Updated installation requirement for Slack Marketplace apps | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:03:07.862Z",
+        "via": "direct",
+        "chars": 408
+      },
+      {
+        "url": "https://docs.slack.dev/slack-marketplace.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:03:07.876Z",
+        "via": "direct",
+        "chars": 2912
+      },
+      {
+        "url": "https://docs.slack.dev/concepts/security.md",
+        "title": null,
+        "fetched_at": "2026-10-21T20:03:07.878Z",
+        "via": "direct",
+        "chars": 26933
+      },
+      {
+        "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "title": "Submission guidelines and requirements | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:03:07.907Z",
+        "via": "direct",
+        "chars": 47971
+      },
+      {
+        "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+        "title": "FAQ: Slack’s Marketplace review process | Slack",
+        "fetched_at": "2026-10-21T20:03:07.918Z",
+        "via": "direct",
+        "chars": 4626
+      },
+      {
+        "url": "https://slack.dev/introducing-the-slack-marketplace/",
+        "title": "From One Workspace to Every Workspace - Introducing the Slack Marketplace | Blog | Slack Developers",
+        "fetched_at": "2026-10-21T20:03:08.305Z",
+        "via": "direct",
+        "chars": 5518
+      },
+      {
+        "url": "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+        "title": "How I Published My Own App in the Slack Marketplace (and What the Docs Didn't Tell Me) - DEV Community",
+        "fetched_at": "2026-10-21T20:05:25.170Z",
+        "via": "direct",
+        "chars": 18241
+      },
+      {
+        "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide/",
+        "title": "Slack Marketplace review process | Slack Developer Docs",
+        "fetched_at": "2026-10-21T20:05:25.185Z",
+        "via": "direct",
+        "chars": 18384
+      },
+      {
+        "url": "https://www.linkedin.com/posts/justin-butlion-54912129_just-an-fyi-for-anyone-building-a-slack-app-activity-7508503614974341120-tJK6",
+        "title": "Just an FYI for anyone building a Slack app. It took Slack 152 days to respond to me with feedback as part of round 1 of their marketplace submission process. That's over 5 months.\n\nApparently round… | Justin Butlion",
+        "fetched_at": "2026-10-21T20:05:25.831Z",
+        "via": "direct",
+        "chars": 8004
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.9-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-sonnet-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E41"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E3",
+            "E6",
+            "E7",
+            "E11",
+            "E12",
+            "E13",
+            "E42",
+            "E43",
+            "E44",
+            "E45",
+            "E46",
+            "E72",
+            "E73",
+            "E74",
+            "E75",
+            "E76",
+            "E77",
+            "E78",
+            "E115",
+            "E116",
+            "E117",
+            "E118",
+            "E119"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E4",
+            "E14",
+            "E15",
+            "E16",
+            "E17",
+            "E18",
+            "E19",
+            "E20",
+            "E79",
+            "E80",
+            "E120",
+            "E121",
+            "E122",
+            "E123",
+            "E124",
+            "E125",
+            "E126",
+            "E127",
+            "E128",
+            "E129",
+            "E130",
+            "E131",
+            "E132"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E24",
+            "E25",
+            "E26",
+            "E27",
+            "E28",
+            "E29",
+            "E47",
+            "E48",
+            "E49",
+            "E50",
+            "E133",
+            "E134",
+            "E135",
+            "E137",
+            "E138",
+            "E139",
+            "E140",
+            "E141",
+            "E142",
+            "E143",
+            "E144",
+            "E145",
+            "E146",
+            "E147"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E51",
+            "E52",
+            "E53",
+            "E148"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "found",
+          "evidence": [
+            "E21",
+            "E22",
+            "E23",
+            "E81",
+            "E82",
+            "E149",
+            "E150"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "found",
+          "evidence": [
+            "E151",
+            "E152"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E30",
+            "E31",
+            "E32",
+            "E33",
+            "E34",
+            "E35",
+            "E36",
+            "E54",
+            "E55",
+            "E56",
+            "E153"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E37",
+            "E38",
+            "E57",
+            "E58",
+            "E59",
+            "E60",
+            "E61",
+            "E62",
+            "E90",
+            "E91",
+            "E92",
+            "E93",
+            "E94",
+            "E95",
+            "E96",
+            "E97",
+            "E154",
+            "E155",
+            "E156",
+            "E157",
+            "E158"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E39",
+            "E40",
+            "E63",
+            "E64",
+            "E65",
+            "E66",
+            "E67",
+            "E68",
+            "E69",
+            "E159",
+            "E160",
+            "E161",
+            "E162",
+            "E163",
+            "E164"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "found",
+          "evidence": [
+            "E5",
+            "E8",
+            "E9",
+            "E10",
+            "E70",
+            "E71",
+            "E83",
+            "E84",
+            "E165",
+            "E166",
+            "E167",
+            "E168",
+            "E169",
+            "E170",
+            "E171",
+            "E172",
+            "E173",
+            "E174",
+            "E175",
+            "E176",
+            "E177"
+          ],
+          "tried": [
+            "https://docs.slack.dev/authentication.md",
+            "https://docs.slack.dev/slack-marketplace.md",
+            "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+            "https://slack.com/blog/developers/slack-marketplace-review-process",
+            "https://docs.slack.dev/concepts/security.md",
+            "https://docs.slack.dev/authentication/installing-with-oauth/",
+            "https://slack.dev/introducing-the-slack-marketplace/",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "found",
+          "evidence": [
+            "E178",
+            "E179",
+            "E180",
+            "E181",
+            "E182",
+            "E183"
+          ],
+          "tried": [
+            "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+            "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide",
+            "https://www.linkedin.com/posts/justin-butlion-54912129_just-an-fyi-for-anyone-building-a-slack-app-activity-7508503614974341120-tJK6"
+          ]
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E86",
+            "E87",
+            "E88",
+            "E89",
+            "E98",
+            "E99",
+            "E100",
+            "E101",
+            "E102",
+            "E103",
+            "E104",
+            "E105",
+            "E106",
+            "E107",
+            "E108",
+            "E109",
+            "E110",
+            "E111",
+            "E112",
+            "E113",
+            "E114"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication.md",
+          "quote": "These are added in the app settings when building an app.",
+          "answer": "OAuth scopes for a Slack app are added in the app settings while building the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.858Z",
+          "page_hash": "5d99f576b8c067a1",
+          "offsets": [
+            936,
+            993
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace.md",
+          "quote": "Ready to list your app? These pages walk you through what to expect and what's required.",
+          "answer": "On this Slack Marketplace page, listing an app in the Slack Marketplace is presented as a separate step with its own expectations and requirements (the page does not say it is required before outside customers can connect).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.876Z",
+          "page_hash": "984fe6ef7c5f76df",
+          "offsets": [
+            2037,
+            2125
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace.md",
+          "quote": "What happens after you submit your app, including the prerequisites your app needs to meet before review and how to prepare for a smooth submission.",
+          "answer": "After an app is submitted for Marketplace listing, it goes through a review, and there are prerequisites the app must meet before review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.876Z",
+          "page_hash": "984fe6ef7c5f76df",
+          "offsets": [
+            2229,
+            2377
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace.md",
+          "quote": "The guidelines we check your app against during review, covering app suitability, functionality, security, design, and the details of your listing.",
+          "answer": "The Marketplace review checks the app against guidelines covering app suitability, functionality, security, design, and the details of the listing.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.876Z",
+          "page_hash": "984fe6ef7c5f76df",
+          "offsets": [
+            2528,
+            2675
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace.md",
+          "quote": "The policies, agreements, and security review process you agree to when you distribute your app through the Slack Marketplace.",
+          "answer": "Distributing an app through the Slack Marketplace involves policies and agreements the developer agrees to, plus a security review process (this page does not give thresholds or specific restrictions).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.876Z",
+          "page_hash": "984fe6ef7c5f76df",
+          "offsets": [
+            2785,
+            2911
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G2",
+          "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+          "quote": "As of July 2026, we require that apps submitting to the Slack Marketplace have at least 10 installations on active workspaces, up from the temporary lower threshold.",
+          "answer": "As of July 2026, apps submitting to the Slack Marketplace must have at least 10 installations on active workspaces. This is a Marketplace submission gate for Marketplace apps, not a general rule for all apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.862Z",
+          "page_hash": "7298d1f63e38301f",
+          "offsets": [
+            138,
+            303
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G2",
+          "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+          "quote": "Your app needs to stay at 10 or more installed workspaces throughout the entire duration of the review .",
+          "answer": "Marketplace apps must keep at least 10 installed workspaces for the entire duration of the review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.862Z",
+          "page_hash": "7298d1f63e38301f",
+          "offsets": [
+            304,
+            408
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G11",
+          "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+          "quote": "As of July 2026, we require that apps submitting to the Slack Marketplace have at least 10 installations on active workspaces, up from the temporary lower threshold.",
+          "answer": "To submit an app to the Slack Marketplace, it needs at least 10 installations on active workspaces (as of July 2026).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.862Z",
+          "page_hash": "7298d1f63e38301f",
+          "offsets": [
+            138,
+            303
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G11",
+          "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+          "quote": "up from the temporary lower threshold",
+          "answer": "The previous Marketplace installation threshold was a temporary, lower one; the page does not give its number.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.862Z",
+          "page_hash": "7298d1f63e38301f",
+          "offsets": [
+            265,
+            302
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G11",
+          "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+          "quote": "Your app needs to stay at 10 or more installed workspaces throughout the entire duration of the review .",
+          "answer": "The 10-installed-workspace minimum must be maintained throughout the review, not only at submission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.862Z",
+          "page_hash": "7298d1f63e38301f",
+          "offsets": [
+            304,
+            408
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G2",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "All apps that submit for listing in the Slack Marketplace undergo a review by the Slack Marketplace team to check compliance with our guidelines and policies.",
+          "answer": "Apps submitted for Slack Marketplace listing undergo a review by the Slack Marketplace team (the trigger is submitting for listing, with no sensitive-scope or user-count condition stated).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            634,
+            792
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G2",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "If you are looking to use an app built by a third-party developer we strongly recommend using one that has been approved for listing in the Slack Marketplace.",
+          "answer": "Slack recommends that users choose third-party apps that have been approved for Marketplace listing.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            284,
+            442
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G2",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Please exercise caution when using any third-party app that has not been approved for the Slack Marketplace.",
+          "answer": "Slack advises users to be cautious with third-party apps that have not been approved for the Slack Marketplace, which implies such apps can be used without that review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            443,
+            551
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G3",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Reviews the app’s use case is suitable for the Slack Marketplace",
+          "answer": "The Marketplace review checks whether the app's use case is suitable for the Slack Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            825,
+            889
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G3",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Reviews listing information, accompanying documentation and links to related pages to make sure they are accurate/work.",
+          "answer": "The review checks that listing information, documentation and related links are accurate and working.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            893,
+            1012
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G3",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Installs the app and tests functionality to ensure the app functions as described and provides a good user experience.",
+          "answer": "The reviewer installs the app and tests its functionality and user experience.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            1016,
+            1134
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G3",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Tests an app’s endpoints for TLS and request signing verification (used by apps to validate requests they receive are coming from Slack).",
+          "answer": "The review tests the app's endpoints for TLS and request signing verification.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            1138,
+            1275
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G3",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Reviews the data access requested is only what is required for the app to function.",
+          "answer": "The review checks that the data access requested is only what the app needs to function.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            1279,
+            1362
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G3",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Please note: while we do our best to ensure the security of our platform, we only perform a moment-in-time review and don’t conduct a code review.",
+          "answer": "The Marketplace review is a moment-in-time review and does not include a code review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            1364,
+            1510
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G3",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Developers submit this information as part of their app review and self-certify that it is accurate and truthful.",
+          "answer": "Developers submit security and compliance information as part of app review and self-certify that it is accurate and truthful; it covers data handling policies, certifications held, and how to report security issues.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            2648,
+            2761
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G6",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "Once an app is approved for listing and published to the Slack Marketplace, the app’s configuration (e.g. scopes, endpoints, listing data) is not updatable by a developer without them resubmitting to the Slack Marketplace team and having the changes reviewed and tested.",
+          "answer": "Changes to a published Marketplace app's configuration (e.g. scopes, endpoints, listing data) require resubmission and a new review and test before they are applied.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            1580,
+            1850
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G6",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "In addition to reviewing changes, we also run regular audits to ensure that apps remain compliant with our requirements and guidelines.",
+          "answer": "Slack runs regular audits to check that published apps remain compliant with its requirements and guidelines.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            1952,
+            2087
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G6",
+          "url": "https://slack.com/blog/developers/slack-marketplace-review-process",
+          "quote": "In some instances, additional testing , including penetration testing, is performed at Slack’s discretion. Reports from that testing are only shared with the developer of the app.",
+          "answer": "Slack may perform additional testing, including penetration testing, at its own discretion on approved apps; reports are shared only with the developer.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.918Z",
+          "page_hash": "c25dbe2f79e0952d",
+          "offsets": [
+            2089,
+            2268
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Always allowed: Low-risk scopes that can be used without special approval (e.g., `commands`, `chat:write`).",
+          "answer": "The page suggests the developer create a scope policy with a 'Always allowed' tier, meaning low-risk scopes usable without special approval (its example scopes are commands and chat:write). This is the page's example policy, not a Slack-defined tier.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            4145,
+            4252
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Requires approval: Higher-risk scopes that require manual review (e.g., `channels:history`, `users:read`).",
+          "answer": "In the page's example policy, a 'Requires approval' tier covers higher-risk scopes needing manual review (its example scopes are channels:history and users:read).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            4261,
+            4367
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Restricted: High-risk scopes that are forbidden or only allowed in exceptional circumstances (e.g., `admin`).",
+          "answer": "In the page's example policy, a 'Restricted' tier covers high-risk scopes that are forbidden or allowed only in exceptional circumstances (its example is admin).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            4376,
+            4485
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Automatically approved and always granted upon installation.",
+          "answer": "For app approval, required scopes are automatically approved and always granted on installation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            9818,
+            9878
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Presented as checkboxes during the approval flow. Admins select which optional scopes users are allowed to grant.",
+          "answer": "For app approval, optional scopes are shown as checkboxes, and the admin chooses which optional scopes members may grant.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            9904,
+            10017
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G4",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Rate scopes: Before creating rules, rate the permission scopes that apps request as \"High\", \"Medium\", or \"Low\" risk.",
+          "answer": "The page suggests rating each requested scope as High, Medium, or Low risk before building approval rules.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            10269,
+            10385
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "By default, any member can install an app.",
+          "answer": "By default, any member of the workspace can install an app, with no approval step.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            7923,
+            7965
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Once enabled, members can only install apps that have been pre-approved; all other apps must be submitted for approval.",
+          "answer": "When the Require App Approval setting is on, members can only install pre-approved apps; all other apps must be submitted for approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8244,
+            8363
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Navigate to your organization dashboard → **Workspaces** → Select the workspace → **Manage** → **Manage apps** → **App Management Settings** and toggle on **Require App Approval**.",
+          "answer": "Admins can enable Require App Approval in the organization dashboard under Workspaces, then Manage, Manage apps, and App Management Settings.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8063,
+            8243
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Admins can proactively pre-approve apps that members can install freely and restrict high-risk or unapproved apps to prevent installation requests.",
+          "answer": "Admins can pre-approve apps that members may install freely and restrict high-risk or unapproved apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8386,
+            8533
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Designate specific \"App Managers\" (either individual members or entire user groups) to help review and process app requests to avoid administrative bottlenecks.",
+          "answer": "Admins can designate App Managers (individual members or user groups) to help review and process app requests.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8559,
+            8719
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Admins can approve app installations, including selecting which optional scopes to permit, from either the Slack system DM or the App Management page.",
+          "answer": "Admins can approve app installations, including choosing which optional scopes to permit, from the Slack system DM or the App Management page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            9413,
+            9563
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G8",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Admins can manage whether members are permitted to use their Slack credentials to sign into third-party services.",
+          "answer": "Admins can control whether members may use their Slack credentials to sign in to third-party services (Sign-in With Slack).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            8815,
+            8928
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G9",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Ensure the redirect URIs defined in your app are limited only to domain names in your direct control.",
+          "answer": "The developer should limit the app's redirect URIs to domain names the developer directly controls.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            2226,
+            2327
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G9",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "This is crucial for preventing the redirection of authorization codes to malicious third-party sites.",
+          "answer": "The page says restricting redirect URIs to controlled domains prevents authorization codes from being redirected to malicious third-party sites.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            2328,
+            2429
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G10",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Navigate to your [application management](https://api.slack.com/apps) and select the relevant app.",
+          "answer": "The developer finds apps in application management at api.slack.com/apps, then selects the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            6021,
+            6119
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G10",
+          "url": "https://docs.slack.dev/concepts/security.md",
+          "quote": "Select the **OAuth & Permissions** section from the left-hand navigation.",
+          "answer": "In the app's settings, the OAuth & Permissions section is in the left-hand navigation (the page uses it to configure the allowed IP list).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.878Z",
+          "page_hash": "e945cbdd4a5930fb",
+          "offsets": [
+            6124,
+            6197
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "G1",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your app is created inside an Enterprise org that supports org-wide installation.",
+          "answer": "An app can be created inside an Enterprise org that supports org-wide installation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            7439,
+            7520
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "OAuth allows a user in any Slack workspace to install your app.",
+          "answer": "Any user in any Slack workspace can start an install of an app through OAuth.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            456,
+            519
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your app can only be installed on the workspace that owns it.",
+          "answer": "An app not publicly distributed (no org-wide installation support) can only be installed on the workspace that owns it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            7253,
+            7314
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your app can be installed on any workspace in the same org, and team can select among them.",
+          "answer": "An app that supports org-wide installation can be installed on any workspace in the same org.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            7521,
+            7612
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs if attempting to install a published app for which the requested scopes aren't approved either because they're still in review for that app, or they weren't yet submitted for review by the app developer.",
+          "answer": "Installing a published app is blocked for requested scopes that are still in review or were never submitted for review by the developer (error unapproved_scope).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            20142,
+            20352
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G2",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs when attempting to install/authorize an undistributed Slack API app on a team where the app was not created.",
+          "answer": "Installing or authorizing an undistributed app on a team where the app was not created produces the error invalid_team_for_non_distributed_app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            19830,
+            19945
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs when attempting to install an app in an Enterprise org containing scopes that are not org-compatible.",
+          "answer": "Installing an app in an Enterprise org fails if it requests scopes that are not org-compatible (error scope_not_allowed_on_enterprise).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            19983,
+            20091
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "The following is a list of scopes that are not org-compatible:",
+          "answer": "The page starts a list of scopes that are not org-compatible, but the list shown is incomplete and only includes the scope 'bot'.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            20383,
+            20445
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs if attempting to install a published app for which the requested scopes aren't approved either because they're still in review for that app, or they weren't yet submitted for review by the app developer.",
+          "answer": "Installing a published app is blocked for requested scopes still in review or not yet submitted for review (error unapproved_scope).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            20142,
+            20352
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G4",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs if requesting a non-existent scope or requesting a set of scopes that are in conflict with each other (e.g. SIWS user scopes cannot be combined with non-SIWS user scopes).",
+          "answer": "Requesting a non-existent scope, or combining conflicting scopes such as SIWS user scopes with non-SIWS user scopes, produces the error invalid_scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            19609,
+            19787
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "G5",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Occurs if attempting to install a published app for which the requested scopes aren't approved either because they're still in review for that app, or they weren't yet submitted for review by the app developer.",
+          "answer": "Installing a published app is blocked for requested scopes still in review or not yet submitted for review (error unapproved_scope).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            20142,
+            20352
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "G5",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "That's your temporary authorization code, which expires after ten minutes.",
+          "answer": "The temporary authorization code expires after ten minutes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            11572,
+            11646
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "G5",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "OAuth tokens do not expire.",
+          "answer": "OAuth access tokens do not expire; they stay valid until revoked.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            18182,
+            18209
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "G8",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "upgrading to an org-level installation may require an Org Owner or Org Admin",
+          "answer": "When an org-level install upgrade is requested for an app already installed on individual workspaces, an Org Owner or Org Admin may be required.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            6848,
+            6924
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G8",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "During installation, users are presented with the optional scopes the admin has pre-approved and can choose which ones to grant.",
+          "answer": "During installation, users see the optional scopes the admin has pre-approved and can choose which to grant.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            10936,
+            11064
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G8",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Enterprise administrators expect that when they install your app on their workspace, employees will connect using corporate-managed accounts.",
+          "answer": "Enterprise administrators expect employees to connect to the app using corporate-managed accounts after the admin installs it in the workspace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            17163,
+            17304
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "The redirect_uri must use HTTPS.",
+          "answer": "The redirect_uri must use HTTPS.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4347,
+            4379
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "A Redirect URL must also use HTTPS.",
+          "answer": "A Redirect URL configured in App Management must use HTTPS.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4483,
+            4518
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Your redirect_uri must match or be a subdirectory of a Redirect URL configured under App Management",
+          "answer": "The redirect_uri must match or be a subdirectory of a Redirect URL configured under App Management.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            5718,
+            5817
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "A Redirect URL can not contain an anchor",
+          "answer": "A Redirect URL cannot contain an anchor (#).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            5820,
+            5860
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "When there are multiple Redirect URL values configured, the redirect_url parameter must be sent in both the Authorize and Access steps described below",
+          "answer": "When multiple Redirect URLs are configured, the redirect_uri parameter must be sent in both the Authorize and Access steps with the same value, or a bad_redirect_uri error occurs.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4520,
+            4670
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G9",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "If there are multiple Redirect URL values configured, but no redirect_uri parameter is sent, the OAuth flow will use the first Redirect URL listed on the App Management page.",
+          "answer": "If multiple Redirect URLs are configured but no redirect_uri is sent, the flow uses the first Redirect URL listed on the App Management page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            5392,
+            5566
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Include both your app's client ID, which is found in the App Management page",
+          "answer": "The client ID is found on the App Management page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            3090,
+            3166
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "You have to prove both that you have the right temporary authorization code, and that you have your app's client secret.",
+          "answer": "The token exchange requires the app's client secret as well as the temporary authorization code.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            2335,
+            2455
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Alternatively, you can configure a Redirect URL in the App Management page under OAuth & Permissions",
+          "answer": "A Redirect URL can be configured in the App Management page under OAuth & Permissions, as an alternative to sending redirect_uri in the authorize request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            4380,
+            4480
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "To request scopes, redirect Slack users to https://slack.com/oauth/v2/authorize .",
+          "answer": "Users are redirected to https://slack.com/oauth/v2/authorize to request scopes (GovSlack apps use https://slack-gov.com/oauth/v2/authorize).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            2663,
+            2744
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "You'll do this by calling the oauth.v2.access method as follows:",
+          "answer": "The code is exchanged by calling the oauth.v2.access method.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            11863,
+            11927
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "In the app settings, uncheck the checkbox next to any scope you want to mark as optional.",
+          "answer": "In app settings, a scope is marked optional by unchecking the checkbox next to it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            9425,
+            9514
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G10",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Optional scopes must also be listed in the corresponding bot or user fields.",
+          "answer": "In an app manifest, optional scopes are listed in bot_optional or user_optional within oauth_config.scopes, and must also appear in the bot or user fields.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            9636,
+            9712
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G11",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "Apps must demonstrate usage of all scopes (both required and optional) and handle the absence of optional scopes gracefully.",
+          "answer": "Apps must demonstrate usage of all scopes, both required and optional, and handle the absence of optional scopes gracefully.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            13213,
+            13337
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G11",
+          "url": "https://docs.slack.dev/authentication/installing-with-oauth/",
+          "quote": "we strongly recommend verifying that the connecting user's account matches the enterprise customer's expected domain.",
+          "answer": "Slack strongly recommends that apps verify the connecting user's account matches the enterprise customer's expected domain after the OAuth exchange.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:14.916Z",
+          "page_hash": "4804df0078f203dc",
+          "offsets": [
+            16537,
+            16654
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G2",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Yes — Slack reviews your app before listing",
+          "answer": "Slack Marketplace apps require Slack review before they are listed; internal apps do not.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            1647,
+            1690
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G2",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Every app goes through a review process for quality, security, and user experience before it’s listed.",
+          "answer": "Every Marketplace app goes through a review process before it is listed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            942,
+            1044
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G2",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Step 3 is a gate. You need real users on multiple workspaces before you can submit — this ensures your app works beyond your own environment.",
+          "answer": "A developer must have real users on multiple workspaces before they can submit an app for Marketplace review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            2919,
+            3060
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "G2",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Once the app is approved, it’s up to you to hit that publish button for your app to go live on the marketplace.",
+          "answer": "After approval, the developer must press publish for the app to go live on the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            3277,
+            3388
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "G2",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "You can share your app directly with friends and people you know without adding it to the Slack Marketplace.",
+          "answer": "Apps can be shared directly with friends and known people without being added to the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            4443,
+            4551
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "G2",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "However all commercial distribution of apps needs to happen via the Marketplace.",
+          "answer": "All commercial distribution of apps must happen through the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            4552,
+            4632
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "G2",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Any workspace, each authorizing separately",
+          "answer": "Marketplace apps can be installed in any workspace, with each workspace authorizing the app separately.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            1428,
+            1470
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "G3",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Every app goes through a review process for quality, security, and user experience before it’s listed.",
+          "answer": "The Marketplace review checks the app's quality, security, and user experience.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            942,
+            1044
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "G3",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Slack sets the standard — encryption, secure credentials, verified requests",
+          "answer": "For Marketplace apps, Slack sets the security standard, covering encryption, secure credentials, and verified requests.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            1823,
+            1898
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "G6",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Step 7 takes time. You can reduce the waiting time by submitting a quality app with no issues.",
+          "answer": "The page gives no specific review duration; it only says the review step takes time and can be shortened by submitting a quality app with no issues.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            3064,
+            3158
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "G6",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "It’s not a one-time submission. Significant feature changes require resubmission for review.",
+          "answer": "Marketplace submission is not a one-time event; significant feature changes require resubmission for review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            4308,
+            4400
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "G11",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "Step 3 is a gate. You need real users on multiple workspaces before you can submit — this ensures your app works beyond your own environment.",
+          "answer": "Real users on multiple workspaces are required before submission; the page gives no number.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            2919,
+            3060
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "G11",
+          "url": "https://slack.dev/introducing-the-slack-marketplace/",
+          "quote": "It’s not just for big companies. The barrier to entry is quality, not size.",
+          "answer": "The page says eligibility for the Marketplace depends on quality rather than company size.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:08.305Z",
+          "page_hash": "18542d32b5e09383",
+          "offsets": [
+            4636,
+            4711
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Slack](/toolkits/slack.md) | `SLACK` |",
+          "answer": "Slack is listed under Composio-managed OAuth available, so Composio supplies the OAuth app for Slack.",
+          "kind": "composio_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.643Z",
+          "page_hash": "",
+          "offsets": [
+            6150,
+            6191
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "Composio can provide the OAuth app that users authorize when they connect a toolkit, so the developer does not need to register an OAuth app or supply a client ID and secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.643Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "The Slack entry sits in the list of toolkits where Composio manages at least one OAuth method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.643Z",
+          "page_hash": "",
+          "offsets": [
+            1000,
+            1153
+          ]
+        },
+        {
+          "id": "E88",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Some toolkits support more than one authentication method.",
+          "answer": "Some toolkits support more than one authentication method, and each method should be checked on the toolkit page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.643Z",
+          "page_hash": "",
+          "offsets": [
+            941,
+            999
+          ]
+        },
+        {
+          "id": "E89",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "Whether Composio provides the OAuth app is determined by checking whether composio_managed_auth_schemes contains the toolkit's OAuth method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.643Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            939
+          ]
+        },
+        {
+          "id": "E90",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "When proxying the callback, the OAuth app's authorized redirect URI is set to your own domain endpoint, not to Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E91",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example authorized redirect URI for the proxy is an HTTPS URL on your own domain at /api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E92",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "The proxy endpoint receives the OAuth callback and immediately sends a 302 redirect to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E93",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy endpoint must return a 302 redirect; it must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3413
+          ]
+        },
+        {
+          "id": "E94",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "The Composio callback target that the proxy forwards to is the backend.composio.dev auth callback endpoint.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E95",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "During a standard OAuth flow the browser briefly redirects through backend.composio.dev so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E96",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits display the backend.composio.dev URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E97",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "Routing the callback through your own domain is optional and is used only to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E98",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "By default the consent screen shows Composio's name, meaning the OAuth consent reads as Composio wanting access to the account.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E99",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Use your own OAuth app",
+          "answer": "The fix for the Composio-branded consent screen is to use your own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            725,
+            747
+          ]
+        },
+        {
+          "id": "E100",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "Bring your own OAuth app only for toolkits where the provider consent screen must show your brand; the page is general and does not name Slack.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E101",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Set your logo, app title, and theme in the dashboard",
+          "answer": "The hosted Connect Link page shows Composio's logo, name and styling by default, which can be changed in the dashboard.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            530,
+            582
+          ]
+        },
+        {
+          "id": "E102",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "Composio registers and maintains OAuth apps for popular toolkits, and Slack is listed as one of them, so a developer does not need to register their own Slack OAuth app when using the managed app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E103",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Composio managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E104",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "A custom auth config lets the developer supply their own OAuth app or other credentials for a toolkit, which Composio then uses.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E105",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Use your own credentials for toolkits where users see consent screens (GitHub, Google, Slack) and Composio managed auth for the rest.",
+          "answer": "The page recommends using the developer's own credentials for Slack, since Slack users see consent screens, rather than the managed auth.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2168,
+            2301
+          ]
+        },
+        {
+          "id": "E106",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "With the managed app, users see a consent screen that names Composio rather than the developer's app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E107",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "In production, users should see your app name, not \"Composio.\" This is the most common reason to switch.",
+          "answer": "In production, users are expected to see the developer's app name on the consent screen, which is the most common reason to switch to a custom app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            1145,
+            1249
+          ]
+        },
+        {
+          "id": "E108",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio requests sensible defaults for each toolkit.",
+          "answer": "Managed apps use default scopes that Composio sets for each toolkit, and those defaults may not include everything a developer needs.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            673,
+            726
+          ]
+        },
+        {
+          "id": "E109",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).",
+          "answer": "Composio's default scopes may not include some needed access, such as write access to a specific Google API, so custom scopes require the developer's own app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            1280,
+            1388
+          ]
+        },
+        {
+          "id": "E110",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+          "answer": "Managed apps share their rate-limit quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1511
+          ]
+        },
+        {
+          "id": "E111",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for triggers, while a developer's own app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E112",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "No OAuth app registration, no credentials to manage. Create a session and start testing immediately.",
+          "answer": "The page describes the managed app as suitable for building and iterating, with no OAuth app registration or credentials to manage.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            533,
+            633
+          ]
+        },
+        {
+          "id": "E113",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.",
+          "answer": "A custom auth config is needed for custom instances, such as a private subdomain, because managed apps do not cover them.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            1722,
+            1819
+          ]
+        },
+        {
+          "id": "E114",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Each toolkit gets its own auth config independently.",
+          "answer": "Each toolkit gets its own auth config independently, so the developer can mix custom and managed auth across toolkits.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:02:08.645Z",
+          "page_hash": "",
+          "offsets": [
+            2302,
+            2354
+          ]
+        },
+        {
+          "id": "E115",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Whether you’ve just started building an app, or are ready to submit one to the Slack Marketplace, this guide will help you prepare your app for the Slack Marketplace review.",
+          "answer": "Apps submitted to the Slack Marketplace go through a Marketplace review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            32,
+            205
+          ]
+        },
+        {
+          "id": "E116",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "We require apps in the Slack Marketplace to include app images in their listings.",
+          "answer": "Apps in the Slack Marketplace must include app images in their listings.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            11167,
+            11248
+          ]
+        },
+        {
+          "id": "E117",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "As installation of your Slack app will be accessible to anyone with a Slack workspace who views your Slack Marketplace listing, your onboarding flow needs to account for this.",
+          "answer": "Apps installed by anyone who views the Marketplace listing (direct install) can be installed without a provider review of each customer.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            14850,
+            15025
+          ]
+        },
+        {
+          "id": "E118",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "We are unlikely to approve use of admin* scopes by apps submitting to the Slack Marketplace who are not part of our partner program",
+          "answer": "Using admin.* scopes is unlikely to be approved for Marketplace apps that are not part of Slack's partner program.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            31257,
+            31388
+          ]
+        },
+        {
+          "id": "E119",
+          "question": "G2",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "In addition to the above, if you’re requesting scopes that provide extensive access to workspace data or allow the bot to add itself to private conversations, your submission will be subject to an enhanced review, to reduce the risk of unexpected behavior.",
+          "answer": "Apps requesting scopes that give extensive workspace data access, or let the bot add itself to private conversations, are subject to enhanced review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            34993,
+            35249
+          ]
+        },
+        {
+          "id": "E120",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "During the review, we’ll check that your app follows the guidelines below, which you’ll see summarized when you submit your app.",
+          "answer": "During Marketplace review, Slack checks that the app follows the Marketplace guidelines.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            207,
+            335
+          ]
+        },
+        {
+          "id": "E121",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "As part of reviewing your submission to the Slack Marketplace we will install and test your Slack app to assess the user experience; below are some of the things we will be looking for.",
+          "answer": "As part of review, Slack installs and tests the app to assess user experience.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            18906,
+            19091
+          ]
+        },
+        {
+          "id": "E122",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Our team may also perform an advanced security review at any point after an app is submitted to the Slack Marketplace.",
+          "answer": "Slack may perform an advanced security review at any point after an app is submitted to the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            40261,
+            40379
+          ]
+        },
+        {
+          "id": "E123",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "DO provide clear reasons for each of the scopes you include in your submitted app. Don’t just tell us what the scope does (we know that already) but rather tell us how your app uses it",
+          "answer": "Developers must give a clear reason for each requested scope, explaining how the app uses it.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            30531,
+            30715
+          ]
+        },
+        {
+          "id": "E124",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "DO disclose the following AI-related information in the relevant fields in the Security & Compliance section of your submission:",
+          "answer": "Developers must disclose specified AI-related information in the Security & Compliance section of the submission when the app uses generative AI.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            33963,
+            34091
+          ]
+        },
+        {
+          "id": "E125",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Model used if your app exposes Slack users to a LLM",
+          "answer": "Model used, data retention and LLM use, data tenancy and data residency must be disclosed for AI apps that expose a LLM to users.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            34095,
+            34146
+          ]
+        },
+        {
+          "id": "E126",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "All Slack Marketplace apps must include a clear privacy policy that details how third-party data is handled and this page should be accessible on your app’s landing page.",
+          "answer": "All Marketplace apps must include a clear privacy policy that is accessible from the app's landing page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            17476,
+            17646
+          ]
+        },
+        {
+          "id": "E127",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "At a minimum should be an email address or a webform.",
+          "answer": "The privacy policy must include, at minimum, a contact method such as an email address or webform; a physical address alone is not sufficient.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            18122,
+            18175
+          ]
+        },
+        {
+          "id": "E128",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "In addition your landing page needs to be publicly accessible (i.e. not behind a login) and should be an actual web page created specifically for your Slack app - not a link to a PDF, document or code repository.",
+          "answer": "The landing page must be publicly accessible (not behind a login) and be a web page created specifically for the Slack app, not a PDF, document or code repository link.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            16325,
+            16537
+          ]
+        },
+        {
+          "id": "E129",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "There is a clear way to get in touch with your support if someone needs help, such as an email address or contact form.",
+          "answer": "The support page must give a clear way to get in touch, such as an email address or contact form, and must be publicly accessible.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            16896,
+            17015
+          ]
+        },
+        {
+          "id": "E130",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "We expect support requests to receive a response within 2 business days .",
+          "answer": "Support requests are expected to receive a response within 2 business days.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            17291,
+            17364
+          ]
+        },
+        {
+          "id": "E131",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Use a 1600px by 1000px size (8:5 ratio).",
+          "answer": "Marketplace listing images must be 1600px by 1000px (8:5 ratio).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            11432,
+            11472
+          ]
+        },
+        {
+          "id": "E132",
+          "question": "G3",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "We strongly recommend you consider adding a video and offer these suggestions:",
+          "answer": "A video is strongly recommended for the listing, but the page does not make it mandatory.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            12189,
+            12267
+          ]
+        },
+        {
+          "id": "E133",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "search:read.* , *:history , files:read , and canvases:read",
+          "answer": "Apps requesting scopes that give extensive workspace data access, or let the bot add itself to private conversations, get enhanced review, including search:read.*, *:history, files:read and canvases:read.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            35275,
+            35333
+          ]
+        },
+        {
+          "id": "E134",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "user token groups:write , groups:write.invites , mpim:write",
+          "answer": "Enhanced review also applies to the user token groups:write, groups:write.invites and mpim:write scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            35337,
+            35396
+          ]
+        },
+        {
+          "id": "E135",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "conversations.connect:write",
+          "answer": "Enhanced review also applies to the conversations.connect:write scope.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            35400,
+            35427
+          ]
+        },
+        {
+          "id": "E136",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "admin.*",
+          "answer": "Enhanced review also applies to the admin.* scopes.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            1490,
+            1497
+          ]
+        },
+        {
+          "id": "E137",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "We are unlikely to approve broad access to workspace message/file data (e.g. user token * :history scopes) without a clear use case that requires them, such as Real-time Search or MCP server functionality",
+          "answer": "Broad access to workspace message or file data (user token *:history scopes) is unlikely to be approved without a clear use case such as Real-time Search or MCP server functionality.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            31049,
+            31253
+          ]
+        },
+        {
+          "id": "E138",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Use of user token scopes should only be used when your app is acting as your authenticating user and action needs to be performed from the user's perspective: for example, reading or starting group DMs for a specific user.",
+          "answer": "User token scopes should only be used when the app acts as the authenticating user and the action must be performed from that user's perspective.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            31392,
+            31614
+          ]
+        },
+        {
+          "id": "E139",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "We will return submissions where user token scopes are being used unnecessarily.",
+          "answer": "Submissions that use user token scopes unnecessarily will be returned.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            31615,
+            31695
+          ]
+        },
+        {
+          "id": "E140",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "DO adhere to the ‘principle of least privilege’ when thinking about the scopes your app will use",
+          "answer": "Developers should follow the principle of least privilege when choosing scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            30429,
+            30525
+          ]
+        },
+        {
+          "id": "E141",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "DON’T include scopes in your submitted app intended for future functionality. We will only approve scopes related to functionality we can test",
+          "answer": "Scopes for future, untested functionality must not be included; only scopes tied to testable functionality will be approved.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            30722,
+            30864
+          ]
+        },
+        {
+          "id": "E142",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "DON’T request legacy/restricted scopes.",
+          "answer": "Legacy or restricted scopes must not be requested.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            30871,
+            30910
+          ]
+        },
+        {
+          "id": "E143",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "use legacy/restricted scopes or methods, scopes that provide extensive access to workspace data without a clear use case that requires them, or coded workflow scopes (e.g. admin.* , identity.* , search:read , workflow.steps:execute , triggers:* ).",
+          "answer": "Apps using legacy/restricted scopes or methods, or coded workflow scopes such as admin.*, identity.*, search:read, workflow.steps:execute and triggers:*, are listed as unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            1318,
+            1565
+          ]
+        },
+        {
+          "id": "E144",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Optional scopes allow users to choose which additional permissions to grant your app at install time.",
+          "answer": "Optional scopes let users choose which extra permissions to grant at install time.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            32105,
+            32206
+          ]
+        },
+        {
+          "id": "E145",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Scopes marked as required are always included; scopes marked as optional can be accepted or declined by the user without blocking installation.",
+          "answer": "Required scopes are always included; optional scopes can be declined without blocking installation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            32207,
+            32350
+          ]
+        },
+        {
+          "id": "E146",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "To enable this you will need to request the team.billing:read bot token scope, which will enable you to check the workspace plan post-authorization and revoke it if needed.",
+          "answer": "Automation platform apps that need the team.billing:read bot token scope can check the workspace plan after authorization.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            39542,
+            39714
+          ]
+        },
+        {
+          "id": "E147",
+          "question": "G4",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "In addition, coded workflows are currently not eligible for listing in the Slack Marketplace.",
+          "answer": "Coded workflows are not currently eligible for Marketplace listing.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            3132,
+            3225
+          ]
+        },
+        {
+          "id": "E148",
+          "question": "G5",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "are installed on less than 10 active workspaces and have less than 10 weekly active users.",
+          "answer": "Apps installed on fewer than 10 active workspaces and with fewer than 10 weekly active users are unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            2330,
+            2420
+          ]
+        },
+        {
+          "id": "E149",
+          "question": "G6",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "You must resubmit your app for review when you make substantial changes or updates to the features, purpose or functionality of your app.",
+          "answer": "Developers must resubmit the app for review when making substantial changes to its features, purpose or functionality.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            44054,
+            44191
+          ]
+        },
+        {
+          "id": "E150",
+          "question": "G6",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Our team may also perform an advanced security review at any point after an app is submitted to the Slack Marketplace.",
+          "answer": "Slack may run an advanced security review at any point after submission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            40261,
+            40379
+          ]
+        },
+        {
+          "id": "E151",
+          "question": "G7",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Slack allows you to charge users for your app.",
+          "answer": "Slack allows developers to charge users for their app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            12807,
+            12853
+          ]
+        },
+        {
+          "id": "E152",
+          "question": "G7",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Included with service subscription: the app is free so long as users have a paid plan with your service.",
+          "answer": "Under the Included with service subscription model, the app is free as long as users have a paid plan with the developer's service.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            13327,
+            13431
+          ]
+        },
+        {
+          "id": "E153",
+          "question": "G8",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Because of this we require that you limit the installation of your app to Slack workspaces on our paid plans.",
+          "answer": "Installation of automation platform apps must be limited to Slack workspaces on paid plans.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            39432,
+            39541
+          ]
+        },
+        {
+          "id": "E154",
+          "question": "G9",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Your app needs Transport Layer Security (TLS) to encrypt all traffic between clients and servers.",
+          "answer": "Apps must use TLS to encrypt all traffic between clients and servers.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            41140,
+            41237
+          ]
+        },
+        {
+          "id": "E155",
+          "question": "G9",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "As of February 19, 2020 , your app must use TLS version 1.2 or greater to continue using Slack endpoints.",
+          "answer": "Since February 19, 2020, apps must use TLS version 1.2 or greater to keep using Slack endpoints.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            41238,
+            41343
+          ]
+        },
+        {
+          "id": "E156",
+          "question": "G9",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "To prevent forgery attacks , your app must use the state parameter when requesting access to customer data during the OAuth flow .",
+          "answer": "Apps must use the state parameter when requesting customer data during the OAuth flow, to prevent forgery attacks.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            40997,
+            41127
+          ]
+        },
+        {
+          "id": "E157",
+          "question": "G9",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Once your app completes the OAuth flow with a Slack workspace, verify that the connecting user's account matches the enterprise customer's expected domain.",
+          "answer": "After OAuth completes, the developer should verify the connecting user's account matches the enterprise customer's expected domain.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            6786,
+            6941
+          ]
+        },
+        {
+          "id": "E158",
+          "question": "G9",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "The URL you provide must HTTP 302 redirect to a fully qualified slack.com/oauth/v2/authorize URL, as per the first step of the OAuth flow .",
+          "answer": "A direct install URL must HTTP 302 redirect to a fully qualified slack.com/oauth/v2/authorize URL.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            14707,
+            14846
+          ]
+        },
+        {
+          "id": "E159",
+          "question": "G10",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Open the Basic Information page",
+          "answer": "To configure direct install, open the app's settings dashboard and go to the Basic Information page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            14536,
+            14567
+          ]
+        },
+        {
+          "id": "E160",
+          "question": "G10",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Scroll down to Installing Your App",
+          "answer": "On the Basic Information page, scroll down to the Installing Your App section.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            14571,
+            14605
+          ]
+        },
+        {
+          "id": "E161",
+          "question": "G10",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Select and enable Install from Slack Marketplace",
+          "answer": "In the Installing Your App section, select and enable Install from Slack Marketplace to configure the direct install link.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            14609,
+            14657
+          ]
+        },
+        {
+          "id": "E162",
+          "question": "G10",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Edit your app's collaborator list by going to your app's settings dashboard and clicking into the Collaborators page.",
+          "answer": "The app's collaborator list is edited on the Collaborators page of the app's settings dashboard.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            43933,
+            44050
+          ]
+        },
+        {
+          "id": "E163",
+          "question": "G10",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "When your app is no longer supported, these API tokens need to be invalidated by deleting your app from your app settings page.",
+          "answer": "When an app is no longer supported, its API tokens must be invalidated by deleting the app from the app settings page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            40868,
+            40995
+          ]
+        },
+        {
+          "id": "E164",
+          "question": "G10",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "If accidentally exposed, you can regenerate it from your app settings.",
+          "answer": "If the signing secret is accidentally exposed, it can be regenerated from the app settings.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            41867,
+            41937
+          ]
+        },
+        {
+          "id": "E165",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "The list below is not exhaustive-the Slack Marketplace team may use their judgment to deny any app from being listed.",
+          "answer": "The Marketplace unsuitable-app list is not exhaustive, and the Marketplace team may use its judgment to deny any app from being listed.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            1048,
+            1165
+          ]
+        },
+        {
+          "id": "E166",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "By distributing your app through the Slack Marketplace, you agree to abide by the following core policies and terms:",
+          "answer": "By distributing through the Slack Marketplace, developers agree to the App Developer Policy, Slack Marketplace Agreement, Security Review, API Terms of Service and Brand Guidelines.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            3704,
+            3820
+          ]
+        },
+        {
+          "id": "E167",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Apps that do not follow these terms will not be accepted in the Slack Marketplace.",
+          "answer": "Apps that do not follow these terms will not be accepted in the Slack Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            3940,
+            4022
+          ]
+        },
+        {
+          "id": "E168",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "use Slack data to train Large Language Models (LLMs).",
+          "answer": "Apps that use Slack data to train Large Language Models are unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            2810,
+            2863
+          ]
+        },
+        {
+          "id": "E169",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "provide only an MCP server without meaningful in-Slack functionality.",
+          "answer": "Apps that provide only an MCP server without meaningful in-Slack functionality are unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            3061,
+            3130
+          ]
+        },
+        {
+          "id": "E170",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "are in private beta, still being built, or have not been fully tested.",
+          "answer": "Apps in private beta, still being built, or not fully tested are unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            2618,
+            2688
+          ]
+        },
+        {
+          "id": "E171",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "enable financial transactions, including cryptocurrency transactions, or the minting or transfer of NFTs in Slack.",
+          "answer": "Apps that enable financial transactions, including cryptocurrency transactions, or NFT minting or transfer are unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            2692,
+            2806
+          ]
+        },
+        {
+          "id": "E172",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "circumvent product restrictions or admin controls in Slack.",
+          "answer": "Apps that circumvent product restrictions or admin controls in Slack are unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            2020,
+            2079
+          ]
+        },
+        {
+          "id": "E173",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "replicate Slack client functionality, or are third-party Slack clients.",
+          "answer": "Apps that embed Slack into another site, or replicate Slack client functionality or are third-party Slack clients, are unsuitable for the Marketplace.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            1764,
+            1835
+          ]
+        },
+        {
+          "id": "E174",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "If your Slack app integrates with another service, include the name of that service in your app name.",
+          "answer": "If the app integrates with another service, the name of that service must be included in the app name.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            8979,
+            9080
+          ]
+        },
+        {
+          "id": "E175",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "If you do not own the service, make sure to not infringe on any trademarks or copyright",
+          "answer": "If the developer does not own the integrated service, it must not infringe on trademarks or copyright in the app name.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            9081,
+            9168
+          ]
+        },
+        {
+          "id": "E176",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "Make sure to keep it short and sweet at 10 words (or fewer) so that it doesn’t get cut off anywhere.",
+          "answer": "The short description should be 10 words or fewer.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            9538,
+            9638
+          ]
+        },
+        {
+          "id": "E177",
+          "question": "G11",
+          "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "quote": "DO limit the Assistant Overview to 25 words or less.",
+          "answer": "Assistant Overview text should be 25 words or less.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T20:03:07.907Z",
+          "page_hash": "139a8194a82f93de",
+          "offsets": [
+            35990,
+            36042
+          ]
+        },
+        {
+          "id": "E178",
+          "question": "R1",
+          "url": "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+          "quote": "I submitted at the beginning of January and got approval in May — so the review alone took four months",
+          "answer": "One developer's blog report (2026): the Marketplace review alone took about four months, from submission in early January to approval in May.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T20:05:25.170Z",
+          "page_hash": "32fc01727e43d4b7"
+        },
+        {
+          "id": "E179",
+          "question": "R1",
+          "url": "https://www.linkedin.com/posts/justin-butlion-54912129_just-an-fyi-for-anyone-building-a-slack-app-activity-7508503614974341120-tJK6",
+          "quote": "It took Slack 152 days to respond to me with feedback as part of round 1 of their marketplace submission process.",
+          "answer": "One developer's LinkedIn post reports Slack took 152 days to return round-1 feedback on a Marketplace submission.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T20:05:25.831Z",
+          "page_hash": "cf489eeae0c7ef78"
+        },
+        {
+          "id": "E180",
+          "question": "R1",
+          "url": "https://www.linkedin.com/posts/justin-butlion-54912129_just-an-fyi-for-anyone-building-a-slack-app-activity-7508503614974341120-tJK6",
+          "quote": "In short, if you submit a slack app to the marketplace today, expect to be unpublished for at least the next 6 months.",
+          "answer": "The same developer expects at least about six months before a submitted Slack app is published; they report round 2 is far quicker.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T20:05:25.831Z",
+          "page_hash": "cf489eeae0c7ef78"
+        },
+        {
+          "id": "E181",
+          "question": "R1",
+          "url": "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+          "quote": "Slack asks about every scope separately. There's no \"I took it just in case\" option.",
+          "answer": "Reviewers ask for a justification of each scope separately, so requesting unused scopes adds review friction.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T20:05:25.170Z",
+          "page_hash": "32fc01727e43d4b7"
+        },
+        {
+          "id": "E182",
+          "question": "R1",
+          "url": "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+          "quote": "Slack states plainly in the confirmation email that at this stage every fix resets your place in the queue.",
+          "answer": "Fixes made during the preliminary stage reset the submission's place in the queue, so polish listing and pages before submitting.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T20:05:25.170Z",
+          "page_hash": "32fc01727e43d4b7"
+        },
+        {
+          "id": "E183",
+          "question": "R1",
+          "url": "https://dev.to/kamilbuksakowski/how-i-published-my-own-app-in-the-slack-marketplace-and-what-the-docs-didnt-tell-me-589m",
+          "quote": "If a change required a new scope, it could mean going back through verification.",
+          "answer": "A developer reports that post-launch changes adding a new scope may trigger another review; changes within already-approved scopes shipped without one.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T20:05:25.170Z",
+          "page_hash": "32fc01727e43d4b7"
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 46160
+        },
+        {
+          "name": "extract https://docs.slack.dev/authentication.md",
+          "stop": "ok (1 facts)",
+          "ms": 4659
+        },
+        {
+          "name": "extract https://docs.slack.dev/slack-marketplace.md",
+          "stop": "ok (4 facts)",
+          "ms": 7865
+        },
+        {
+          "name": "extract https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+          "stop": "ok (5 facts)",
+          "ms": 8009
+        },
+        {
+          "name": "extract https://slack.com/blog/developers/slack-marketplace-review-process",
+          "stop": "ok (13 facts)",
+          "ms": 11932
+        },
+        {
+          "name": "extract https://docs.slack.dev/concepts/security.md",
+          "stop": "ok (17 facts)",
+          "ms": 16596
+        },
+        {
+          "name": "extract https://docs.slack.dev/authentication/installing-with-oauth/",
+          "stop": "ok (31 facts)",
+          "ms": 29730
+        },
+        {
+          "name": "extract https://slack.dev/introducing-the-slack-marketplace/",
+          "stop": "ok (13 facts)",
+          "ms": 15517
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (4 facts)",
+          "ms": 6601
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (12 facts)",
+          "ms": 12909
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (13 facts)",
+          "ms": 9292
+        },
+        {
+          "name": "extract https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+          "stop": "ok (62 facts)",
+          "ms": 110661
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 45044
+        }
+      ],
+      "judge": {
+        "checked": 43,
+        "supported": 30,
+        "partial": 10,
+        "unsupported": 2,
+        "contradicted": 1,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "Quotes suggest non-Marketplace apps can be used, but say nothing specific about an internal app on own workspace."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "unsupported",
+            "reason": "Quotes don't list steps for internal apps."
+          },
+          {
+            "id": "s2.path",
+            "verdict": "supported",
+            "reason": "All apps submitted for Marketplace listing undergo a Marketplace team review."
+          },
+          {
+            "id": "s2.trigger",
+            "verdict": "partial",
+            "reason": "Review applies to all listing submissions, but 'always required' for connecting is not stated; sharing directly avoids it for non-commercial use."
+          },
+          {
+            "id": "s2.gates",
+            "verdict": "partial",
+            "reason": "Review is supported but the quotes don't give the full ordered steps, e.g. 10 installs or publish after approval."
+          },
+          {
+            "id": "s2.checks",
+            "verdict": "unsupported",
+            "reason": "Quotes mention guidelines compliance and enhanced review, not the listed checks."
+          },
+          {
+            "id": "s2.wait",
+            "verdict": "contradicted",
+            "reason": "Quote gives no duration; the 4-6 months figure isn't supported and the quote only says it takes time."
+          },
+          {
+            "id": "s2.shortcut",
+            "verdict": "supported",
+            "reason": "Direct sharing without listing is allowed; commercial distribution must go via the Marketplace."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "At least 10 active workspace installs required for submission."
+          },
+          {
+            "id": "s2.mod0.note",
+            "verdict": "supported",
+            "reason": "10 active installs, kept throughout the review."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "Admins approve installs when approval is required."
+          },
+          {
+            "id": "s2.mod1.note",
+            "verdict": "supported",
+            "reason": "Require App Approval workspaces need approval of non-pre-approved apps."
+          },
+          {
+            "id": "s2.mod2",
+            "verdict": "supported",
+            "reason": "Resubmission for review is required on substantial changes."
+          },
+          {
+            "id": "s2.mod2.note",
+            "verdict": "supported",
+            "reason": "Substantial changes require resubmission for review."
+          },
+          {
+            "id": "s2.mod3",
+            "verdict": "supported",
+            "reason": "LLM training on Slack data is excluded and the team may deny apps."
+          },
+          {
+            "id": "s2.mod3.note",
+            "verdict": "supported",
+            "reason": "Quotes list LLM training as excluded, and the list is non-exhaustive."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "The 10 installs and review are supported, but same day for own workspace and 4-6 months are not in the quotes."
+          },
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "Quote states a user in any workspace can install via OAuth."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "Quote matches the statement directly."
+          },
+          {
+            "id": "c3",
+            "verdict": "partial",
+            "reason": "Quote advises caution for unapproved apps; the implication of use without review is plausible but not stated."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "Quote states the requirement."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote states the requirement."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c7",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "Quote gives no duration and says it takes time."
+          },
+          {
+            "id": "c9",
+            "verdict": "partial",
+            "reason": "Privacy policy requirement is supported; the email or webform contact detail is not in the quote."
+          },
+          {
+            "id": "c10",
+            "verdict": "supported",
+            "reason": "Quote matches."
+          },
+          {
+            "id": "c11",
+            "verdict": "partial",
+            "reason": "2-business-day response is supported; the clear contact way is not in the quote."
+          },
+          {
+            "id": "c12",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c13",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "Quote says real users on multiple workspaces are needed before submitting."
+          },
+          {
+            "id": "c17",
+            "verdict": "supported",
+            "reason": "Quote gives the size and ratio."
+          },
+          {
+            "id": "c18",
+            "verdict": "supported",
+            "reason": "Quote asks for clear reasons for each scope."
+          },
+          {
+            "id": "c19",
+            "verdict": "partial",
+            "reason": "The quote only fragments the item; the 'unsuitable' framing is implied but the quote shows only the list item."
+          },
+          {
+            "id": "c20",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c22",
+            "verdict": "supported",
+            "reason": "Quote says only testable-functionality scopes are approved and future ones shouldn't be included."
+          },
+          {
+            "id": "c23",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c24",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c25",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c30",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c31",
+            "verdict": "supported",
+            "reason": "Quote states it."
+          },
+          {
+            "id": "c32",
+            "verdict": "partial",
+            "reason": "Quote describes the condition, but the error name unapproved_scope is not in the quote."
+          },
+          {
+            "id": "c34",
+            "verdict": "partial",
+            "reason": "Quote describes the condition, but the error name is not in the quote."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 46160,
+        "discover_read": 26508,
+        "extract": 110662,
+        "gapfill": 45050,
+        "write": 32832,
+        "verify": 14155
+      }
+    }
+  }
+}

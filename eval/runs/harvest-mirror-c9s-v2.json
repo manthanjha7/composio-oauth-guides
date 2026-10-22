@@ -1,0 +1,3117 @@
+{
+  "slug": "harvest",
+  "guide": {
+    "app": {
+      "name": "Harvest",
+      "website": "https://www.getharvest.com/",
+      "developer_docs_url": "https://help.getharvest.com/api-v2/"
+    },
+    "oauth_supported": "yes",
+    "summary": "Public agent app, own Harvest OAuth app (self-serve (no review step found in the docs), wait none).",
+    "verdict": "Public agent app, own Harvest OAuth app (self-serve (no review step found in the docs), wait none).",
+    "default_scenario": "s1",
+    "composio": {
+      "toolkit_slug": "harvest",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio manages OAuth for Harvest. For launch, create an auth config with your own client ID and secret, using the redirect URI copied from the Composio dashboard."
+    },
+    "need_own_app": {
+      "answer": "Not for a prototype, since Composio's managed app works. For production, bring your own app so users see your brand, you get dedicated quota, and you can use shorter trigger polling.",
+      "reasons": [
+        "Branding: managed apps show 'Composio wants to access your account'",
+        "Quota: managed apps share quota across all Composio users",
+        "Polling: managed auth enforces a 15-minute minimum interval",
+        "Control over scopes and rate limits through a custom auth config"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "Public agent app, own Harvest OAuth app",
+        "when_this_applies": "Your agent connects many customers' Harvest accounts through an OAuth2 app you register in Harvest ID.",
+        "difficulty": "easy",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "None",
+          "basis": "The docs describe no review step (c3); no waiting time is documented either way.",
+          "max_days": null
+        },
+        "approval": "No app review, verification or partner acceptance is described for OAuth2 registration. Directory listing is a separate optional form.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c14",
+          "c20"
+        ],
+        "path": "self_serve",
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [],
+        "trigger": "none",
+        "modifiers": [],
+        "path_claim_ids": [
+          "c1",
+          "c2",
+          "c3"
+        ],
+        "shortcut_claim_ids": [],
+        "path_basis": "inferred"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Harvest account with admin rights",
+        "detail": "Older V1 docs say you must be an Administrator on your Harvest account to register an OAuth app. Confirm the same for the current Harvest ID flow.",
+        "claim_ids": [
+          "c12",
+          "c2"
+        ]
+      },
+      {
+        "title": "Decide product scope",
+        "detail": "You choose Harvest, Forecast or both at registration, and Harvest advises picking the minimal scope.",
+        "claim_ids": [
+          "c4",
+          "c5"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Get redirect URI from Composio dashboard",
+        "owner": "agent",
+        "detail": "Copy the redirect URI from the Composio dashboard and check it is a valid URL to register as the Harvest Redirect URL.",
+        "inputs": [
+          "Composio dashboard access"
+        ],
+        "done_when": "You have the exact redirect URI to register.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c6",
+          "c7"
+        ]
+      },
+      {
+        "title": "Register OAuth2 app in Harvest ID",
+        "owner": "you",
+        "detail": "In the Developers section of Harvest ID, enter the app name, redirect URL, multi-account setting and product scope.",
+        "inputs": [
+          "Harvest ID login",
+          "Redirect URI",
+          "App name"
+        ],
+        "done_when": "Harvest shows a client ID and secret.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4",
+          "c24"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the Harvest auth config through Composio's API using your client ID and secret.",
+        "inputs": [
+          "Client ID",
+          "Client secret"
+        ],
+        "done_when": "The auth config exists and a connect link can be generated.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c19",
+          "c22"
+        ]
+      },
+      {
+        "title": "Test a connection end to end",
+        "owner": "you",
+        "detail": "Authorize a Harvest account through the connect link and run a few API calls. Check that token refresh works after the 18-hour expiry.",
+        "inputs": [
+          "Test Harvest account"
+        ],
+        "done_when": "Calls succeed and a refreshed token works.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": null,
+        "claim_ids": [
+          "c8",
+          "c14"
+        ]
+      },
+      {
+        "title": "Optionally request a directory listing",
+        "owner": "you",
+        "detail": "Submit Harvest's integration form to appear in its integrations directory. It is a marketing listing and not needed to connect users.",
+        "inputs": [
+          "Listing copy",
+          "Logo",
+          "Screenshots",
+          "Support contact"
+        ],
+        "done_when": "The integrations team has your request.",
+        "scenario_ids": [
+          "s1"
+        ],
+        "link": "https://www.getharvest.com/contact/integration_submission",
+        "claim_ids": [
+          "c20",
+          "c21"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Greenhouse 'Harvest' docs are a different product",
+        "detail": "Search results for 'Harvest API' also return Greenhouse's recruiting API, which needs a signed partner agreement. None of that applies to Harvest time tracking.",
+        "claim_ids": []
+      },
+      {
+        "title": "Short-lived access tokens",
+        "detail": "Access tokens expire after 18 hours, so your agent must refresh them using the refresh token.",
+        "claim_ids": [
+          "c8"
+        ]
+      },
+      {
+        "title": "Rate limits block the account",
+        "detail": "General API calls are limited to 100 per 15 seconds and Reports API calls to 100 per 15 minutes. Exceeding them returns HTTP 429.",
+        "claim_ids": [
+          "c9",
+          "c10",
+          "c11"
+        ]
+      },
+      {
+        "title": "Managed app is not for launch",
+        "detail": "It shows 'Composio' on the consent screen and shares quota with all Composio users.",
+        "claim_ids": [
+          "c16",
+          "c17"
+        ]
+      },
+      {
+        "title": "Old docs describe V1",
+        "detail": "V1 is deprecated and only supported for legacy apps. Follow the V2 docs for new builds.",
+        "claim_ids": [
+          "c13"
+        ]
+      }
+    ],
+    "blockers": [],
+    "open_questions": [
+      "Is there any hidden review, user cap or wait for public OAuth2 apps? Not found; ask Harvest support or test with a second organization's account.",
+      "Does a customer's Harvest admin need to approve your app? Docs do not mention it; test with a non-admin customer user.",
+      "Are token lifetimes the same in V2? The 18-hour figure comes from V1 docs and a GitHub copy; verify in the V2 flow.",
+      "Does Harvest validate redirect URIs beyond the 'must start with the registered URL' rule? Test with the Composio callback."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "To build integrations that other users can use, you need to register an OAuth2 application.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "If you are interested in building integrations that other users can use, you will need to register an OAuth2 Application",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "An OAuth2 application is created from the Developers section of Harvest ID.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "The application can be created from the Developers section",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "Registration asks for name, redirect URL, multi-account setting and product scope; the page describes no identity check, use-case review, demo, security assessment or listing review.",
+        "label": "unknown",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "If you are interested in building integrations that other users can use, you will need to register an OAuth2 Application, also known as an OAuth2 Client.",
+        "probe_id": null,
+        "note": "The quote does not support this claim: Quotes do not list the registration fields or say what checks are absent."
+      },
+      {
+        "id": "c4",
+        "text": "When registering an OAuth2 app, you choose the product scope: Harvest, Forecast, or both.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "Products –scope of access requested; can be either Harvest, Forecast or both.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "The docs advise picking the minimal scope.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "It is advised to pick the minimal scope",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "Each OAuth2 app has a registered Redirect URL, to which successful authentications are redirected by default.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "Redirect URL –the URL in your integration; successful authentications will be redirected to by default.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "A custom redirect_uri can be supplied, but it must start with the Redirect URL registered with the application.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "the default Redirect URL can be further customized here if needed, but needs to start with the Redirect",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "A new access token must be requested after 18 hours using the refresh token.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+        "quote": "Request a new access token after 18 hours using the refresh token.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "The general API rate limit is 100 requests per 15 seconds.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+        "quote": "The rate limit for general API requests is 100 requests per 15 seconds",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c10",
+        "text": "The Reports API rate limit is 100 requests per 15 minutes.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+        "quote": "The rate limit for Reports API requests is 100 requests per 15 minutes",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "When the rate limit is exceeded Harvest returns HTTP 429, with the wait in the Retry-After header.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+        "quote": "When the rate limit is exceeded Harvest will send an HTTP 429 status code.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: HTTP 429 is supported, but the Retry-After header is not in the quote."
+      },
+      {
+        "id": "c12",
+        "text": "To register an OAuth application you must be logged in as an Administrator on your Harvest account (V1 docs).",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+        "quote": "You’ll need to register your application with Harvest ( you must be logged in as an Administrator on your account to access this page ) before using OAuth 2.0 for authorization.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "The V1 API is deprecated but continues to function for legacy applications.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+        "quote": "The V1 API has been deprecated , but will continue to function for legacy applications.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "For an app registered for one account, the end user chooses which account to authorize; the page does not mention admin approval.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "If you registered your app as needing access to just one account, the user will choose which account to authorize",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The user choosing the account is supported, but the absence of any admin approval mention is not shown by the quote."
+      },
+      {
+        "id": "c15",
+        "text": "Harvest is listed as having Composio-managed OAuth available.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "| [Harvest](/toolkits/harvest.md) | `HARVEST` |",
+        "probe_id": null,
+        "note": "The quote shares few words with this claim. Read it before relying on the claim."
+      },
+      {
+        "id": "c16",
+        "text": "Managed apps show users 'Composio wants to access your account' during OAuth.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "Managed apps share quota across all Composio users.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Managed apps share quota across all Composio users.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter intervals where supported.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "You can create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances even when a managed app exists.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "Harvest's separate integrations-directory listing request asks for contact details, listing copy, logo, screenshots and support contact; it is a marketing listing form, not an OAuth app review.",
+        "label": "provider_docs",
+        "source_url": "https://www.getharvest.com/contact/integration_submission",
+        "quote": "Before we can create your integration page, we need you to provide us with a little information.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote only says information is needed for an integration page; the specific fields and the 'not an OAuth review' claim are not shown."
+      },
+      {
+        "id": "c21",
+        "text": "Listing requests go through the integration submission form to the integrations team, who follow up; no review criteria are stated.",
+        "label": "provider_docs",
+        "source_url": "https://support.getharvest.com/hc/en-us/articles/12511803761165-How-can-I-get-my-integration-listed-or-updated-on-your-integrations-page",
+        "quote": "The form will be directed to the integrations team and they will reach out with any updates.",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: The form going to the integrations team who reach out is supported; the absence of stated review criteria is not shown."
+      },
+      {
+        "id": "c22",
+        "text": "The authorization URL uses the app's client_id, and the token exchange also uses client_id and client_secret.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "https://id.getharvest.com/oauth2/authorize?client_id={CLIENT_ID}&response_type=code",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c23",
+        "text": "No documented review time or approval wait for Harvest OAuth apps was found.",
+        "label": "unknown",
+        "source_url": null,
+        "quote": null,
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c24",
+        "text": "For OAuth2 apps, the granted scope varies with the app's options and what the user authorizes.",
+        "label": "provider_docs",
+        "source_url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "quote": "it can vary depending on the options you selected and the authorization the user might give you.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T13:53:59.842Z",
+    "generated_by": "agent v2 (v2.9-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-sonnet-5-5 · composio_search",
+    "duration_ms": 142957,
+    "query": "Harvest",
+    "partial": false,
+    "warnings": [
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 24,
+      "quotes_checked": 23,
+      "quotes_verified": 23,
+      "downgraded": 1
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 114863,
+      "output_tokens": 50130,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T13:51:37.180Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T13:51:37.180Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T13:51:37.180Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/harvest",
+        "title": null,
+        "fetched_at": "2026-10-21T13:51:37.180Z",
+        "via": "direct",
+        "chars": 354
+      },
+      {
+        "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+        "title": "Authentication – Harvest API V2 Documentation",
+        "fetched_at": "2026-10-21T13:51:40.970Z",
+        "via": "direct",
+        "chars": 9049
+      },
+      {
+        "url": "https://help.getharvest.com/api-v2/",
+        "title": "Harvest API V2 Documentation",
+        "fetched_at": "2026-10-21T13:51:50.521Z",
+        "via": "direct",
+        "chars": 1805
+      },
+      {
+        "url": "https://www.getharvest.com/",
+        "title": "Time Tracking Software With Invoicing | Harvest",
+        "fetched_at": "2026-10-21T13:51:50.524Z",
+        "via": "direct",
+        "chars": 5442
+      },
+      {
+        "url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+        "title": "Overview – Harvest API V2 Documentation",
+        "fetched_at": "2026-10-21T13:51:54.503Z",
+        "via": "direct",
+        "chars": 6130
+      },
+      {
+        "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+        "title": "For Server Side Applications – Harvest API V1 Documentation",
+        "fetched_at": "2026-10-21T13:51:54.523Z",
+        "via": "direct",
+        "chars": 2614
+      },
+      {
+        "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+        "title": "OAuth 2.0 Authentication – Harvest API V1 Documentation",
+        "fetched_at": "2026-10-21T13:51:54.541Z",
+        "via": "direct",
+        "chars": 1342
+      },
+      {
+        "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+        "title": "api/Authentication/OAuth 2.0.md at master · harvesthq/api · GitHub",
+        "fetched_at": "2026-10-21T13:51:54.878Z",
+        "via": "direct",
+        "chars": 5228
+      },
+      {
+        "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+        "title": "Integrating as a Greenhouse Harvest Partner (OAuth 2.0 Auth Code Grant Guide)",
+        "fetched_at": "2026-10-21T13:51:55.255Z",
+        "via": "direct",
+        "chars": 12281
+      },
+      {
+        "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+        "title": "Greenhouse - How do I set up my partner credentials? | Merge Help Center",
+        "fetched_at": "2026-10-21T13:51:55.296Z",
+        "via": "direct",
+        "chars": 7395
+      },
+      {
+        "url": "https://www.getharvest.com/contact/integration_submission",
+        "title": "Contact - Integration Submission",
+        "fetched_at": "2026-10-21T13:52:46.586Z",
+        "via": "direct",
+        "chars": 2745
+      },
+      {
+        "url": "https://support.getharvest.com/hc/en-us/articles/12511803761165-How-can-I-get-my-integration-listed-or-updated-on-your-integrations-page",
+        "title": "How can I get my integration listed or updated on your integrations page? – Harvest Help Center",
+        "fetched_at": "2026-10-21T13:52:48.925Z",
+        "via": "composio_fetch",
+        "chars": 976
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.9-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-sonnet-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E15",
+            "E16",
+            "E25",
+            "E26",
+            "E39",
+            "E55",
+            "E56",
+            "E97",
+            "E98"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "found",
+          "evidence": [
+            "E10",
+            "E11",
+            "E27",
+            "E28",
+            "E57",
+            "E58",
+            "E59",
+            "E99",
+            "E100",
+            "E101",
+            "E102"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "found",
+          "evidence": [
+            "E60",
+            "E61",
+            "E62",
+            "E103",
+            "E104",
+            "E105",
+            "E125",
+            "E126"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+            "https://www.getharvest.com/contact/integration_submission",
+            "https://platform.harvestapp.com/",
+            "https://support.getharvest.com/hc/en-us/articles/12511803761165-How-can-I-get-my-integration-listed-or-updated-on-your-integrations-page"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E29",
+            "E30",
+            "E31",
+            "E32",
+            "E33",
+            "E63",
+            "E64",
+            "E65",
+            "E106",
+            "E107",
+            "E108",
+            "E109"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E23",
+            "E24",
+            "E40",
+            "E41",
+            "E110",
+            "E111",
+            "E112",
+            "E113",
+            "E114"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "not_found",
+          "evidence": [
+            "E66"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+            "https://www.getharvest.com/contact/integration_submission",
+            "https://support.getharvest.com/hc/en-us/articles/12511803761165-How-can-I-get-my-integration-listed-or-updated-on-your-integrations-page"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E17",
+            "E18",
+            "E34",
+            "E42",
+            "E43",
+            "E115",
+            "E116"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E19",
+            "E35",
+            "E36",
+            "E44",
+            "E45",
+            "E67",
+            "E68",
+            "E87",
+            "E88",
+            "E89",
+            "E90",
+            "E91",
+            "E92",
+            "E93",
+            "E117",
+            "E118"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E12",
+            "E13",
+            "E14",
+            "E20",
+            "E21",
+            "E22",
+            "E37",
+            "E38",
+            "E46",
+            "E47",
+            "E48",
+            "E49",
+            "E69",
+            "E70",
+            "E71",
+            "E72",
+            "E73",
+            "E119",
+            "E120",
+            "E121",
+            "E122"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "not_found",
+          "evidence": [
+            "E74",
+            "E123"
+          ],
+          "tried": [
+            "https://help.getharvest.com/api-v2/introduction/overview/general/",
+            "https://help.getharvest.com/api-v2/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+            "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+            "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+            "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+            "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+            "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+            "https://www.getharvest.com/contact/integration_submission"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://support.getharvest.com/hc/en-us/articles/12511803761165-How-can-I-get-my-integration-listed-or-updated-on-your-integrations-page"
+          ]
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E50",
+            "E51",
+            "E52",
+            "E53",
+            "E54",
+            "E75",
+            "E76",
+            "E77",
+            "E78",
+            "E79",
+            "E80",
+            "E81",
+            "E82",
+            "E83",
+            "E84",
+            "E85",
+            "E86",
+            "E94",
+            "E95",
+            "E96"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+          "quote": "This is the current API V2 documentation.",
+          "answer": "The page describes itself as the current Harvest API V2 documentation, with the legacy API V1 documentation still viewable separately.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.503Z",
+          "page_hash": "36c7d15f19ca0117",
+          "offsets": [
+            106,
+            147
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G5",
+          "url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+          "quote": "We have an API throttle that blocks accounts that exceed our API rate limits.",
+          "answer": "Harvest has an API throttle that blocks accounts that exceed its API rate limits.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.503Z",
+          "page_hash": "36c7d15f19ca0117",
+          "offsets": [
+            3223,
+            3300
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G5",
+          "url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+          "quote": "The rate limit for general API requests is 100 requests per 15 seconds",
+          "answer": "The general API request rate limit is 100 requests per 15 seconds. This is stated for API requests in general, not specifically for unreviewed apps.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.503Z",
+          "page_hash": "36c7d15f19ca0117",
+          "offsets": [
+            3446,
+            3516
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G5",
+          "url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+          "quote": "The rate limit for Reports API requests is 100 requests per 15 minutes",
+          "answer": "The Reports API request rate limit is 100 requests per 15 minutes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.503Z",
+          "page_hash": "36c7d15f19ca0117",
+          "offsets": [
+            3522,
+            3592
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G5",
+          "url": "https://help.getharvest.com/api-v2/introduction/overview/general/",
+          "quote": "When the rate limit is exceeded Harvest will send an HTTP 429 status code.",
+          "answer": "When the rate limit is exceeded, Harvest returns HTTP 429, and the seconds until the throttle lifts are sent in the Retry-After header.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.503Z",
+          "page_hash": "36c7d15f19ca0117",
+          "offsets": [
+            3868,
+            3942
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v2/",
+          "quote": "This is the current API V2 documentation.",
+          "answer": "The page says this documentation is for the current API V2, not the legacy platform.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:50.521Z",
+          "page_hash": "14526137013da25e",
+          "offsets": [
+            45,
+            86
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "You’ll need to register your application with Harvest ( you must be logged in as an Administrator on your account to access this page ) before using OAuth 2.0 for authorization.",
+          "answer": "To register an OAuth application, you must be logged in as an Administrator on your Harvest account.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            522,
+            699
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "The V1 API has been deprecated , but will continue to function for legacy applications.",
+          "answer": "This page covers the Harvest API v1, which is deprecated and continues to work only for legacy applications, not as the current platform.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            124,
+            211
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "As of January 1st, 2019, we will only offer technical support for the V2 API .",
+          "answer": "Harvest only offers technical support for the V2 API as of January 1, 2019, not for V1.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            212,
+            290
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G2",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "To register your application, please visit: https://YOURACCOUNT.harvestapp.com/oauth2/clients",
+          "answer": "Registration is done by you in your own Harvest account's OAuth client page (at YOURACCOUNT.harvestapp.com), and the page describes no app review, verification, marketplace listing, or partner acceptance step.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            815,
+            908
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G2",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "You’ll need to register your application with Harvest ( you must be logged in as an Administrator on your account to access this page ) before using OAuth 2.0 for authorization.",
+          "answer": "Client registration is a manual step done by an Administrator, not an automatic or dynamic registration process described on this page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            522,
+            699
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "To register your application, please visit: https://YOURACCOUNT.harvestapp.com/oauth2/clients",
+          "answer": "Register the app by visiting the OAuth clients page of your Harvest account (YOURACCOUNT.harvestapp.com/oauth2/clients) while logged in as an Administrator.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            815,
+            908
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "After you register, we’ll provide you with credentials that your application can use to communicate with Harvest.",
+          "answer": "After registering, Harvest provides credentials that your application uses to communicate with Harvest; the page does not say how to find the client ID and secret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            700,
+            813
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "quote": "Note : The OAuth 2.0 Sample App is a great starting point if you’d like to experiment with Harvest’s OAuth 2.0 using your own registered client ID and secret.",
+          "answer": "Harvest's OAuth 2.0 Sample App can be used as a starting point for experimenting with your own registered client ID and secret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.541Z",
+          "page_hash": "3aa32d0c23a41725",
+          "offsets": [
+            910,
+            1068
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "The V1 API has been deprecated , but will continue to function for legacy applications.",
+          "answer": "The V1 API is deprecated and is kept only for legacy applications; this page covers the V1 server-side flow.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            128,
+            215
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "As of January 1st, 2019, we will only offer technical support for the V2 API .",
+          "answer": "Since January 1, 2019, technical support is offered only for the V2 API.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            216,
+            294
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G8",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "Redirect users to Harvest to authorize their accounts with your application.",
+          "answer": "In the server-side flow, the page says users are redirected to Harvest to authorize their accounts with the application; it does not mention an admin approval step.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            450,
+            526
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G8",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "To limit access to a single Harvest account, you can specify its web address instead of api.harvestapp.com .",
+          "answer": "The authorization URL can be pointed at a single Harvest account's web address instead of api.harvestapp.com, which limits access to that one account.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            703,
+            811
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G9",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "Harvest sends it to your redirect URI as a query parameter.",
+          "answer": "Harvest sends the authorization code to the app's redirect URI as a query parameter.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            892,
+            951
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "Harvest uses the Authorization Code flow for server-side authorization.",
+          "answer": "The server-side flow uses the Authorization Code grant.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            374,
+            445
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "GET https://example.harvestapp.com/oauth2/authorize?client_id={client ID}&redirect_uri=https%3A%2F%2Fexample.com%2Fredirect_path&state=optional-csrf-token&response_type=code",
+          "answer": "The authorization request includes the app's client ID and a redirect URI, with response_type=code.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            528,
+            701
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "\"client_secret\" : \"{your application's client secret}\" ,",
+          "answer": "The token request sends the app's client ID and client secret along with the authorization code and redirect URI to the token endpoint.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            1343,
+            1399
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G5",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "\"expires_in\" : 64799 ,",
+          "answer": "Access tokens are returned with an expires_in value of 64799; the page does not say this is specific to testing mode.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            1579,
+            1601
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G5",
+          "url": "https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "quote": "Request a new access token after 18 hours using the refresh token.",
+          "answer": "A new access token is requested after 18 hours using the refresh token; the page does not say this is specific to testing mode.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.523Z",
+          "page_hash": "15e0282621f0fe8a",
+          "offsets": [
+            1941,
+            2007
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "This is the current API V2 documentation.",
+          "answer": "The page is the current API V2 documentation, not the legacy V1 documentation.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            119,
+            160
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G1",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "The application can be created from the Developers section",
+          "answer": "An OAuth2 application is created from the Developers section of Harvest ID.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            2297,
+            2355
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G2",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "If you are interested in building integrations that other users can use, you will need to register an OAuth2 Application",
+          "answer": "Developers must register an OAuth2 application if they want integrations that other users can use.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            2143,
+            2263
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G2",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "This URL allows the user to authenticate on Harvest ID and lets them authorize access to their account(s)",
+          "answer": "Users authenticate on Harvest ID and authorize access to their accounts, depending on the app's OAuth2 settings and their own choice.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            3150,
+            3255
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G4",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "Products –scope of access requested; can be either Harvest, Forecast or both.",
+          "answer": "When registering an OAuth2 app, the developer chooses the product scope: Harvest, Forecast, or both.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            2692,
+            2769
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G4",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "It is advised to pick the minimal scope",
+          "answer": "The page advises requesting the minimal scope needed for the integration to work.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            2770,
+            2809
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G4",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "Personal Access Tokens have the all scope by default, so you have full access to all of your accounts.",
+          "answer": "Personal Access Tokens have the all scope by default, giving full access to all of the user's accounts.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            7157,
+            7259
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G4",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "it can vary depending on the options you selected and the authorization the user might give you.",
+          "answer": "For OAuth2 applications, the granted scope varies with the app's options and what the user authorizes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            7285,
+            7381
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G4",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "harvest:{ACCOUNT_ID} –a Harvest account ID that the user granted access to.",
+          "answer": "Scope values include harvest:{ACCOUNT_ID}, forecast:{ACCOUNT_ID}, harvest:all, forecast:all, and all, depending on the accounts the user granted.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            7437,
+            7512
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G8",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "If you registered your app as needing access to just one account, the user will choose which account to authorize",
+          "answer": "For an app registered for one account, the end user chooses which account to authorize; the page does not mention admin approval.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            7803,
+            7916
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G9",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "Redirect URL –the URL in your integration; successful authentications will be redirected to by default.",
+          "answer": "Each OAuth2 app has a registered Redirect URL, to which successful authentications are redirected by default.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            2463,
+            2566
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "G9",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "the default Redirect URL can be further customized here if needed, but needs to start with the Redirect",
+          "answer": "A custom redirect_uri can be supplied, but it must start with the Redirect URL registered with the application.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            3507,
+            3610
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "Name –name of your application.",
+          "answer": "The app's setup form asks for a name, a redirect URL, whether it supports multiple accounts, and the products (scope).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            2428,
+            2459
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "G10",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "https://id.getharvest.com/oauth2/authorize?client_id={CLIENT_ID}&response_type=code",
+          "answer": "The authorization URL is built with the app's client_id, and the token exchange also uses client_id and client_secret.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc",
+          "offsets": [
+            3065,
+            3148
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "G1",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "You'll need to register your application with Harvest (must be logged in as an administrator on your account to access this page) before using OAuth 2.0 for authorization.",
+          "answer": "To register an OAuth app, you must be logged in as an administrator on your Harvest account.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            749,
+            920
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "G5",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Each user in Harvest is granted a token that expires after 18 hours.",
+          "answer": "Each user's access token expires after 18 hours (this is stated for all users, not specifically for testing mode).",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            1311,
+            1379
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "G5",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Request a new access token after 18 hours using the refresh token.",
+          "answer": "After 18 hours, the app must request a new access token using the refresh token.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            3322,
+            3388
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "G8",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Redirect users to Harvest to authorize their accounts with your application.",
+          "answer": "The page says the app redirects users to Harvest so they can authorize their own accounts with the app; it does not mention an admin approval step.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            1489,
+            1565
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "G8",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "To limit access to a single Harvest account, you can specify its web address instead of api.harvestapp.com.",
+          "answer": "Authorization can be limited to a single Harvest account by using that account's web address instead of api.harvestapp.com.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            1767,
+            1874
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "G9",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Harvest sends it to your redirect URI as a query parameter.",
+          "answer": "In the server-side flow, Harvest sends the authorization code to the app's redirect URI as a query parameter.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            1954,
+            2013
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G9",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Harvest sends it to your redirect URI as a hash parameter.",
+          "answer": "In the client-side flow, Harvest sends the access token to the app's redirect URI as a hash parameter.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            4611,
+            4669
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G10",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "After registering, we'll provide you with credentials that your application can use to communicate with Harvest.",
+          "answer": "After you register the app, Harvest provides credentials (client ID and secret) that the app uses to communicate with Harvest.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            921,
+            1033
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G10",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Please note : The OAuth 2.0 Sample App is a great starting point if you'd like to experiment with Harvest's OAuth 2.0 using your own registered client ID and secret.",
+          "answer": "Harvest's OAuth 2.0 Sample App can be used to experiment with OAuth using your own registered client ID and secret.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            1035,
+            1200
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G10",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Harvest uses the Authorization Code flow for server-side authorization.",
+          "answer": "Harvest uses the Authorization Code flow for server-side applications.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            1414,
+            1485
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G10",
+          "url": "https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "quote": "Harvest uses the Implicit Grant flow for client-side authorization.",
+          "answer": "Harvest uses the Implicit Grant flow for client-side applications.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:54.878Z",
+          "page_hash": "fdee2cf6612c1649",
+          "offsets": [
+            4080,
+            4147
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Harvest](/toolkits/harvest.md) | `HARVEST` |",
+          "answer": "Harvest is listed under 'Composio-managed OAuth available', so Composio manages at least one OAuth method for it.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            4308,
+            4355
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "## Composio-managed OAuth available (124)",
+          "answer": "Composio-managed OAuth apps are listed under the heading 'Composio-managed OAuth available (124)', separate from the 'Bring your own OAuth app (219)' list.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1268,
+            1309
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "For toolkits on this page, Composio can supply the OAuth app users authorize, so the developer does not need to register an OAuth app or supply a client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "Some toolkits support more than one auth method, and a toolkit is listed as Composio-managed if Composio manages at least one OAuth method; each method must be checked on the toolkit's own page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            941,
+            1153
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "Whether Composio provides the OAuth app for a toolkit can be checked by reading the composio_managed_auth_schemes field from the toolkit endpoint; if the OAuth method is in that field, Composio provides the app, otherwise the developer must register their own.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            939
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G1",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "If you are already an official Greenhouse partner with a signed agreement, proceed directly to Step 2.",
+          "answer": "For Greenhouse (as described in this Merge guide), a developer who is already an official Greenhouse partner with a signed agreement can skip the request form and go straight to getting credentials.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            466,
+            568
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G1",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "If you haven't already done so, you'll need to sign an agreement with Greenhouse.",
+          "answer": "A developer without a signed agreement with Greenhouse must first sign one with Greenhouse before getting credentials.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            570,
+            651
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G2",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Start the process by submitting the integration request form below.",
+          "answer": "The first step toward Greenhouse credentials is submitting Greenhouse's integration request form.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            652,
+            719
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G2",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Applications are reviewed by Greenhouse on the first Monday of every month .",
+          "answer": "Greenhouse reviews partner applications on the first Monday of every month.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            749,
+            825
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G2",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "After completing their review, Greenhouse will share an API agreement with you.",
+          "answer": "After Greenhouse completes its review, it shares an API agreement with the developer; this partner acceptance comes before any credentials are issued.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            826,
+            905
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G3",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "The name of your integration",
+          "answer": "The email requesting credentials from Greenhouse must include the name of the integration.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            1157,
+            1185
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G3",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Environment (unless just using for testing, choose Production)",
+          "answer": "The credential request email must state the environment; if the app is not only for testing, the environment should be Production.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            1189,
+            1251
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G3",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "A 128x128 logo",
+          "answer": "The credential request email must include a 128x128 logo.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            1309,
+            1323
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G4",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Set the following scopes to enable access for all Merge Common Models. You may choose to remove scopes if not needed for your use case.",
+          "answer": "The page lists a set of scopes that enable access to all Merge Common Models, and developers may remove scopes they do not need.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            2082,
+            2217
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G4",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Allows creating candidates in Greenhouse.",
+          "answer": "Example scope harvest:candidates:create allows creating candidates in Greenhouse.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            2879,
+            2920
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G4",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Scope : OAuth scopes, provisioned by Greenhouse (space-separated list)",
+          "answer": "Scopes for the Merge integration are provisioned by Greenhouse and entered as a space-separated list.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            7055,
+            7125
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G6",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Applications are reviewed by Greenhouse on the first Monday of every month .",
+          "answer": "Greenhouse reviews partner applications monthly, on the first Monday of each month, per this guide.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            749,
+            825
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G9",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Redirect URI: https://app.merge.dev/oauth/callback",
+          "answer": "The redirect URI to register with Greenhouse for this integration is https://app.merge.dev/oauth/callback.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            1255,
+            1305
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G9",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "OAuth Redirect URI : https://app.merge.dev/oauth/callback",
+          "answer": "In the Merge dashboard, the OAuth Redirect URI field must be set to https://app.merge.dev/oauth/callback.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            6994,
+            7051
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G10",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "After receiving an API agreement from Greenhouse, you'll be able to retrieve your Client ID and Client Secret by emailing [email protected] .",
+          "answer": "After receiving an API agreement, the developer retrieves the Greenhouse Client ID and Client Secret by emailing Greenhouse.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            0,
+            141
+          ]
+        },
+        {
+          "id": "E70",
+          "question": "G10",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "After receiving your Client ID and Client Secret from Greenhouse, navigate to the Integrations page in the Merge dashboard.",
+          "answer": "After receiving the Client ID and Client Secret from Greenhouse, the developer goes to the Integrations page in the Merge dashboard.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            6608,
+            6731
+          ]
+        },
+        {
+          "id": "E71",
+          "question": "G10",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "Expand the Greenhouse integration and select Edit .",
+          "answer": "In the Merge dashboard, the developer expands the Greenhouse integration and selects Edit.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            6735,
+            6786
+          ]
+        },
+        {
+          "id": "E72",
+          "question": "G10",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "OAuth Client Id : Client ID value provided by Greenhouse",
+          "answer": "The OAuth Client Id field takes the Client ID provided by Greenhouse.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            6866,
+            6922
+          ]
+        },
+        {
+          "id": "E73",
+          "question": "G10",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "OAuth Client Secret : Client Secret value provided by Greenhouse",
+          "answer": "The OAuth Client Secret field takes the Client Secret provided by Greenhouse.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            6926,
+            6990
+          ]
+        },
+        {
+          "id": "E74",
+          "question": "G11",
+          "url": "https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "quote": "If you are already an official Greenhouse partner with a signed agreement, proceed directly to Step 2.",
+          "answer": "Eligibility for Greenhouse credentials, per this guide, is being an official Greenhouse partner with a signed agreement (or signing one through the request process).",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.296Z",
+          "page_hash": "8aa23f133026cf72",
+          "offsets": [
+            466,
+            568
+          ]
+        },
+        {
+          "id": "E75",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack.",
+          "answer": "This page is a general comparison and does not mention Harvest specifically. It says Composio managed apps are OAuth apps Composio registers and maintains for popular toolkits such as GitHub, Gmail, and Slack.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            153
+          ]
+        },
+        {
+          "id": "E76",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You do not need to register your own OAuth app.",
+          "answer": "For toolkits with a managed app, the developer does not need to register their own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            154,
+            201
+          ]
+        },
+        {
+          "id": "E77",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "With a custom auth config, the developer supplies their own OAuth app, API key, bearer token, or other credentials and tells Composio to use them for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            229,
+            349
+          ]
+        },
+        {
+          "id": "E78",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps are the default when they are available.",
+          "answer": "Managed apps are the default when they are available.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            426,
+            479
+          ]
+        },
+        {
+          "id": "E79",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Users will see \"Composio wants to access your account\" during OAuth.",
+          "answer": "Managed apps show users the consent message \"Composio wants to access your account\" during OAuth, so the page says they suit internal tools, prototypes, and development rather than production.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            781,
+            849
+          ]
+        },
+        {
+          "id": "E80",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "In production, users should see your app name, not \"Composio.\"",
+          "answer": "The page recommends a developer's own OAuth app when production users should see the developer's app name instead of Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1145,
+            1207
+          ]
+        },
+        {
+          "id": "E81",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users.",
+          "answer": "Managed apps share their quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1474
+          ]
+        },
+        {
+          "id": "E82",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Managed auth enforces a 15-minute minimum polling interval for triggers, whereas a developer's own app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E83",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.",
+          "answer": "Self-hosted or regional variants of an app, such as a private Salesforce subdomain, need their own OAuth app rather than the managed one.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1722,
+            1819
+          ]
+        },
+        {
+          "id": "E84",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.",
+          "answer": "A custom auth config can be created for branding, scopes, rate limits, polling intervals, or custom instances even when a managed app exists.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1996,
+            2112
+          ]
+        },
+        {
+          "id": "E85",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "Whether Composio provides a managed OAuth app for a given toolkit is checked on a separate Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E86",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "You don't have to pick one approach for all toolkits.",
+          "answer": "A developer can use their own credentials for some toolkits and Composio managed auth for others, with each toolkit getting its own auth config.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            2114,
+            2167
+          ]
+        },
+        {
+          "id": "E87",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "In your OAuth app's settings, you set the authorized redirect URI to your own endpoint.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E88",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example authorized redirect URI on your own domain is https://yourdomain.com/api/composio-redirect.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E89",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "During OAuth, the browser briefly redirects through backend.composio.dev so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E90",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also display the backend.composio.dev URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E91",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "You can proxy the redirect through your own domain if you need to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E92",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "Your proxy endpoint receives the OAuth callback and immediately 302-redirects it to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E93",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.",
+          "answer": "The proxy endpoint must return a 302 redirect, and must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3494
+          ]
+        },
+        {
+          "id": "E94",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "composio_url = \"https://backend.composio.dev/api/v3/toolkits/auth/callback\"",
+          "answer": "The Composio callback URL that the proxy forwards to is https://backend.composio.dev/api/v3/toolkits/auth/callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            2718,
+            2793
+          ]
+        },
+        {
+          "id": "E95",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, the OAuth consent screen on providers such as Google and GitHub shows \"Composio wants to access your account\".",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E96",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "You should add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:37.180Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E97",
+          "question": "G1",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "To get started, you must have a signed Greenhouse partnership agreement.",
+          "answer": "Developers must have a signed Greenhouse partnership agreement before they can start.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            0,
+            72
+          ]
+        },
+        {
+          "id": "E98",
+          "question": "G1",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Use the stored access_token to make calls to the Greenhouse Harvest V3 API.",
+          "answer": "The page's API calls target the Harvest V3 API.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            11194,
+            11269
+          ]
+        },
+        {
+          "id": "E99",
+          "question": "G2",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Once the agreement is finalized, you can proceed with the steps below.",
+          "answer": "Developers must have a signed Greenhouse partnership agreement first; the steps proceed only after the agreement is finalized.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            172,
+            242
+          ]
+        },
+        {
+          "id": "E100",
+          "question": "G2",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Greenhouse will provide you with a Client ID and a Client Secret",
+          "answer": "Developers request credentials by contacting Greenhouse Partner Support, which then provides a Client ID and Client Secret.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            1303,
+            1367
+          ]
+        },
+        {
+          "id": "E101",
+          "question": "G2",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Is this for testing (only your own sandbox) or production (live for mutual customers)?",
+          "answer": "The request to Greenhouse asks whether the integration is for testing (only the developer's own sandbox) or production (live for mutual customers).",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            835,
+            921
+          ]
+        },
+        {
+          "id": "E102",
+          "question": "G2",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "(Inform Greenhouse- If Required): Once your callback endpoint ( redirect_uri ) is operational and tested, please inform Greenhouse support via [email protected] and provide the final redirect_uri",
+          "answer": "After the callback endpoint is working and tested, the developer must inform Greenhouse support and provide the final redirect_uri, if required.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            0,
+            195
+          ]
+        },
+        {
+          "id": "E103",
+          "question": "G3",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Logo: Provide a 128x128 logo file. Customers will see this when authorizing your integration.",
+          "answer": "The developer must send Greenhouse a 128x128 logo file, which customers see when authorizing the integration.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            1208,
+            1301
+          ]
+        },
+        {
+          "id": "E104",
+          "question": "G3",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Integration Name: What is your product/integration called?",
+          "answer": "When requesting credentials, the developer must tell Greenhouse the integration name.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            760,
+            818
+          ]
+        },
+        {
+          "id": "E105",
+          "question": "G3",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Redirect URI(s): The url(s) where you handle the authorization code callback",
+          "answer": "When requesting credentials, the developer must list the required scopes and the redirect URI(s) for the callback.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            1115,
+            1191
+          ]
+        },
+        {
+          "id": "E106",
+          "question": "G4",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "A space-separated list of the permissions you need, e.g., harvest:job_posts:list harvest:candidates:list",
+          "answer": "Example scopes given on the page are harvest:job_posts:list and harvest:candidates:list; scopes are requested as a space-separated list.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            2293,
+            2397
+          ]
+        },
+        {
+          "id": "E107",
+          "question": "G4",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "See Harvest API documentation for available scopes.",
+          "answer": "The page refers to the Harvest API documentation for the list of available scopes.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            1060,
+            1111
+          ]
+        },
+        {
+          "id": "E108",
+          "question": "G4",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "(You requested scopes not permitted for your client application).",
+          "answer": "Requesting scopes not permitted for the client application produces an invalid_scope error.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            3947,
+            4012
+          ]
+        },
+        {
+          "id": "E109",
+          "question": "G4",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "This occurs if the client tries to exchange a code associated with scopes it isn't permitted to request.",
+          "answer": "Exchanging a code tied to scopes the client is not permitted to request returns HTTP 401 Unauthorized.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            7819,
+            7923
+          ]
+        },
+        {
+          "id": "E110",
+          "question": "G5",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Authorization Code: 1 minute (Must be exchanged quickly!)",
+          "answer": "The authorization code lives 1 minute and must be exchanged quickly (this applies generally, not specifically to testing mode).",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            387,
+            444
+          ]
+        },
+        {
+          "id": "E111",
+          "question": "G5",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Access Token: 1 hour (Used to make API calls)",
+          "answer": "The access token lives 1 hour (general lifetime stated on the page, not specific to testing mode).",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            448,
+            493
+          ]
+        },
+        {
+          "id": "E112",
+          "question": "G5",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Refresh Token: 14 days (Used to get new access tokens)",
+          "answer": "The refresh token lives 14 days (general lifetime stated on the page, not specific to testing mode).",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            497,
+            551
+          ]
+        },
+        {
+          "id": "E113",
+          "question": "G5",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "IMPORTANT: If the refresh_token expires (not used within 14 days), the user must repeat the entire authorization flow from Step 2.",
+          "answer": "If the refresh token is not used within 14 days, it expires and the user must repeat the whole authorization flow.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            8962,
+            9092
+          ]
+        },
+        {
+          "id": "E114",
+          "question": "G5",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Is this for testing (only your own sandbox) or production (live for mutual customers)?",
+          "answer": "Testing environment is limited to the developer's own sandbox.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            835,
+            921
+          ]
+        },
+        {
+          "id": "E115",
+          "question": "G8",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "When the user successfully authenticates and authorizes your integration on Greenhouse",
+          "answer": "After the user authorizes the integration on Greenhouse, they are redirected back to the developer's redirect_uri.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            4183,
+            4269
+          ]
+        },
+        {
+          "id": "E116",
+          "question": "G8",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "The user who authorized the connection may not have the necessary Greenhouse permissions in-app to perform the requested action (e.g., creating a candidate, accessing certain data).",
+          "answer": "A user who authorized the connection may lack the Greenhouse in-app permissions needed for an action, which causes HTTP 403 errors.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            11821,
+            12002
+          ]
+        },
+        {
+          "id": "E117",
+          "question": "G9",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Must match the one registered with your client_id",
+          "answer": "The redirect_uri sent in the authorization request must match the one registered with the client_id.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            2211,
+            2260
+          ]
+        },
+        {
+          "id": "E118",
+          "question": "G9",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "The provided redirect_uri doesn't match the one registered for your client_id",
+          "answer": "A redirect_uri that does not match the one registered for the client_id produces an invalid_request error.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            3464,
+            3541
+          ]
+        },
+        {
+          "id": "E119",
+          "question": "G10",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Contact Greenhouse Partner Support: Reach out via [email protected]",
+          "answer": "Setup starts by contacting Greenhouse Partner Support by email to request API credentials; no developer console is described on the page.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            0,
+            67
+          ]
+        },
+        {
+          "id": "E120",
+          "question": "G10",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Link your button to the Greenhouse authorization endpoint: https://auth.greenhouse.io/authorize",
+          "answer": "The authorization endpoint is https://auth.greenhouse.io/authorize.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            1740,
+            1835
+          ]
+        },
+        {
+          "id": "E121",
+          "question": "G10",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Immediately send a server-to-server POST request to the Greenhouse token endpoint: https://auth.greenhouse.io/token",
+          "answer": "The token endpoint is https://auth.greenhouse.io/token, reached by server-to-server POST.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            5700,
+            5815
+          ]
+        },
+        {
+          "id": "E122",
+          "question": "G10",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "Combine your Client ID and Client Secret with a colon",
+          "answer": "The Authorization header is built by Base64-encoding the Client ID and Client Secret joined by a colon.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            5909,
+            5962
+          ]
+        },
+        {
+          "id": "E123",
+          "question": "G11",
+          "url": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "quote": "If you need Greenhouse logos or branding guidelines, please consult https://brand.greenhouse.io",
+          "answer": "Greenhouse logos and branding guidelines are available at brand.greenhouse.io for developers who need them.",
+          "kind": "reported",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T13:51:55.255Z",
+          "page_hash": "f91a111c9d400cee",
+          "offsets": [
+            1610,
+            1705
+          ]
+        },
+        {
+          "id": "E124",
+          "question": "G3",
+          "url": "https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "quote": "If you are interested in building integrations that other users can use, you will need to register an OAuth2 Application, also known as an OAuth2 Client.",
+          "answer": "Harvest's API v2 docs say OAuth2 registration is done in the Harvest ID Developers section by supplying name, redirect URL, multi-account setting and product scope; the page describes no identity check, use-case review, demo, security assessment or listing review for this step.",
+          "kind": "provider_docs",
+          "status": "rejected",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T13:51:40.970Z",
+          "page_hash": "9dc5a77f1a707bdc"
+        },
+        {
+          "id": "E125",
+          "question": "G3",
+          "url": "https://www.getharvest.com/contact/integration_submission",
+          "quote": "Before we can create your integration page, we need you to provide us with a little information.",
+          "answer": "Harvest's separate integrations-directory listing request asks for partner contact details, listing copy (tagline, 500-900 character intro), logo, screenshots, a support contact, a landing page URL, and free-access or paywall review details; it is a marketing listing form, not a documented OAuth app review.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T13:52:46.586Z",
+          "page_hash": "6992755d42ae541a"
+        },
+        {
+          "id": "E126",
+          "question": "G3",
+          "url": "https://support.getharvest.com/hc/en-us/articles/12511803761165-How-can-I-get-my-integration-listed-or-updated-on-your-integrations-page",
+          "quote": "The form will be directed to the integrations team and they will reach out with any updates.",
+          "answer": "Requests to be listed in Harvest's integrations directory go through the integration submission form to the integrations team, who follow up; no security, demo or scope review criteria are stated.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "gapfill",
+          "fetched_at": "2026-10-21T13:52:48.925Z",
+          "page_hash": "7801d7c1afc07dd4"
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 13551
+        },
+        {
+          "name": "extract https://help.getharvest.com/api-v2/introduction/overview/general/",
+          "stop": "ok (5 facts)",
+          "ms": 8527
+        },
+        {
+          "name": "extract https://help.getharvest.com/api-v2/",
+          "stop": "ok (1 facts)",
+          "ms": 3873
+        },
+        {
+          "name": "extract https://help.getharvest.com/api-v1/authentication/authentication/oauth/",
+          "stop": "ok (8 facts)",
+          "ms": 12449
+        },
+        {
+          "name": "extract https://help.getharvest.com/api-v1/authentication/authentication/server-side-apps/",
+          "stop": "ok (10 facts)",
+          "ms": 14011
+        },
+        {
+          "name": "extract https://help.getharvest.com/api-v2/authentication-api/authentication/authentication/",
+          "stop": "ok (14 facts)",
+          "ms": 21936
+        },
+        {
+          "name": "extract https://github.com/harvesthq/api/blob/master/Authentication/OAuth%202.0.md",
+          "stop": "ok (11 facts)",
+          "ms": 13940
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (5 facts)",
+          "ms": 7815
+        },
+        {
+          "name": "extract https://help.merge.dev/articles/7586629903-greenhouse-how-do-i-set-up-my-partner-credentials",
+          "stop": "ok (20 facts)",
+          "ms": 20528
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (12 facts)",
+          "ms": 9139
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (10 facts)",
+          "ms": 11597
+        },
+        {
+          "name": "extract https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+          "stop": "ok (27 facts)",
+          "ms": 29170
+        },
+        {
+          "name": "gap: important details",
+          "stop": "finished",
+          "ms": 14371
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 17120
+        },
+        {
+          "name": "gap: official docs",
+          "stop": "finished",
+          "ms": 32506
+        }
+      ],
+      "judge": {
+        "checked": 17,
+        "supported": 8,
+        "partial": 8,
+        "unsupported": 1,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "s1.path",
+            "verdict": "partial",
+            "reason": "Quotes say registration of an OAuth2 app is needed, but say nothing about whether the provider reviews it; neither confirmed nor denied."
+          },
+          {
+            "id": "s1.gates",
+            "verdict": "partial",
+            "reason": "Registering an OAuth2 app is supported, but the 'connect with a test account' step and the order are not in the quotes."
+          },
+          {
+            "id": "s1.mod0",
+            "verdict": "partial",
+            "reason": "Quote says registration requires being logged in as an Administrator, a prerequisite, but not an approved account, sandbox, plan or agreement as such."
+          },
+          {
+            "id": "s1.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote states you must be logged in as an Administrator to access the registration page."
+          },
+          {
+            "id": "verdict",
+            "verdict": "partial",
+            "reason": "Quotes show registering an app is needed, but nothing on Composio's managed app, the 1-2 hour estimate, or absence of review."
+          },
+          {
+            "id": "c1",
+            "verdict": "supported",
+            "reason": "Quote says exactly this."
+          },
+          {
+            "id": "c3",
+            "verdict": "unsupported",
+            "reason": "Quotes do not list the registration fields or say what checks are absent."
+          },
+          {
+            "id": "c4",
+            "verdict": "supported",
+            "reason": "Quote says product scope can be Harvest, Forecast or both."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote says it is advised to pick the minimal scope."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "Quote says to request a new token after 18 hours using the refresh token."
+          },
+          {
+            "id": "c9",
+            "verdict": "supported",
+            "reason": "Quote gives 100 requests per 15 seconds for general API."
+          },
+          {
+            "id": "c10",
+            "verdict": "supported",
+            "reason": "Quote gives 100 requests per 15 minutes for Reports API."
+          },
+          {
+            "id": "c11",
+            "verdict": "partial",
+            "reason": "HTTP 429 is supported, but the Retry-After header is not in the quote."
+          },
+          {
+            "id": "c14",
+            "verdict": "partial",
+            "reason": "The user choosing the account is supported, but the absence of any admin approval mention is not shown by the quote."
+          },
+          {
+            "id": "c20",
+            "verdict": "partial",
+            "reason": "Quote only says information is needed for an integration page; the specific fields and the 'not an OAuth review' claim are not shown."
+          },
+          {
+            "id": "c21",
+            "verdict": "partial",
+            "reason": "The form going to the integrations team who reach out is supported; the absence of stated review criteria is not shown."
+          },
+          {
+            "id": "c24",
+            "verdict": "supported",
+            "reason": "Quote says the scope can vary with options selected and the user's authorization."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 13551,
+        "discover_read": 4861,
+        "extract": 41579,
+        "gapfill": 32508,
+        "write": 32006,
+        "verify": 18450
+      }
+    }
+  }
+}

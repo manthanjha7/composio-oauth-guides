@@ -1,0 +1,2242 @@
+{
+  "slug": "box",
+  "guide": {
+    "app": {
+      "name": "Box",
+      "website": "https://www.box.com",
+      "developer_docs_url": "https://developer.box.com"
+    },
+    "oauth_supported": "yes",
+    "summary": "End-user OAuth app, agent acts as user (self-serve (no review step found in the docs)); Server authentication (JWT) app (self-serve (no review step found in the docs)).",
+    "verdict": "Easiest: Server authentication (JWT) app (self-serve (no review step found in the docs)). Hardest: End-user OAuth app, agent acts as user (self-serve (no review step found in the docs)).",
+    "default_scenario": "s1",
+    "composio": {
+      "toolkit_slug": "box",
+      "managed_oauth": "yes",
+      "credential_guide_url": null,
+      "note": "Composio lists OAuth2 as managed for Box. Managed apps share quota and enforce a 15-minute minimum polling interval, and the consent screen shows Composio's name."
+    },
+    "need_own_app": {
+      "answer": "Not for a prototype, since Composio can supply a managed Box OAuth app. For launch you need your own app if you want your brand on the consent screen or a dedicated quota.",
+      "reasons": [
+        "Consent screen shows your brand instead of Composio's",
+        "Dedicated quota instead of quota shared across all Composio users",
+        "Shorter polling intervals than the 15-minute managed minimum"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "s1",
+        "label": "End-user OAuth app, agent acts as user",
+        "when_this_applies": "Your own Box OAuth 2.0 app where each end user logs in and approves scopes, connected through Composio.",
+        "difficulty": "unknown",
+        "hands_on": {
+          "estimate": "1-2 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "No Box review process or timeline was found in the dossier.",
+          "max_days": null
+        },
+        "approval": "Unconfirmed: the dossier did not find whether Box reviews OAuth apps before outside customers can connect.",
+        "claim_ids": [
+          "c1",
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Admin must enable MCP or authorize the Platform"
+        ],
+        "gate_sequence": [],
+        "modifiers": [
+          {
+            "kind": "customer_admin",
+            "qualifier": "required",
+            "note": "Admin must enable MCP or authorize the Platform App.",
+            "claim_ids": [
+              "c5",
+              "c6"
+            ]
+          }
+        ],
+        "path_basis": "inferred",
+        "path": "self_serve"
+      },
+      {
+        "id": "s2",
+        "label": "Server authentication (JWT) app",
+        "when_this_applies": "A Box app using Server Authentication (with JWT), acting through a service account in the customer's enterprise.",
+        "difficulty": "medium",
+        "hands_on": {
+          "estimate": "1-3 hours",
+          "basis": "estimate from step count, not measured"
+        },
+        "waiting": {
+          "estimate": "Unknown",
+          "basis": "Admin authorization timing is not documented.",
+          "max_days": null
+        },
+        "approval": "No Box review found, but the customer's Admin must authorize the app in the Admin Console before any API call works.",
+        "claim_ids": [
+          "c7",
+          "c8",
+          "c9",
+          "c10",
+          "c11"
+        ],
+        "review_checks": [],
+        "shortcut": null,
+        "extras": [
+          "Admin authorization is always required before use.",
+          "Reviews repeat on changes or periodically",
+          "2FA needed on your Box account for keypair."
+        ],
+        "modifiers": [
+          {
+            "kind": "customer_admin",
+            "qualifier": "required",
+            "note": "Admin authorization is always required before use.",
+            "claim_ids": [
+              "c7",
+              "c8"
+            ]
+          },
+          {
+            "kind": "recurring",
+            "qualifier": "required",
+            "note": "Reviews repeat on changes or periodically",
+            "claim_ids": [
+              "c9"
+            ]
+          },
+          {
+            "kind": "builder_prerequisite",
+            "qualifier": "required",
+            "note": "2FA needed on your Box account for keypair.",
+            "claim_ids": [
+              "c11"
+            ]
+          }
+        ],
+        "path_basis": "inferred",
+        "path": "self_serve"
+      }
+    ],
+    "prerequisites": [
+      {
+        "title": "Free Box developer account",
+        "detail": "It gives access to the Developer Console, where you create the app.",
+        "claim_ids": [
+          "c1"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "2FA on your Box account",
+        "detail": "Generating a public/private keypair for a JWT app requires 2FA.",
+        "claim_ids": [
+          "c11"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Box enterprise account with MCP enabled",
+        "detail": "For the MCP integration path, an admin must enable the MCP server on the enterprise account.",
+        "claim_ids": [
+          "c5",
+          "c12"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Prototype with Composio managed Box app",
+        "owner": "agent",
+        "detail": "Use Composio's managed Box OAuth2 app, no credentials needed, to test the agent flow.",
+        "inputs": [
+          "Composio project"
+        ],
+        "done_when": "A test user can connect Box through Composio.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c13"
+        ]
+      },
+      {
+        "title": "Create developer account and open Console",
+        "owner": "you",
+        "detail": "Sign up for a free Box developer account and open the Developer Console.",
+        "inputs": [
+          "Box login"
+        ],
+        "done_when": "Developer Console is visible.",
+        "scenario_ids": [],
+        "link": "https://developer.box.com",
+        "claim_ids": [
+          "c1",
+          "c14"
+        ]
+      },
+      {
+        "title": "Create app and configure scopes",
+        "owner": "you",
+        "detail": "Create the application, configure scopes, and generate credentials, requesting only the scopes the agent needs.",
+        "inputs": [
+          "App name",
+          "Scope list"
+        ],
+        "done_when": "Client ID and secret are available.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c15",
+          "c16"
+        ]
+      },
+      {
+        "title": "Copy redirect URI from Composio dashboard",
+        "owner": "agent",
+        "detail": "Get the callback URL from the Composio dashboard and check it matches the redirect URI registered in Box.",
+        "inputs": [
+          "Composio dashboard"
+        ],
+        "done_when": "Redirect URI is registered in the Box app.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c17"
+        ]
+      },
+      {
+        "title": "Create Composio auth config",
+        "owner": "agent",
+        "detail": "Create the auth config through Composio's API with your own client ID and secret.",
+        "inputs": [
+          "Client ID",
+          "Client secret"
+        ],
+        "done_when": "Auth config exists in Composio.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c18"
+        ]
+      },
+      {
+        "title": "Ask customer admin to authorize",
+        "owner": "waiting",
+        "detail": "The customer's admin enables MCP or authorizes the app in the Admin Console.",
+        "inputs": [
+          "Customer Admin"
+        ],
+        "done_when": "Admin has authorized the app and a test call succeeds.",
+        "scenario_ids": [],
+        "link": null,
+        "claim_ids": [
+          "c6",
+          "c8"
+        ]
+      }
+    ],
+    "traps": [
+      {
+        "title": "Server-auth apps fail until admin authorizes",
+        "detail": "API calls fail until the customer's Admin authorizes the app, and again after any configuration change.",
+        "claim_ids": [
+          "c8",
+          "c9"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "title": "Scopes are only a ceiling",
+        "detail": "Scopes never grant access to files the signed-in identity cannot open.",
+        "claim_ids": [
+          "c19"
+        ],
+        "scenario_ids": []
+      },
+      {
+        "title": "Managed app shows Composio branding",
+        "detail": "Without your own app, the consent screen shows Composio's name and shares quota across all Composio users.",
+        "claim_ids": [
+          "c20",
+          "c21"
+        ],
+        "scenario_ids": []
+      }
+    ],
+    "blockers": [
+      {
+        "symptom": "API calls fail for a JWT app",
+        "what_it_means": "The app has not been authorized in the Admin Console.",
+        "what_to_do": "Have the customer's Admin authorize the app, and reauthorize after configuration changes.",
+        "agent_can_help": "Draft the instructions for the admin.",
+        "claim_ids": [
+          "c8",
+          "c9"
+        ],
+        "scenario_ids": [
+          "s2"
+        ]
+      },
+      {
+        "symptom": "MCP connection cannot be set up",
+        "what_it_means": "The MCP server is not enabled by an admin on the enterprise account.",
+        "what_to_do": "Ask the Box admin to enable MCP in the Admin Console.",
+        "agent_can_help": "Draft the request to the admin.",
+        "claim_ids": [
+          "c5",
+          "c12"
+        ],
+        "scenario_ids": [
+          "s1"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Does Box review OAuth apps before outside customers can connect? Check the Developer Console app publishing settings or ask Box developer support.",
+      "How long does any Box review or approval take? Ask Box developer support.",
+      "Which scopes need extra approval? Check the Developer Console scope configuration for the app type.",
+      "Not found: every step that must happen before a customer outside the developer's own company can connect, in order. Checked box.com, box.com.",
+      "Not found: what each review or verification checks and what the developer must submit. Checked box.com, box.com."
+    ],
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A free developer account gives access to the Developer Console, where an OAuth 2.0 application can be created.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2",
+        "quote": "A free developer account gives you access to the Developer Console, where you can create an OAuth 2.0 application and start authenticating users in minutes.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c2",
+        "text": "The end user (not an admin) logs in to Box and approves the scopes the application asks for.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2",
+        "quote": "The user logs in to Box and approves the scopes your application asks for.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c3",
+        "text": "With end-user OAuth, the agent acts as the Box user who signs in, who authorizes the connection.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+        "quote": "The agent acts as the Box user who signs in.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c4",
+        "text": "Whether Box reviews OAuth apps before outside customers can connect was not found.",
+        "label": "unknown",
+        "source_url": null,
+        "quote": null,
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c5",
+        "text": "For production, a Box admin must enable MCP (or authorize the Platform App) in the Admin Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+        "quote": "An admin enables MCP (or authorizes the Platform App) in the Admin Console.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c6",
+        "text": "For production, a Box admin must enable MCP (or authorize the Platform App) in the Admin Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+        "quote": "An admin enables MCP (or authorizes the Platform App) in the Admin Console.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c7",
+        "text": "Server Authentication (JWT) apps always require Admin authorization before they can be used.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+        "quote": "Server Authentication (with JWT) always requires Admin authorization before use.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c8",
+        "text": "Server Authentication apps must be authorized in the Admin Console before they can make successful API calls.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+        "quote": "All applications leveraging Server Authentication must be authorized in the Admin Console before making successful API calls.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c9",
+        "text": "Changing the configuration of a JWT app requires it to be reauthorized before the changes take effect.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+        "quote": "If configuration changes are made to this application, it will need to be",
+        "probe_id": null,
+        "note": "Only partly supported by the quote: Quote is truncated: it says it will need to be... but not 'reauthorized' or 'before changes take effect'."
+      },
+      {
+        "id": "c10",
+        "text": "Creating a JWT app: click Create Platform App, then Platform App, then Server Authentication (with JWT), name the app, and click Create App in the Developer Console.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+        "quote": "Click **Create Platform App** > **Platform App** > **Server Authentication (with JWT)** > name the application > **Create App**",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c11",
+        "text": "2FA must be enabled on the Box account to generate a public/private keypair for the app.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+        "quote": "For security reasons 2FA must be enabled on your Box account to successfully",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c12",
+        "text": "The Box MCP server must be enabled by an admin on the customer's Box enterprise account before the connection is set up.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+        "quote": "A Box enterprise account with the MCP server enabled by an admin.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c13",
+        "text": "For toolkits like Box, Composio can provide the OAuth app that users authorize, so the developer does not need to register an OAuth app or supply a client ID and client secret.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c14",
+        "text": "Setup starts in the Developer Console, which is where the developer opens to begin (step 1 of the quick start).",
+        "label": "unknown",
+        "source_url": "https://developer.box.com/",
+        "quote": "Open the Developer Console",
+        "probe_id": null,
+        "note": "The claim states 1, which the quote does not contain."
+      },
+      {
+        "id": "c15",
+        "text": "In the Developer Console, the developer creates an application, configures its scopes, and generates credentials.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/",
+        "quote": "Create an application, configure scopes, and generate credentials.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c16",
+        "text": "Developers should request only the scopes the agent needs (page gives no scope list or review tiers).",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+        "quote": "Enable MCP in the Admin Console, create integration credentials, and request only the scopes the agent needs.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c17",
+        "text": "The application's authorization URL is built from its client ID and a registered redirect URI.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/authentication/oauth2",
+        "quote": "Your application builds an authorization URL from its client ID and a registered redirect URI, and sends the user to it.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c18",
+        "text": "For Composio, a custom auth config lets the developer supply their own OAuth app credentials for a toolkit.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "**Custom auth configs**: You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c19",
+        "text": "Scopes never grant access to files the identity cannot open.",
+        "label": "provider_docs",
+        "source_url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+        "quote": "Scopes never grant access to files the identity cannot open.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c20",
+        "text": "Without your own OAuth app, the provider consent screen shows Composio's name (e.g. on Google, GitHub).",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+        "probe_id": null,
+        "note": null
+      },
+      {
+        "id": "c21",
+        "text": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+        "label": "composio_docs",
+        "source_url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+        "probe_id": null,
+        "note": null
+      }
+    ]
+  },
+  "meta": {
+    "origin": "live",
+    "reviewed": false,
+    "review_note": null,
+    "generated_at": "2026-10-21T19:45:55.011Z",
+    "generated_by": "agent v2 (v2.9-2026-10-21) · identify claude-haiku-5-5 · research claude-haiku-5-5 · write claude-sonnet-5-5 · judge claude-sonnet-5-5 · anthropic_web_search",
+    "duration_ms": 123213,
+    "query": "Box",
+    "partial": true,
+    "warnings": [
+      "\"End-user OAuth app, agent acts as user\": no path was given; self-serve inferred because none of this setup's evidence mentions a review or an access request.",
+      "\"Server authentication (JWT) app\": no path was given; self-serve inferred because none of this setup's evidence mentions a review or an access request.",
+      "The one-line verdict could not be confirmed against the sources; it was rebuilt from the setups."
+    ],
+    "verification": {
+      "claims_total": 21,
+      "quotes_checked": 20,
+      "quotes_verified": 19,
+      "downgraded": 1
+    },
+    "usage": {
+      "usd": 0,
+      "input_tokens": 55212,
+      "output_tokens": 32301,
+      "cache_read_tokens": 0,
+      "web_searches": 0
+    },
+    "sources": [
+      {
+        "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:16.857Z",
+        "via": "direct",
+        "chars": 20797
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:16.859Z",
+        "via": "direct",
+        "chars": 3500
+      },
+      {
+        "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:16.859Z",
+        "via": "direct",
+        "chars": 3169
+      },
+      {
+        "url": "https://docs.composio.dev/toolkits/box",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:16.859Z",
+        "via": "direct",
+        "chars": 303
+      },
+      {
+        "url": "https://www.box.com/",
+        "title": "Box | AI-Powered Content Management, Workflow & Collaboration",
+        "fetched_at": "2026-10-21T19:44:21.477Z",
+        "via": "direct",
+        "chars": 4380
+      },
+      {
+        "url": "https://developer.box.com/guides/authentication/oauth2",
+        "title": "OAuth 2.0 authentication - Box Dev Docs",
+        "fetched_at": "2026-10-21T19:44:21.739Z",
+        "via": "direct",
+        "chars": 2172
+      },
+      {
+        "url": "https://developer.box.com/",
+        "title": "Home - Box Dev Docs",
+        "fetched_at": "2026-10-21T19:44:25.946Z",
+        "via": "direct",
+        "chars": 3010
+      },
+      {
+        "url": "https://developer.box.com/llms.txt",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:26.009Z",
+        "via": "direct",
+        "chars": 30367
+      },
+      {
+        "url": "https://account.box.com/login?redirect_url=%2Fllms.txt",
+        "title": "Box",
+        "fetched_at": "2026-10-21T19:44:26.269Z",
+        "via": "direct",
+        "chars": 15
+      },
+      {
+        "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:26.416Z",
+        "via": "direct",
+        "chars": 6754
+      },
+      {
+        "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:26.506Z",
+        "via": "direct",
+        "chars": 4056
+      },
+      {
+        "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:26.597Z",
+        "via": "direct",
+        "chars": 3693
+      },
+      {
+        "url": "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+        "title": "Box",
+        "fetched_at": "2026-10-21T19:44:26.609Z",
+        "via": "direct",
+        "chars": 15
+      },
+      {
+        "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+        "title": null,
+        "fetched_at": "2026-10-21T19:44:26.870Z",
+        "via": "direct",
+        "chars": 2083
+      },
+      {
+        "url": "https://developer.box.com/guides/box-mcp",
+        "title": "Box MCP server - Box Dev Docs",
+        "fetched_at": "2026-10-21T19:45:01.386Z",
+        "via": "direct",
+        "chars": 2700
+      },
+      {
+        "url": "https://developer.box.com/guides/authentication/oauth2/oauth2-setup",
+        "title": "Setup with OAuth 2.0 - Box Dev Docs",
+        "fetched_at": "2026-10-21T19:45:01.479Z",
+        "via": "direct",
+        "chars": 4707
+      },
+      {
+        "url": "https://developer.box.com/guides/applications",
+        "title": "Applications - Box Dev Docs",
+        "fetched_at": "2026-10-21T19:45:01.526Z",
+        "via": "direct",
+        "chars": 1957
+      }
+    ],
+    "probes": [],
+    "research": {
+      "version": 2,
+      "prompt_version": "v2.9-2026-10-21",
+      "models": {
+        "identify": "claude-haiku-5-5",
+        "research": "claude-haiku-5-5",
+        "write": "claude-sonnet-5-5",
+        "critic": "claude-sonnet-5-5"
+      },
+      "served": {
+        "identify": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "research": [
+          "claude-haiku-5-5 (Claude Code mirror)"
+        ],
+        "write": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ],
+        "critic": [
+          "claude-sonnet-5-5 (Claude Code mirror)"
+        ]
+      },
+      "questions": [
+        {
+          "id": "G1",
+          "status": "found",
+          "evidence": [
+            "E1",
+            "E7",
+            "E23",
+            "E24",
+            "E55",
+            "E56",
+            "E57"
+          ],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md"
+          ]
+        },
+        {
+          "id": "G2",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+            "https://developer.box.com/guides/box-mcp/",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup/",
+            "https://developer.box.com/guides/applications/",
+            "https://developer.box.com/llms.txt"
+          ]
+        },
+        {
+          "id": "G3",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+            "https://developer.box.com/guides/box-mcp/",
+            "https://developer.box.com/guides/authentication/oauth2/oauth2-setup/",
+            "https://developer.box.com/guides/applications/",
+            "https://developer.box.com/llms.txt"
+          ]
+        },
+        {
+          "id": "G4",
+          "status": "found",
+          "evidence": [
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E15",
+            "E16",
+            "E17",
+            "E18",
+            "E19",
+            "E20",
+            "E21",
+            "E22",
+            "E25",
+            "E58",
+            "E59"
+          ],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md"
+          ]
+        },
+        {
+          "id": "G5",
+          "status": "found",
+          "evidence": [
+            "E60",
+            "E61"
+          ],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md"
+          ]
+        },
+        {
+          "id": "G6",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+            "https://developer.box.com/guides/authentication/oauth2/",
+            "https://developer.box.com/llms.txt",
+            "https://developer.box.com/guides/applications/",
+            "https://developer.box.com/guides/applications/app-approval",
+            "https://developer.box.com/guides/integrations/app-review"
+          ]
+        },
+        {
+          "id": "G7",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md"
+          ]
+        },
+        {
+          "id": "G8",
+          "status": "found",
+          "evidence": [
+            "E2",
+            "E12",
+            "E13",
+            "E26",
+            "E62",
+            "E63",
+            "E64"
+          ],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md"
+          ]
+        },
+        {
+          "id": "G9",
+          "status": "found",
+          "evidence": [
+            "E3",
+            "E4",
+            "E28",
+            "E45",
+            "E46",
+            "E47",
+            "E48",
+            "E49",
+            "E50"
+          ],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md"
+          ]
+        },
+        {
+          "id": "G10",
+          "status": "found",
+          "evidence": [
+            "E5",
+            "E6",
+            "E14",
+            "E29",
+            "E30",
+            "E31",
+            "E32",
+            "E33",
+            "E34",
+            "E35",
+            "E65",
+            "E66",
+            "E67",
+            "E68",
+            "E69"
+          ],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md"
+          ]
+        },
+        {
+          "id": "G11",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+            "https://developer.box.com/guides/authentication/oauth2",
+            "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+            "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+            "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+            "https://developer.box.com/",
+            "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+            "https://developer.box.com/guides/box-apps/",
+            "https://developer.box.com/guides/box-apps/publish-box-app/",
+            "https://developer.box.com/guides/box-apps.md",
+            "https://developer.box.com/guides/box-apps/publish-box-app.md",
+            "https://developer.box.com/llms.txt"
+          ]
+        },
+        {
+          "id": "R1",
+          "status": "not_found",
+          "evidence": [],
+          "tried": [
+            "https://developer.box.com/guides/authentication/oauth2/",
+            "https://developer.box.com/llms.txt",
+            "https://developer.box.com/guides/applications/",
+            "https://developer.box.com/guides/applications/app-approval",
+            "https://developer.box.com/guides/integrations/app-review",
+            "https://support.box.com/hc/en-us/articles/20738406915219-Platform-Insights"
+          ]
+        },
+        {
+          "id": "C1",
+          "status": "found",
+          "evidence": [
+            "E37",
+            "E38",
+            "E39",
+            "E40",
+            "E41",
+            "E42",
+            "E43",
+            "E44",
+            "E51",
+            "E52",
+            "E53",
+            "E54"
+          ],
+          "tried": [
+            "https://docs.composio.dev/toolkits/managed-auth.md",
+            "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+            "https://docs.composio.dev/docs/authentication/white-labeling-authentication"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "A free developer account gives you access to the Developer Console, where you can create an OAuth 2.0 application and start authenticating users in minutes.",
+          "answer": "A free developer account gives access to the Developer Console, where an OAuth 2.0 application can be created.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:21.739Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1784,
+            1940
+          ]
+        },
+        {
+          "id": "E2",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "The user logs in to Box and approves the scopes your application asks for.",
+          "answer": "The end user (not an admin) logs in to Box and approves the scopes the application asks for.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:21.739Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1230,
+            1304
+          ]
+        },
+        {
+          "id": "E3",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "Your application builds an authorization URL from its client ID and a registered redirect URI, and sends the user to it.",
+          "answer": "The application's authorization URL is built from its client ID and a registered redirect URI.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:21.739Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            0,
+            120
+          ]
+        },
+        {
+          "id": "E4",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "Box redirects the user back to your redirect URI with a short-lived authorization code.",
+          "answer": "Box sends the user back to the application's redirect URI with a short-lived authorization code.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:21.739Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            0,
+            87
+          ]
+        },
+        {
+          "id": "E5",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "Your application exchanges that code, along with its client secret, for an access token and a refresh token.",
+          "answer": "The application exchanges the authorization code plus its client secret for an access token and a refresh token.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:21.739Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            0,
+            108
+          ]
+        },
+        {
+          "id": "E6",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/authentication/oauth2",
+          "quote": "A free developer account gives you access to the Developer Console, where you can create an OAuth 2.0 application and start authenticating users in minutes.",
+          "answer": "The OAuth 2.0 application is created in the Developer Console, which a free developer account provides access to.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:21.739Z",
+          "page_hash": "5b0b2d88c57c1842",
+          "offsets": [
+            1784,
+            1940
+          ]
+        },
+        {
+          "id": "E7",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "Use a free developer account and sample files while you learn the tools.",
+          "answer": "The page suggests a free developer account for learning the tools with sample files; it does not say who can create an OAuth app for production.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            2379,
+            2451
+          ]
+        },
+        {
+          "id": "E8",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "The maximum actions the integration can request.",
+          "answer": "Scopes set the maximum actions the integration can request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            1141,
+            1189
+          ]
+        },
+        {
+          "id": "E9",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "Scopes never grant access to files the identity cannot open.",
+          "answer": "Scopes never grant access to files the identity cannot open.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            1190,
+            1250
+          ]
+        },
+        {
+          "id": "E10",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "Enable MCP in the Admin Console, create integration credentials, and request only the scopes the agent needs.",
+          "answer": "Developers should request only the scopes the agent needs (page gives no scope list or review tiers).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            1774,
+            1883
+          ]
+        },
+        {
+          "id": "E11",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "Admin-configured scopes cap what the client can request.",
+          "answer": "Admin-configured scopes cap what a Microsoft agent client (GitHub Copilot or Microsoft Foundry Tools) can request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            3198,
+            3254
+          ]
+        },
+        {
+          "id": "E12",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "An admin enables MCP (or authorizes the Platform App) in the Admin Console.",
+          "answer": "For production, a Box admin must enable MCP (or authorize the Platform App) in the Admin Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            2597,
+            2672
+          ]
+        },
+        {
+          "id": "E13",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "The agent acts as the Box user who signs in.",
+          "answer": "With end-user OAuth, the agent acts as the Box user who signs in, who authorizes the connection.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            1606,
+            1650
+          ]
+        },
+        {
+          "id": "E14",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "quote": "Enable MCP in the Admin Console, create integration credentials, and request only the scopes the agent needs.",
+          "answer": "For the MCP setup, enable MCP in the Admin Console, create integration credentials, and request the needed scopes.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.597Z",
+          "page_hash": "4493c947ad58c11b",
+          "offsets": [
+            1774,
+            1883
+          ]
+        },
+        {
+          "id": "E15",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "To facilitate this process we've created a new set of API scopes that allow developers to control which UI controls are available to end users in applications leveraging UI Element.",
+          "answer": "Box's dedicated scopes are API scopes for controlling which UI controls end users get in apps that use Box UI Elements (not an AI agent scope list).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            0,
+            181
+          ]
+        },
+        {
+          "id": "E16",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "So a developer can combine multiple scopes in a token exchange request to generate a token with the desired set of functionality.",
+          "answer": "Dedicated scopes are modular and strictly additive, so a developer can combine several scopes in one token exchange request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            1519,
+            1648
+          ]
+        },
+        {
+          "id": "E17",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "Also to avoid confusion, two scopes should never have the same permission.",
+          "answer": "Two dedicated scopes should never grant the same permission.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            1649,
+            1723
+          ]
+        },
+        {
+          "id": "E18",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "So adding this scope to the token enables the specific action.",
+          "answer": "Each dedicated scope should map to a specific action in the UI Element, so adding it enables that action.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            1797,
+            1859
+          ]
+        },
+        {
+          "id": "E19",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "Since some actions can only be performed by specific UI Elements, some scopes may only be meaningfully applicable to those UI Elements.",
+          "answer": "Some dedicated scopes only apply meaningfully to certain UI Elements, because only specific UI Elements can perform some actions.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            1860,
+            1995
+          ]
+        },
+        {
+          "id": "E20",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "So even if some end-user of your application uses the token directly against the API, they can't gain access beyond what you intended them to provide through the UI Element.",
+          "answer": "Each dedicated scope should contain the minimum permissions needed for its action, so end users cannot gain access beyond what the developer intended through the UI Element.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            2100,
+            2273
+          ]
+        },
+        {
+          "id": "E21",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "This scope should always be included in the Token Exchange request.",
+          "answer": "Every UI Element has a base scope with the least permissions needed for it to work, and the base scope must always be included in the token exchange request.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            2505,
+            2572
+          ]
+        },
+        {
+          "id": "E22",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "quote": "As with base scopes, feature scopes too are mostly",
+          "answer": "Feature scopes are added on top of the base scope and enable additional capabilities within a UI Element; they are mostly different for every UI Element.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.506Z",
+          "page_hash": "7263f93be86ed58d",
+          "offsets": [
+            3449,
+            3499
+          ]
+        },
+        {
+          "id": "E23",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "A Box enterprise account with the MCP server enabled by an admin.",
+          "answer": "The Box integration path requires a Box enterprise account (the page lists this as a prerequisite).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            590,
+            655
+          ]
+        },
+        {
+          "id": "E24",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "Go to **Configuration** > **Add Integration Credentials** to generate new credentials.",
+          "answer": "Credentials for the Custom Box MCP Server integration are generated by an admin in the Box Admin Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            989,
+            1075
+          ]
+        },
+        {
+          "id": "E25",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "**Scopes** define the maximum set of actions. Users can only access content they already have permission to view or edit in Box.",
+          "answer": "The page defines Box access scopes as the maximum set of actions, but does not list specific scopes for an AI agent.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            1377,
+            1505
+          ]
+        },
+        {
+          "id": "E26",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "A Box enterprise account with the MCP server enabled by an admin.",
+          "answer": "The Box MCP server must be enabled by an admin on the customer's Box enterprise account before the connection is set up.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            590,
+            655
+          ]
+        },
+        {
+          "id": "E27",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "Admin",
+          "answer": "The enable-and-configure steps for the Box side are marked as Admin tasks.",
+          "kind": "provider_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            755,
+            760
+          ]
+        },
+        {
+          "id": "E28",
+          "question": "G9",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "In **Redirect URIs**, change the Box redirect URIs to the Redirect URI provided by the external MCP Client.",
+          "answer": "In the Box integration's Redirect URIs setting, the Box redirect URIs are changed to the redirect URI provided by the external MCP client.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            1079,
+            1186
+          ]
+        },
+        {
+          "id": "E29",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "Go to **Integrations** and find **Custom Box MCP Server** either by using the **MCP Category** filter, or by using the search bar at the top of the page.",
+          "answer": "To set up the app, go to Box Admin Console > Integrations and find the Custom Box MCP Server, either via the MCP Category filter or the search bar.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            832,
+            985
+          ]
+        },
+        {
+          "id": "E30",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "Go to **Configuration** > **Add Integration Credentials** to generate new credentials.",
+          "answer": "Generate the credentials under Configuration > Add Integration Credentials in the Box Admin Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            989,
+            1075
+          ]
+        },
+        {
+          "id": "E31",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "Copy the **Client ID** and **Client Secret** for later use. These are required later for Microsoft Foundry Tools to authorize the connection.",
+          "answer": "Copy the Client ID and Client Secret from the Box side; they are needed later to authorize the connection in Microsoft Foundry Tools.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            1190,
+            1331
+          ]
+        },
+        {
+          "id": "E32",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "Check the desired **Access scopes**:",
+          "answer": "Check the desired Access scopes for the integration in the Box Admin Console setup.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            1335,
+            1371
+          ]
+        },
+        {
+          "id": "E33",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "quote": "Select **Save**.",
+          "answer": "Select Save to finish the Box integration configuration.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.870Z",
+          "page_hash": "42dc4628b5686ba0",
+          "offsets": [
+            1509,
+            1525
+          ]
+        },
+        {
+          "id": "E34",
+          "question": "G10",
+          "url": "https://developer.box.com/",
+          "quote": "Open the Developer Console",
+          "answer": "Setup starts in the Developer Console, which is where the developer opens to begin (step 1 of the quick start).",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:25.946Z",
+          "page_hash": "812a5ffe3309f37a",
+          "offsets": [
+            1822,
+            1848
+          ]
+        },
+        {
+          "id": "E35",
+          "question": "G10",
+          "url": "https://developer.box.com/",
+          "quote": "Create an application, configure scopes, and generate credentials.",
+          "answer": "In the Developer Console, the developer creates an application, configures its scopes, and generates credentials.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:25.946Z",
+          "page_hash": "812a5ffe3309f37a",
+          "offsets": [
+            1849,
+            1915
+          ]
+        },
+        {
+          "id": "E36",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "| [Box](/toolkits/box.md) | `BOX` |",
+          "answer": "Box is listed under 'Composio-managed OAuth available', so Composio supplies the OAuth app for Box.",
+          "kind": "composio_docs",
+          "status": "not_on_page",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.857Z",
+          "page_hash": "",
+          "offsets": [
+            1787,
+            1822
+          ]
+        },
+        {
+          "id": "E37",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.",
+          "answer": "For toolkits like Box, Composio can provide the OAuth app that users authorize, so the developer does not need to register an OAuth app or supply a client ID and client secret.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.857Z",
+          "page_hash": "",
+          "offsets": [
+            216,
+            389
+          ]
+        },
+        {
+          "id": "E38",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.",
+          "answer": "Composio provides the OAuth app when the toolkit's composio_managed_auth_schemes field contains the toolkit's OAuth method; otherwise the developer must register their own OAuth app.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.857Z",
+          "page_hash": "",
+          "offsets": [
+            720,
+            939
+          ]
+        },
+        {
+          "id": "E39",
+          "question": "C1",
+          "url": "https://docs.composio.dev/toolkits/managed-auth.md",
+          "quote": "Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.",
+          "answer": "Some toolkits support more than one authentication method, and a toolkit is listed as Composio-managed when Composio manages at least one OAuth method, so the Box page should be opened to check each method.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.857Z",
+          "page_hash": "",
+          "offsets": [
+            941,
+            1153
+          ]
+        },
+        {
+          "id": "E40",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.",
+          "answer": "This page is general and does not mention Box. It describes Composio managed apps for popular toolkits such as GitHub, Gmail, and Slack, so it does not confirm whether Composio supplies a managed OAuth app for Box.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            55,
+            201
+          ]
+        },
+        {
+          "id": "E41",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth).",
+          "answer": "Not Box-specific: to check whether Composio provides the OAuth app for a given toolkit, the page points to a separate Managed OAuth apps page.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            1882,
+            1995
+          ]
+        },
+        {
+          "id": "E42",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "**Custom auth configs**: You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.",
+          "answer": "Not Box-specific: with a custom auth config, the developer supplies their own OAuth app, API key, bearer token, or other credentials for a toolkit.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            204,
+            349
+          ]
+        },
+        {
+          "id": "E43",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed apps share quota across all Composio users. Your own app gets a dedicated quota.",
+          "answer": "Limit of managed apps in general (not Box-specific): managed apps share quota across all Composio users, while a developer's own app gets a dedicated quota.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            1423,
+            1511
+          ]
+        },
+        {
+          "id": "E44",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "quote": "Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.",
+          "answer": "Limit of managed apps in general (not Box-specific): managed auth enforces a 15-minute minimum polling interval, whereas a developer's own app can use shorter polling intervals where supported.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            1552,
+            1675
+          ]
+        },
+        {
+          "id": "E45",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "When routing the callback through your own domain, you set the authorized redirect URI in your OAuth app's settings to your own endpoint.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E46",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "https://yourdomain.com/api/composio-redirect",
+          "answer": "The example redirect URI for the proxy is on your own domain, not Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            2374,
+            2418
+          ]
+        },
+        {
+          "id": "E47",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:",
+          "answer": "The proxy endpoint receives the OAuth callback and immediately sends a 302 redirect on to Composio's callback URL.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            2454,
+            2541
+          ]
+        },
+        {
+          "id": "E48",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio.",
+          "answer": "The proxy endpoint must return a 302 redirect; it must not follow the redirect server-side or make a fetch call to Composio.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            3295,
+            3413
+          ]
+        },
+        {
+          "id": "E49",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token.",
+          "answer": "Without a proxy, the browser briefly redirects through backend.composio.dev during OAuth so Composio can capture the auth token.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            1968,
+            2082
+          ]
+        },
+        {
+          "id": "E50",
+          "question": "G9",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.",
+          "answer": "Proxying the redirect through your own domain is an option if you need to hide Composio's domain.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            2143,
+            2241
+          ]
+        },
+        {
+          "id": "E51",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Add your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "answer": "The page is general and does not say anything Box-specific; it says to bring your own OAuth app only for toolkits where the provider consent screen must show your brand.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            1242,
+            1338
+          ]
+        },
+        {
+          "id": "E52",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "\"Composio wants to access your account\" on Google, GitHub, etc.",
+          "answer": "Without your own OAuth app, the provider consent screen shows Composio's name (e.g. on Google, GitHub).",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            659,
+            722
+          ]
+        },
+        {
+          "id": "E53",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "Some toolkits also display this URL on the consent screen.",
+          "answer": "Some toolkits also display Composio's backend URL on the consent screen.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            2083,
+            2141
+          ]
+        },
+        {
+          "id": "E54",
+          "question": "C1",
+          "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "quote": "In your OAuth app's settings, set the authorized redirect URI to your own endpoint:",
+          "answer": "If you proxy the redirect, the redirect URI you register with your own OAuth app is your own endpoint, not Composio's callback.",
+          "kind": "composio_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:16.859Z",
+          "page_hash": "",
+          "offsets": [
+            2285,
+            2368
+          ]
+        },
+        {
+          "id": "E55",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "Since we released a new OAuth 2.0",
+          "answer": "The page says the Box CLI was moved to a new OAuth 2.0 version, and this JWT (server authentication) setup is kept only for developers who still want that application type.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            345,
+            378
+          ]
+        },
+        {
+          "id": "E56",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "From the left-hand navigation panel on your All Files page, open the [Developer Console][dc].",
+          "answer": "Creating the app starts in the Developer Console, which is reached from the left-hand navigation panel on the All Files page.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            1105,
+            1198
+          ]
+        },
+        {
+          "id": "E57",
+          "question": "G1",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "If this is your first time using the Box API and this option is not already available, you can add it to your account by clicking [here][dc].",
+          "answer": "If you are new to the Box API and the Developer Console option is not visible, you can add it to your account through a link.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            1199,
+            1340
+          ]
+        },
+        {
+          "id": "E58",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "Read all files and folders stored in Box",
+          "answer": "The minimum scope for this CLI server-authentication (JWT) app is reading all files and folders stored in Box.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            1016,
+            1056
+          ]
+        },
+        {
+          "id": "E59",
+          "question": "G4",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "Write all files and folders stored in Box",
+          "answer": "The minimum scope for this CLI server-authentication (JWT) app also includes writing all files and folders stored in Box.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            1059,
+            1100
+          ]
+        },
+        {
+          "id": "E60",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "Server Authentication (with JWT) always requires Admin authorization before use.",
+          "answer": "Server Authentication (JWT) apps always require Admin authorization before they can be used.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            1491,
+            1571
+          ]
+        },
+        {
+          "id": "E61",
+          "question": "G5",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "All applications leveraging Server Authentication must be authorized in the Admin Console before making successful API calls.",
+          "answer": "Server Authentication apps must be authorized in the Admin Console before they can make successful API calls.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            0,
+            125
+          ]
+        },
+        {
+          "id": "E62",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "All applications leveraging Server Authentication must be authorized in the Admin Console before making successful API calls.",
+          "answer": "For JWT server-authentication apps, an Admin must authorize the app in the Admin Console before successful API calls are possible.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            0,
+            125
+          ]
+        },
+        {
+          "id": "E63",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "Steps for developers and Admins can be found in our authorization guide.",
+          "answer": "The page says JWT apps have a Service Account that, depending on the app's scopes, may be able to perform Admin actions, which is why admin authorization is required.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            2341,
+            2413
+          ]
+        },
+        {
+          "id": "E64",
+          "question": "G8",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "If configuration changes are made to this application, it will need to be",
+          "answer": "Changing the configuration of a JWT app requires it to be reauthorized before the changes take effect.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            2621,
+            2694
+          ]
+        },
+        {
+          "id": "E65",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "Click **Create Platform App** > **Platform App** > **Server Authentication (with JWT)** > name the application > **Create App**",
+          "answer": "To create a JWT app, click Create Platform App, then Platform App, then Server Authentication (with JWT), name the app, and click Create App in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            1345,
+            1472
+          ]
+        },
+        {
+          "id": "E66",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "You can choose either App Access Only or App + Enterprise Access as the application access.",
+          "answer": "The app's access can be set to either App Access Only or App + Enterprise Access.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            0,
+            91
+          ]
+        },
+        {
+          "id": "E67",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "the following scopes are set in the **Configuration** tab of your application:",
+          "answer": "The scopes are configured on the app's Configuration tab in the Developer Console.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            0,
+            78
+          ]
+        },
+        {
+          "id": "E68",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "Click **Generate a Public/Private Keypair**, which will",
+          "answer": "The configuration file (used by the CLI) is downloaded from the Configuration tab by clicking Generate a Public/Private Keypair, which requires 2FA verification.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            3310,
+            3365
+          ]
+        },
+        {
+          "id": "E69",
+          "question": "G10",
+          "url": "https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "quote": "For security reasons 2FA must be enabled on your Box account to successfully",
+          "answer": "2FA must be enabled on the Box account to generate a public/private keypair for the app.",
+          "kind": "provider_docs",
+          "status": "verified",
+          "via": "extract",
+          "fetched_at": "2026-10-21T19:44:26.416Z",
+          "page_hash": "62d3e7c736a6218f",
+          "offsets": [
+            3532,
+            3608
+          ]
+        }
+      ],
+      "workers": [
+        {
+          "name": "identify",
+          "stop": "finished",
+          "ms": 33890
+        },
+        {
+          "name": "extract https://account.box.com/login?redirect_url=%2Fdevelopers%2Fconsole",
+          "stop": "ok (0 facts)",
+          "ms": 3388
+        },
+        {
+          "name": "extract https://developer.box.com/guides/authentication/oauth2",
+          "stop": "ok (6 facts)",
+          "ms": 7722
+        },
+        {
+          "name": "extract https://developer.box.com/guides/box-mcp/permission-aware-access.md",
+          "stop": "ok (8 facts)",
+          "ms": 10428
+        },
+        {
+          "name": "extract https://developer.box.com/guides/embed/ui-elements/scopes.md",
+          "stop": "ok (8 facts)",
+          "ms": 12372
+        },
+        {
+          "name": "extract https://developer.box.com/guides/box-mcp/integrations/microsoft-foundry-tools.md",
+          "stop": "ok (10 facts)",
+          "ms": 12388
+        },
+        {
+          "name": "extract https://developer.box.com/",
+          "stop": "ok (2 facts)",
+          "ms": 5862
+        },
+        {
+          "name": "extract https://docs.composio.dev/toolkits/managed-auth.md",
+          "stop": "ok (3 facts)",
+          "ms": 7716
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "stop": "ok (5 facts)",
+          "ms": 9118
+        },
+        {
+          "name": "extract https://docs.composio.dev/docs/authentication/white-labeling-authentication",
+          "stop": "ok (10 facts)",
+          "ms": 9926
+        },
+        {
+          "name": "extract https://developer.box.com/guides/cli/cli-with-jwt-authentication/jwt-cli.md",
+          "stop": "ok (15 facts)",
+          "ms": 20517
+        },
+        {
+          "name": "gap: official docs",
+          "stop": "finished",
+          "ms": 15904
+        },
+        {
+          "name": "gap: developer reports",
+          "stop": "finished",
+          "ms": 19861
+        },
+        {
+          "name": "gap: important details",
+          "stop": "finished",
+          "ms": 26193
+        }
+      ],
+      "judge": {
+        "checked": 18,
+        "supported": 16,
+        "partial": 2,
+        "unsupported": 0,
+        "contradicted": 0,
+        "unchecked": 0,
+        "items": [
+          {
+            "id": "s1.mod0",
+            "verdict": "supported",
+            "reason": "Admin enables MCP or authorizes the Platform App in the Admin Console."
+          },
+          {
+            "id": "s1.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote states admin enables MCP or authorizes the Platform App."
+          },
+          {
+            "id": "s2.mod0",
+            "verdict": "supported",
+            "reason": "Admin authorization is always required before use."
+          },
+          {
+            "id": "s2.mod0.note",
+            "verdict": "supported",
+            "reason": "Quote says always requires Admin authorization before use."
+          },
+          {
+            "id": "s2.mod1",
+            "verdict": "supported",
+            "reason": "Configuration changes mean the app needs to be (re)authorized; quote is truncated but implies it."
+          },
+          {
+            "id": "s2.mod1.note",
+            "verdict": "partial",
+            "reason": "Quote is cut off before 'reauthorized'; the requirement is implied but not stated."
+          },
+          {
+            "id": "s2.mod2",
+            "verdict": "supported",
+            "reason": "2FA must be enabled on the Box account, a prerequisite for the developer."
+          },
+          {
+            "id": "s2.mod2.note",
+            "verdict": "supported",
+            "reason": "Quote says 2FA must be enabled on the Box account (the quote is truncated before mentioning the keypair)."
+          },
+          {
+            "id": "c2",
+            "verdict": "supported",
+            "reason": "User logs in and approves the scopes."
+          },
+          {
+            "id": "c3",
+            "verdict": "supported",
+            "reason": "Agent acts as the Box user who signs in."
+          },
+          {
+            "id": "c5",
+            "verdict": "supported",
+            "reason": "Quote states an admin enables MCP or authorizes the Platform App; 'production' is not mentioned but is not contradicted."
+          },
+          {
+            "id": "c6",
+            "verdict": "supported",
+            "reason": "Same quote: admin enables MCP or authorizes the Platform App."
+          },
+          {
+            "id": "c7",
+            "verdict": "supported",
+            "reason": "Quote says always requires Admin authorization before use."
+          },
+          {
+            "id": "c8",
+            "verdict": "supported",
+            "reason": "Quote says must be authorized in the Admin Console before successful API calls."
+          },
+          {
+            "id": "c9",
+            "verdict": "partial",
+            "reason": "Quote is truncated: it says it will need to be... but not 'reauthorized' or 'before changes take effect'."
+          },
+          {
+            "id": "c12",
+            "verdict": "supported",
+            "reason": "The quote lists an enterprise account with MCP enabled by an admin as a requirement."
+          },
+          {
+            "id": "c16",
+            "verdict": "supported",
+            "reason": "Quote says to request only the scopes the agent needs."
+          },
+          {
+            "id": "c19",
+            "verdict": "supported",
+            "reason": "Quote states this verbatim."
+          }
+        ]
+      },
+      "timings_ms": {
+        "identify": 33890,
+        "discover_read": 1183,
+        "extract": 28239,
+        "gapfill": 26202,
+        "write": 23137,
+        "verify": 10559
+      }
+    }
+  }
+}
